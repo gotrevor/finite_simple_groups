@@ -32,6 +32,8 @@ chief factors). See `MathlibStubs.lean` for the stub catalog.
 -/
 
 import FeitThompson.MathlibStubs
+import Mathlib.GroupTheory.Commutator.Basic
+import Mathlib.GroupTheory.Frattini
 
 namespace FeitThompson.BGsection1
 
@@ -79,6 +81,32 @@ def pNormAbelian (p : ℕ) (D A : Subgroup G) : Prop :=
 of G normalized by X. -/
 noncomputable def puigSucc (D E : Subgroup G) : Subgroup G :=
   Subgroup.closure (⋃ A ∈ { A : Subgroup G | A ≤ D ∧ normAbelian E A }, (A : Set G))
+
+/-- `p_stable p G`: a representation-theoretic Hall-Higman-style condition.
+
+In B & G:
+  `∀ P A, p-group P → O_p'(G) * P ⊲ G → p-subgroup of N_G(P) (A) →
+     [P, A, A] = 1 → A · C_G(P) ⊆ O_p(N_G(P) / C_G(P))`
+
+**STUB** — the conclusion involves `pCore` applied to a *quotient* of a
+*subgroup*, which requires viewing subgroups and quotients as groups in
+their own right (a routine but bulky construction). We stub the full
+condition for now. -/
+def pStable (_p : ℕ) (_G : Type*) [Group _G] : Prop := True  -- STUB
+
+/-- Puig iteration: `puigAt n D G` is the n-th Puig group with respect to D. -/
+noncomputable def puigAt : ℕ → Subgroup G → Subgroup G
+  | 0,     _ => ⊥
+  | n + 1, D => puigSucc D (puigAt n D)
+
+/-- `'L_*(G)` — limit of the Puig series (lower limit). Defined as `puigAt`
+applied to a large enough index. -/
+noncomputable def puigInf [Fintype G] : Subgroup G :=
+  puigAt (2 * Nat.card G) ⊤
+
+/-- `'L(G)` — the Puig subgroup (upper limit). -/
+noncomputable def puig [Fintype G] : Subgroup G :=
+  puigSucc ⊤ puigInf
 
 -- ════════════════════════════════════════════════════════════════════
 -- §BGsection1 — Lemmas, Propositions, Theorems
@@ -147,6 +175,78 @@ theorem coprime_trivg_cent_Fitting
     (_hSol : IsSolvable G)
     (_hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥) :
     A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥ := by
+  sorry
+
+/-- **STATED** — B & G, Proposition 1.6(a) (`coprime_cent_prod`).
+
+`A ⊆ N(G) ∧ coprime |G| |A| ∧ solvable G → [G,A] · C_G(A) = G`.
+
+UPSTREAM:
+  `Proposition coprime_cent_prod gT (A G : {group gT}) :
+     A \subset 'N(G) -> coprime #|G| #|A| -> solvable G ->
+     [~: G, A] * 'C_G(A) = G.`
+-/
+theorem coprime_cent_prod
+    [Fintype G] (A : Subgroup G)
+    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (_hSol : IsSolvable G) :
+    (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ⊔
+      Subgroup.centralizer (A : Set G) = ⊤ := by
+  sorry
+
+/-- **STATED** — B & G, Proposition 1.6(b) (`coprime_commGid`).
+
+Under the same hypotheses, `[G,A,A] = [G,A]`.
+
+UPSTREAM:
+  `Proposition coprime_commGid gT (A G : {group gT}) :
+     A \subset 'N(G) -> coprime #|G| #|A| -> solvable G ->
+     [~: G, A, A] = [~: G, A].`
+-/
+theorem coprime_commGid
+    [Fintype G] (A : Subgroup G)
+    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (_hSol : IsSolvable G) :
+    ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⁅(⊤ : Subgroup G), A⁆ := by
+  sorry
+
+/-- **STATED** — B & G, Proposition 1.6(c) (`coprime_commGG1P`).
+
+If furthermore `[G,A,A] = 1` then `A ⊆ C(G)`.
+
+UPSTREAM:
+  `Proposition coprime_commGG1P gT (A G : {group gT}) :
+     A \subset 'N(G) -> coprime #|G| #|A| -> solvable G ->
+     [~: G, A, A] = 1 -> A \subset 'C(G).`
+-/
+theorem coprime_commGG1P
+    [Fintype G] (A : Subgroup G)
+    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (_hSol : IsSolvable G)
+    (_hVanish : ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⊥) :
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) := by
+  sorry
+
+/-- **STATED** — B & G, Proposition 1.8 / Aschbacher 24.1 (`coprime_cent_Phi`).
+
+If G is a p-group, |A| is coprime to |G|, and `[G,A] ⊆ Φ(G)`, then `A ⊆ C(G)`.
+
+UPSTREAM:
+  `Proposition coprime_cent_Phi gT p (A G : {group gT}) :
+     p.-group G -> coprime #|G| #|A| -> [~: G, A] \subset 'Phi(G) ->
+     A \subset 'C(G).`
+
+This one uses mathlib's real `frattini` definition — no stub needed for
+the Frattini subgroup, only for the rest of the apparatus. -/
+theorem coprime_cent_Phi
+    [Fintype G] (p : ℕ) (A : Subgroup G)
+    (_hG : IsPGroup p (⊤ : Subgroup G))
+    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (_hCommInPhi : (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ≤ frattini G) :
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) := by
   sorry
 
 end FeitThompson.BGsection1

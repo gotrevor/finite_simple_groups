@@ -33,6 +33,9 @@ chief factors). See `MathlibStubs.lean` for the stub catalog.
 
 import FeitThompson.MathlibStubs
 import FeitThompson.BGsection1.L1_1
+import FeitThompson.BGsection1.L1_2
+import FeitThompson.BGsection1.P1_3
+import FeitThompson.BGsection1.P1_4
 import Mathlib.GroupTheory.Commutator.Basic
 import Mathlib.GroupTheory.Frattini
 
@@ -140,13 +143,10 @@ UPSTREAM:
      minnormal M G ->  M \subset G -> solvable M -> M \subset 'Z('F(G)).`
 -/
 theorem minnormal_solvable_Fitting_center
-    (M : Subgroup G) (_hMin : MinNormal M) (_hSol : IsSolvable M) :
+    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : IsSolvable M) :
     M ≤ FittingSubgroup G ⊓
-      Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) := by
-  -- Upstream phrasing `M ≤ 'Z('F(G))` is "M is contained in the center of
-  -- F(G)". In mathlib idiom that's `M ≤ F(G) ⊓ C_G(F(G))` (the elements
-  -- of F(G) that commute with all of F(G), viewed inside G).
-  sorry
+      Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) :=
+  L1_2.minnormal_solvable_Fitting_center M hMin hSol
 
 /-- **STATED** — B & G, Proposition 1.3 (P. Hall).
 
@@ -159,10 +159,10 @@ UPSTREAM:
 
 This is the flagship lemma of §1 — the rest of the chapter uses it
 repeatedly. -/
-theorem cent_sub_Fitting (_hG : IsSolvable G) :
+theorem cent_sub_Fitting (hG : IsSolvable G) :
     Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G)
-      ≤ FittingSubgroup G := by
-  sorry
+      ≤ FittingSubgroup G :=
+  P1_3.cent_sub_Fitting hG
 
 /-- **STATED** — B & G, Proposition 1.4 (internal action).
 
@@ -176,12 +176,12 @@ UPSTREAM:
 -/
 theorem coprime_trivg_cent_Fitting
     [Fintype G] (A : Subgroup G)
-    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (_hSol : IsSolvable G)
-    (_hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥) :
-    A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥ := by
-  sorry
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hSol : IsSolvable G)
+    (hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥) :
+    A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥ :=
+  P1_4.coprime_trivg_cent_Fitting A hNorm hCoprime hSol hCentTrivial
 
 /-- **STATED** — B & G, Proposition 1.6(a) (`coprime_cent_prod`).
 

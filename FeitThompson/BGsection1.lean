@@ -37,9 +37,15 @@ import FeitThompson.BGsection1.L1_2
 import FeitThompson.BGsection1.P1_3
 import FeitThompson.BGsection1.P1_4
 import FeitThompson.BGsection1.P1_6
+import FeitThompson.BGsection1.P1_6d
+import FeitThompson.BGsection1.P1_6e
 import FeitThompson.BGsection1.P1_8
+import FeitThompson.BGsection1.P1_9_base
+import FeitThompson.BGsection1.P1_9
+import FeitThompson.BGsection1.P1_10
 import Mathlib.GroupTheory.Commutator.Basic
 import Mathlib.GroupTheory.Frattini
+import Mathlib.GroupTheory.Nilpotent
 
 namespace FeitThompson.BGsection1
 
@@ -256,5 +262,104 @@ theorem coprime_cent_Phi
     (hCommInPhi : (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ≤ frattini G) :
     A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
   P1_8.coprime_cent_Phi p A hG hCoprime hCommInPhi
+
+/-- **STATED** — B & G, Proposition 1.6(d) (`coprime_abelian_cent_dprod`).
+
+In the abelian setting, the join from 1.6(a) refines to an internal direct
+product: `⁅G,A⁆ × C_G(A) = G`. We expose both halves (sup = ⊤ and inf = ⊥).
+
+UPSTREAM:
+  `Proposition coprime_abelian_cent_dprod gT (A G : {group gT}) :
+     A \subset 'N(G) -> coprime #|G| #|A| -> abelian G ->
+     [~: G, A] \x 'C_G(A) = G.`
+-/
+theorem coprime_abelian_cent_dprod
+    [Fintype G] (A : Subgroup G)
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hAbel : IsMulCommutative G) :
+    (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ⊔
+        Subgroup.centralizer (A : Set G) = ⊤ ∧
+    (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ⊓
+        Subgroup.centralizer (A : Set G) = ⊥ :=
+  P1_6d.coprime_abelian_cent_dprod A hNorm hCoprime hAbel
+
+/-- **STATED** — B & G, Proposition 1.6(e) (`coprime_abelian_faithful_Ohm1`).
+
+Generalizes Aschbacher (24.3): in the abelian coprime setting, faithful
+action on `Ω₁(G)` lifts to faithful action on G.
+
+UPSTREAM:
+  `Proposition coprime_abelian_faithful_Ohm1 gT (A G : {group gT}) :
+     A \subset 'N(G) -> coprime #|G| #|A| -> abelian G ->
+     A \subset 'C('Ohm_1(G)) -> A \subset 'C(G).`
+-/
+theorem coprime_abelian_faithful_Ohm1
+    [Fintype G] (A : Subgroup G)
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hAbel : IsMulCommutative G)
+    (hFaith : A ≤ Subgroup.centralizer ((P1_6e.Ohm1 G : Subgroup G) : Set G)) :
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
+  P1_6e.coprime_abelian_faithful_Ohm1 A hNorm hCoprime hAbel hFaith
+
+/-- **STATED** — B & G, Proposition 1.9 base case (`stable_factor_cent`).
+
+If `A ⊆ C(H)`, the chain is A-stable, A and G have coprime orders, and G is
+solvable, then A acts trivially on G.
+
+UPSTREAM:
+  `Proposition stable_factor_cent gT (A G H : {group gT}) :
+     A \subset 'C(H) -> stable_factor A H G ->
+     coprime #|G| #|A| -> solvable G ->
+     A \subset 'C(G).`
+-/
+theorem stable_factor_cent
+    [Fintype G] (A H : Subgroup G)
+    (hStable : P1_9_base.IsStableFactor A H)
+    (hCAH : A ≤ Subgroup.centralizer (H : Set G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hSol : IsSolvable G) :
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
+  P1_9_base.stable_factor_cent A H hStable hCAH hCoprime hSol
+
+/-- **STATED** — B & G, Proposition 1.9 (`stable_series_cent`).
+
+Iterates 1.9 base down an A-stable series.
+
+UPSTREAM:
+  `Proposition stable_series_cent gT (A G : {group gT}) s :
+     last 1%G s :=: G -> (A.-stable).-series 1%G s ->
+     coprime #|G| #|A| -> solvable G ->
+     A \subset 'C(G).`
+-/
+theorem stable_series_cent
+    [Fintype G] (A : Subgroup G) (s : List (Subgroup G))
+    (hStable : P1_9.IsAStableSeries A s)
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hSol : IsSolvable G) :
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
+  P1_9.stable_series_cent A s hStable hCoprime hSol
+
+/-- **STATED** — B & G, Proposition 1.10 (`coprime_nil_faithful_cent_stab`).
+
+For nilpotent G with A acting and `C := C_G(A)` satisfying `C_G(C) ≤ C`,
+the action is trivial.
+
+UPSTREAM:
+  `Proposition coprime_nil_faithful_cent_stab gT (A G : {group gT}) :
+     A \subset 'N(G) -> coprime #|G| #|A| -> nilpotent G ->
+     let C := 'C_G(A) in 'C_G(C) \subset C -> A \subset 'C(G).`
+-/
+theorem coprime_nil_faithful_cent_stab
+    [Fintype G] (A : Subgroup G)
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hNil : Group.IsNilpotent G)
+    (hSelfCent : Subgroup.centralizer
+        ((Subgroup.centralizer (A : Set G) : Subgroup G) : Set G)
+      ≤ Subgroup.centralizer (A : Set G)) :
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
+  P1_10.coprime_nil_faithful_cent_stab A hNorm hCoprime hNil hSelfCent
 
 end FeitThompson.BGsection1

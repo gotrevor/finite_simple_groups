@@ -1,0 +1,39 @@
+name: lake build
+
+on:
+  push:
+    branches:
+      - main
+      - 'ft-port-experiment'
+      - 'ft-**'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: lake build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lean & mathlib cache
+        uses: leanprover/lean-action@v1
+        with:
+          use-mathlib-cache: true
+          test: false
+          lint: false
+          build-args: ""
+
+      - name: Build FeitThompson
+        run: lake build FeitThompson
+
+      - name: Build FiniteSimpleGroups
+        run: lake build FiniteSimpleGroups
+
+      - name: Detect new sorries
+        run: |
+          set -euo pipefail
+          new=$(grep -RnE "\bsorry\b|sorryAx" FeitThompson FiniteSimpleGroups 2>/dev/null | grep -v "^Binary" | wc -l | tr -d ' ')
+          echo "sorry/sorryAx mentions in source: $new"
+          # Soft check only: log, don't fail. Sorries are expected during port.

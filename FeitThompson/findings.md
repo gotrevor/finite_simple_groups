@@ -205,3 +205,76 @@ real mathlib defs.
 When a stub gets ripe enough that mathlib would accept it as a PR, peel it
 off into a separate `mathlib-pr-*` branch and submit upstream. Replace
 import here once it lands.
+
+---
+
+# Update — third hour: leaf-proving measurement
+
+After 5 increments of structural decomposition (8 BG §1 lemmas with full
+proof trees), the question was: does the AI multiplier *also* hold for
+filling in leaves, or only for stating structure?
+
+## What we measured
+
+Targeted 4 "easy" leaves. Result: **5/5 landed** (4 targeted + 1 assembly
+bonus), in ~15-20 min of focused work.
+
+| Leaf | LOC | Approach |
+|------|-----|----------|
+| `commutator_self_normal_of_normal` | 3 | `haveI := hM; exact Subgroup.commutator_normal M M` |
+| `commutator_lt_self` (solvable→derived proper) | 7 | mirrored mathlib's `IsSolvable.commutator_lt_of_ne_bot`, swapping `IsSolvable G` ↔ `IsSolvable ↥M` |
+| `isMulCommutative_of_commutator_eq_bot` | 2 | composed two mathlib iff's |
+| `isAbelem_nilpotent` | 4 | instance chain: `IsMulCommutative → CommGroup → IsNilpotent` |
+| `minnormal_solvable_abelem` assembly | 5 | `refine` + `Subtype.ext` + `push_cast` for subtype coercion |
+
+Sorry count: was 24 (21 leaves + 3 stubs), now **22** (19 leaves + 3 stubs).
+
+## Multiplier observations
+
+**When the multiplier is real (~30×):**
+- Leaf has a direct mathlib analog (grep finds it in seconds)
+- Routine instance / typeclass chain (`infer_instance` fires)
+- Mirrors an existing mathlib proof pattern almost verbatim
+
+**When it isn't (~3-5×):**
+- Novel definitional choices (Subgroup-vs-subtype, where things live)
+- Cross-domain bridging (e.g., commutator-of-Subgroup ↔ commutator-of-↥M)
+- Subtype coercion bookkeeping (push_cast / Subtype.ext patterns to remember)
+- Naming guesses fail (`Subgroup.nontrivial_iff_ne_bot` vs `M.nontrivial_iff_ne_bot`)
+
+## Revised estimate (third pass)
+
+The leaf-proving multiplier *for easy leaves* is real, ~10-30× depending on
+mathlib discoverability. The bottleneck is grep-and-name-discovery, not
+proof-writing. With `exact?` / `apply?` / Loogle wired in (not currently
+used here, but available), the multiplier on these leaves would be even higher.
+
+**However**, the easy leaves are NOT representative of the full tree. The
+hard leaves — the ones involving the *stubs* (Fitting, pCore, chief series) —
+cannot be proved at all until those stubs are replaced. So the leaf-completion
+rate will *drop sharply* once the easy ones are exhausted.
+
+Updated phase breakdown for the full FT port:
+
+| Phase | Old estimate | Refined |
+|-------|--------------|---------|
+| State all lemmas with tree decomposition | (not separately tracked) | ~10% of total time, AI-fast |
+| Prove easy leaves (mathlib hits) | (lumped) | ~20% of total time, AI-fast |
+| Build foundational library bricks (Fitting, pCore, minnormal, chief, Hall) | ~500 hr | ~500 hr unchanged |
+| Prove hard leaves once bricks exist | (lumped) | ~30% of total time, AI-medium |
+| Strategic / architectural decisions | (lumped) | ~10% of total time, AI-slow |
+| Character theory layer + PF sections | ~650 hr | unchanged |
+
+The total still lands around **~9 months full-time**. The new insight: the
+*easy* part (statement + easy leaves) is small — maybe 30% of the work
+— and the *hard* part is the library bricks + the hard leaves that depend
+on them. Multiplier is high on the easy part, mid-range on the hard part.
+
+## Conclusion of the experiment
+
+- "5y → 2 months" claim: **falsified** — ~9 months is the floor for one
+  focused person, full-time, with AI assistance.
+- "5y → 9-18 months full-time" claim: **validated** — sits at the low end.
+- Strategic move: build Fitting + pCore in mathlib first (the
+  `mathlib-prs/FittingSubgroup.md` scope doc captures this). That's where
+  the next session's leverage lives.

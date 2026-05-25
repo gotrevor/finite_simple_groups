@@ -80,26 +80,40 @@ def MinNormal (H : Subgroup G) : Prop :=
   H ≠ ⊥ ∧ H.Normal ∧
     ∀ K : Subgroup G, K.Normal → K ≤ H → K = ⊥ ∨ K = H
 
-/-! ### p-core and Fitting subgroup -- STUBS -/
+/-! ### p-core and Fitting subgroup -- promoted to real defs
 
-section StubsSubgroups
+These were `sorry`-witnessed stubs in earlier increments. Both now have
+real definitions (the same shape we'd push upstream in a mathlib PR).
+The naming `pCore` / `FittingSubgroup` matches the planned mathlib API. -/
+
+section RealDefs
 variable (G)
 
-/-- **STUB**: the **p-core** `O_p(G)` — the largest normal p-subgroup of G.
+/-- The **p-core** `O_p(G)` — the largest normal p-subgroup of G.
 
-To be replaced by a real mathlib definition. Candidate phrasing:
-`pCore p G := sSup { H : Subgroup G | H.Normal ∧ IsPGroup p H }` (join in
-the subgroup lattice of all normal p-subgroups). -/
-noncomputable def pCore (_p : ℕ) : Subgroup G := sorry
+Defined as the join (in the subgroup lattice) of all normal p-subgroups.
+For finite G this is well-known to itself be a normal p-subgroup. -/
+noncomputable def pCore (p : ℕ) : Subgroup G :=
+  sSup { H : Subgroup G | H.Normal ∧ IsPGroup p H }
 
-/-- **STUB**: the **Fitting subgroup** `F(G)` — the largest nilpotent normal
-subgroup of G.
+/-- The **Fitting subgroup** `F(G)` — the largest nilpotent normal subgroup of G.
 
-For finite G, equivalently the join of `pCore p G` over primes `p ∣ |G|`.
-To be replaced by a real mathlib definition. -/
-noncomputable def FittingSubgroup : Subgroup G := sorry
+Defined as the join of all nilpotent normal subgroups. For finite G this
+is itself nilpotent (Fitting's theorem); for infinite G the definition still
+makes sense but the join may not be nilpotent. -/
+noncomputable def FittingSubgroup : Subgroup G :=
+  sSup { H : Subgroup G | H.Normal ∧ Group.IsNilpotent H }
 
-end StubsSubgroups
+end RealDefs
+
+/-- The Fitting subgroup is normal. **AXIOM** (proof deferred — would be
+part of the mathlib PR: sSup of conjugation-invariant family is Normal). -/
+instance FittingSubgroup_normal (G : Type*) [Group G] :
+    (FittingSubgroup G).Normal := by sorry
+
+/-- The p-core is normal. **AXIOM** (proof deferred — same shape). -/
+instance pCore_normal (G : Type*) [Group G] (p : ℕ) :
+    (pCore G p).Normal := by sorry
 
 /-! ### Iterated p-core layer
 

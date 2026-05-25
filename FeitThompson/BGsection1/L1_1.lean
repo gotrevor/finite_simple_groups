@@ -147,8 +147,13 @@ theorem exists_prime_exp
     | inr h => exact absurd h (hNotTop K hKeq)
   refine ⟨p, hp, ?_⟩
   intro m hm
-  -- m^p lies in the p-power image (= K = ⊥), so m^p = 1.
-  sorry  -- mechanical: m^p ∈ K via hKeq + def of pPowerImage; K = ⊥ ⇒ m^p = 1
+  -- m^p ∈ pPowerImage M p (witnessed by m)
+  have hMemSet : m ^ p ∈ pPowerImage M p := ⟨m, hm, rfl⟩
+  rw [← hKeq] at hMemSet
+  -- hMemSet : m^p ∈ (K : Set G) is the same as m^p ∈ K (SetLike coe)
+  have hMemK : m ^ p ∈ K := hMemSet
+  rw [hKbot] at hMemK
+  exact Subgroup.mem_bot.mp hMemK
 
 end BranchB
 

@@ -4,130 +4,107 @@ Trevor's framing for whoever picks this up (human or AI):
 
 > Lean into really fractal theorems — top down. Lots of sorries — ultimately, the sorries drop like flies. **Pretty at the top, ugly in the details (smooth-brained).**
 
-After PRs #11 and #13, the Galois proof tree has been pushed down two fractal levels. The dispatcher is real proof; the case main theorems are real proof; only the **leaf witnesses** remain.
+After PRs #11, #13, and the current PR, the Galois proof tree has been pushed down to leaf-witness level. The dispatcher is real proof; the case main theorems are real proof; the **leaf witnesses** are the only sorries — with **corrected and verified signatures**.
 
-## State of the scaffold (2026-05-25, post-PR #13)
+## State of the scaffold (post-current-PR)
 
-`FiniteSimpleGroups/Alternating.lean` has **3 sorries**, all of identical shape:
+`FiniteSimpleGroups/Alternating.lean` has **3 sorries**:
 
-```lean
-private theorem caseN_commutator_witness
-    {n : ℕ} (g_perm : Equiv.Perm (Fin n))
-    (h_caseN_hypothesis : ...) :
-    ∃ h_perm : Equiv.Perm (Fin n),
-      h_perm.IsThreeCycle ∧
-      (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle := by
-  sorry
-```
+1. **`case1_commutator_witness`** — produce a 3-cycle `h_perm` such that the commutator with `g_perm` is also a 3-cycle. Verified achievable: construction is `h = (a b c)` from three consecutive points of the long cycle; `[g, h] = (a b d)`.
+2. **`case2_long_cycle_witness`** *(retyped)* — produce an intermediate `g' ∈ NC({g})` with a long cycle. Case 2's main theorem chains this with `exists_threeCycle_of_long_cycle` (Case 1). Verified achievable: take `g' := [g, (a b d)]`; for `g = (a b c)(d e f)` this gives the 5-cycle `(a d c e b)`.
+3. **`case4_commutator_witness`** — produce a 3-cycle `h_perm` such that the commutator with `g_perm` is also a 3-cycle. Has two sub-cases:
+   - **Free point exists**: `h = (a b c)` where `(a b)` is a 2-cycle of `g` and `c` is the free point. The commutator `[g, h] = h` itself (verified by hand-computation).
+   - **No free point** (e.g., `n = 8` with 4 swaps): no direct one-step construction; needs reduction (commutator with `(a b c)` gives an element of cycleType `{2, 2}` with smaller support, then recurse).
 
-Each leaf says: **given a specific cycle structure on `g_perm`, produce a 3-cycle `h_perm` whose commutator with `g_perm` is also a 3-cycle.**
+## What changed in this PR
 
-Once a leaf closes, the corresponding case main theorem is immediately a real proof (the wiring above the leaf is already in place: `commutator_mem_normalClosure` handles the membership claim, `push_cast` handles the alternatingGroup coercion).
+- **Case 2's signature was wrong** in the prior scaffold. The old HANDOFF claimed the standard `τ = (a b d)` construction made `[g, τ]` a 3-cycle, but it actually produces a 5-cycle. Hand-verification:
+  ```
+  g = (a b c)(d e f),  τ = (a b d)
+  [g, τ] sends a→d, b→a, c→e, d→c, e→b, f fixed
+  trace: a → d → c → e → b → a   ⇒ 5-cycle
+  ```
+  Case 2's witness is now retyped to produce a long-cycle intermediate, and Case 2's main theorem chains it with Case 1.
+- **Case 4 documentation now reflects the verified construction.** With free point `c`, the key identity is `[g, h] = h` (because `g` conjugates `h` to `h⁻¹`, and `h⁻¹ * h⁻¹ = h` since `h` has order 3).
 
 ## The principle (unchanged)
 
-Don't try to write elegant leaf proofs. The structural decomposition at the top should be clean and obviously correct. The leaves can be brute force, `decide`, `aesop` spam, helper sub-lemmas with their own sorries — whatever works to make the bytes compile.
+`sorry` is **structure**, not failure. Use it freely while shaping the proof tree. **Lean in harder than a human might.** Build any chain that works.
 
-`sorry` is **structure**, not failure. Use it freely while shaping the proof tree.
+## How to close each leaf
 
-**Lean in harder than a human might.** A human Lean prover often tries to find the "right" lemma. The smooth-brained approach is: don't. Build any chain that works. Refactor never.
+### `case1_commutator_witness`
 
-## The three leaves
+Construction (verified):
+1. Extract `σ_long ∈ g_perm.cycleFactorsFinset` with `σ_long.support.card ≥ 4`.
+2. Pick `a ∈ σ_long.support`; set `b := σ_long a`, `c := σ_long² a`, `d := σ_long³ a`.
+3. Show `a, b, c, d` pairwise distinct (uses `orderOf σ_long = σ_long.support.card ≥ 4`).
+4. Define `h_perm := swap a b * swap b c`; this is `(a b c)`, a 3-cycle by `isThreeCycle_swap_mul_swap_same`.
+5. Show `(g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle`.
 
-### `case1_commutator_witness` — long cycle
+For step 5, the cleanest path uses the disjoint commutativity reduction:
+- `g_perm = σ_long * rest` with `rest` disjoint from `σ_long`'s support (and hence disjoint from `h_perm`'s support).
+- `[g_perm, h_perm] = [σ_long, h_perm]` (rest commutes with both σ_long and h_perm).
+- Then `[σ_long, h_perm] = (a b d)` by Equiv.ext + per-element computation.
 
-**Hypothesis:** `g_perm.cycleType` contains some `k ≥ 4`.
+### `case2_long_cycle_witness` (retyped)
 
-**Standard construction:** pick three consecutive points `a, b, c` of the long cycle (i.e., distinct, with `g_perm a = b ∧ g_perm b = c`). Take `h_perm := Equiv.swap a b * Equiv.swap b c` (this is the 3-cycle `(a b c)`).
+Construction (verified):
+1. Extract two distinct 3-cycle factors `c₁, c₂ ∈ g.cycleFactorsFinset` with `cᵢ.support.card = 3`.
+2. Pick `a, b, c` from `c₁.support` and `d, e, f` from `c₂.support`.
+3. Take `τ := swap a b * swap b d` (3-cycle `(a b d)`).
+4. Set `g' := g * τ * g⁻¹ * τ⁻¹` (commutator).
+5. Show `g' ∈ NC({g})` via `commutator_mem_normalClosure`.
+6. Show `(g' : Equiv.Perm _).cycleType` contains a `5`.
 
-**Sub-decomposition:**
-1. **Extract `a, b, c`** — extract a cycle factor `c_long ∈ g_perm.cycleFactorsFinset` with `c_long.support.card ≥ 4`. Inside `c_long.support`, walk forward from any element to get three consecutive points.
-2. **`h_perm.IsThreeCycle`** — mathlib has `Equiv.swap_mul_swap_isThreeCycle` (or similar; check `Equiv.Perm.Basic`).
-3. **Commutator is a 3-cycle** — explicit computation. Either `Equiv.ext` with per-element case analysis, or use `Equiv.Perm.IsConj` + cycle-type machinery to show the commutator has cycleType `{3}`.
+For step 6: `g'` is the 5-cycle `(a d c e b)` (assuming `g = (a b c)(d e f) * rest` with `rest` disjoint). Hand computation. The Lean argument can use `Equiv.ext` + per-element verification.
 
-### `case2_commutator_witness` — multiple 3-cycles
+### `case4_commutator_witness`
 
-**Hypothesis:** `g_perm.cycleType.count 3 ≥ 2`.
+**Sub-case A (free point exists):**
+1. Extract a 2-cycle factor `c₀ ∈ g_perm.cycleFactorsFinset` (via `card_support_eq_two ↔ IsSwap`, mathlib `Equiv.Perm.card_support_eq_two`).
+2. Get `a, b` with `c₀ = swap a b`, `a ≠ b`.
+3. Get free point `c ∉ g_perm.support` (uses `g_perm.support.card < n`).
+4. Define `h_perm := swap a b * swap b c`.
+5. Show `h_perm.IsThreeCycle` via `isThreeCycle_swap_mul_swap_same` (needs `a ≠ b`, `a ≠ c`, `b ≠ c`).
+6. Show `g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹ = h_perm` via algebraic identity:
+   - `g_perm = swap a b * rest` (factor out the 2-cycle).
+   - `rest` commutes with `h_perm` (supports disjoint: rest's support is in `g_perm.support \ {a, b}`, which is disjoint from `{a, b, c}` because `c` is free and `a, b` aren't in rest's support).
+   - `g_perm * h_perm * g_perm⁻¹ = (swap a b) * h_perm * (swap a b)` (rest cancels).
+   - `(swap a b) * h_perm * (swap a b) = h_perm⁻¹` (conjugation by a transposition inverts the 3-cycle starting with the same pair).
+   - `h_perm⁻¹ * h_perm⁻¹ = h_perm` (because `h_perm` has order 3, so `h_perm⁻² = h_perm`).
 
-**Standard construction:** pick two distinct 3-cycle factors `c₁, c₂ ∈ g_perm.cycleFactorsFinset` with `cᵢ.support.card = 3`. From `c₁.support` extract `a, b, c`; from `c₂.support` extract `d, e, f`. Take `h_perm := (a b d)`.
-
-**Sub-decomposition:**
-1. **Extract `c₁, c₂`** — from `cycleType_def` + `count` arithmetic.
-2. **Extract `a, b, d`** — from each cycle's support.
-3. **`h_perm.IsThreeCycle`** — same as Case 1.
-4. **Commutator is a 3-cycle** — explicit computation. The commutator turns out to be `(a c e)` or similar; verify via `Equiv.ext`.
-
-### `case4_commutator_witness` — only 2-cycles
-
-**Hypothesis:** every `m ∈ g_perm.cycleType` equals 2, `g_perm ≠ 1`, `n ≥ 5`.
-
-**Split on free-point existence:**
-
-**Sub-case A (free point):** if `g_perm.support.card < n`, there's a free point `e`. Pick a 2-cycle factor `c₀ ∈ g_perm.cycleFactorsFinset` with `c₀.support = {a, b}`. Take `h_perm := (a b e)`. The commutator works out to `(a b e)` itself (verify by `Equiv.ext`).
-
-**Sub-case B (no free point):** then `n ≥ 8` and `g_perm` is e.g. `(a b)(c d)(e f)(g h)`. Pick two distinct 2-cycle factors, extract `(a b)` from one and `(c d)` from another. Take `h_perm := (a b c)`. The commutator works out to `(a c d)` (verify by `Equiv.ext`).
-
-**Sub-decomposition:**
-1. **`by_cases` on `g_perm.support.card < n`**.
-2. **Extract a 2-cycle factor** — from `cycleType` containing 2.
-3. **Extract a second 2-cycle factor (Sub-case B only)** — from `g_perm ≠ 1` + counting.
-4. **`h_perm.IsThreeCycle`** — same as Case 1.
-5. **Commutator is a 3-cycle** — explicit computation.
+**Sub-case B (no free point):** see `case4_commutator_witness` docstring. Needs a different construction (or recursive call after a commutator step that reduces support size).
 
 ## Already-proved infrastructure
 
 - **`commutator_mem_normalClosure`** — generic Group: `g * h * g⁻¹ * h⁻¹ ∈ normalClosure({g})`. Used by all three cases.
-- **Case 3 helpers** (`orderOf_g_eq_six_of_3_2_pattern`, `orderOf_g_sq_eq_three_of_orderOf_six`, `cycleType_g_sq_replicate`, `card_cycleType_g_sq_eq_one`, `isThreeCycle_g_sq`) — proved in PR #11. Reference patterns for cycleType / lcm / disjoint-decomposition arguments.
+- **Case 3 helpers** (`orderOf_g_eq_six_of_3_2_pattern`, etc.) — proved in PR #11. Reference patterns for cycleType / lcm / disjoint-decomposition arguments.
 
-## Mathlib lemmas worth knowing (refreshed)
+## Mathlib lemmas worth knowing
 
-For extracting cycle factors:
-- `Equiv.Perm.cycleType_def` — `σ.cycleType = σ.cycleFactorsFinset.val.map (Finset.card ∘ support)`. Use with `Multiset.mem_map` to extract factors.
+- `Equiv.Perm.cycleType_def` — `σ.cycleType = σ.cycleFactorsFinset.val.map (Finset.card ∘ support)`.
 - `Equiv.Perm.mem_cycleFactorsFinset_iff` — `c ∈ g.cycleFactorsFinset ↔ c.IsCycle ∧ ∀ x ∈ c.support, g x = c x`.
 - `Equiv.Perm.cycleType_mul_inv_mem_cycleFactorsFinset_eq_sub` — for removing a known factor.
 - `Equiv.Perm.disjoint_mul_inv_of_mem_cycleFactorsFinset` — disjointness for `g * c⁻¹` against `c`.
-
-For 3-cycles:
-- `Equiv.Perm.IsThreeCycle` — `cycleType = {3}`.
+- `Equiv.Perm.Disjoint.commute` — disjoint perms commute.
+- `Equiv.Perm.card_support_eq_two : #f.support = 2 ↔ f.IsSwap` (in `GroupTheory.Perm.Support`).
+- `Equiv.Perm.IsSwap` — `∃ x y, x ≠ y ∧ f = swap x y`.
+- `Equiv.Perm.isThreeCycle_swap_mul_swap_same : a ≠ b → a ≠ c → b ≠ c → IsThreeCycle (swap a b * swap b c)`.
 - `Equiv.Perm.IsThreeCycle.mem_alternatingGroup` — 3-cycles are even.
-- `Equiv.Perm.IsThreeCycle.swap_mul_swap` (or similar — check `GroupTheory.Perm.Basic`) — `(swap a b * swap b c).IsThreeCycle` for distinct `a, b, c`.
+- `Equiv.swap_apply_def`, `Equiv.swap_apply_left`, `Equiv.swap_apply_right`, `Equiv.swap_swap` (involution), `Equiv.swap_inv`.
 
-For commutator computations:
-- `Equiv.ext` — pointwise equality of permutations.
-- `Equiv.swap_apply_def`, `Equiv.swap_apply_left`, `Equiv.swap_apply_right`.
-- `Equiv.Perm.isConj_iff_cycleType_eq` — if you've computed the commutator's cycleType, conjugation is automatic.
-
-## Brute-force tactics worth trying liberally
+## Brute-force tactics
 
 - `decide`, `native_decide` — for decidable goals over `Fin n` with concrete `n`.
-- `aesop` — general automation; surprisingly effective on Subgroup membership.
-- `omega` — Nat / Int arithmetic, including some divisibility.
-- `simp [...]` with a long list of `Equiv.swap_*`, cycle lemmas.
-- `interval_cases` after bounding a Multiset count.
-- `Finset.ext` then `decide` for support equalities on small `Fin n`.
-- `group` — closes group-theoretic identities like `a * b * a⁻¹ * a = a * b`.
+- `aesop`, `omega`, `simp [...]`, `interval_cases`, `Finset.ext`.
+- `group` — closes group-theoretic identities (e.g., associativity rearrangement).
+- `Equiv.ext` then pointwise case analysis for permutation equality.
 
-## The smooth-brained checkpoint
+## Mathlib PR ambition (unchanged)
 
-When tempted to clean up a leaf proof, ask: **does the case main theorem still type-check?** If yes, ship it. The leaf can be ugly. The reader of the scaffold sees the clean top; they don't care about the rubble underneath.
-
-## Mathlib PR ambition (if you close all 3 leaves)
-
-If all three leaves close, the entire Galois reduction (`exists_threeCycle_of_normal`) becomes a real proof, and so does `alternatingGroup_isSimple` for arbitrary `n ≥ 5`. The natural upstream PR is then:
-
-```lean
-theorem alternatingGroup.isSimple_of_card_ne_four
-    {α : Type*} [Fintype α] [DecidableEq α]
-    (h : Fintype.card α ≠ 4) :
-    IsSimpleGroup (alternatingGroup α)
-```
-
-This is the documented TODO at the top of `Mathlib/GroupTheory/SpecificGroups/Alternating.lean`. The mathlib reviewers know it's expected and supporting machinery is in place.
-
-After landing upstream, `FiniteSimpleGroups/Alternating.lean` collapses to a one-line re-export.
-
-Smooth-brain reward: the most architecturally beautiful possible outcome.
+If all three leaves close, `alternatingGroup.isSimple_of_card_ne_four` becomes a real proof — the documented TODO at the top of `Mathlib/GroupTheory/SpecificGroups/Alternating.lean`.
 
 ---
 
-*Written 2026-05-25, post-PR #13. State of the scaffold: 3 leaf-witness sorries in Alternating.lean (all of identical shape) + 2 sorries in Adjacent/PrimeMul and SmallOrders. The Galois proof tree is real-proof from the dispatcher down to the leaves.*
+*Updated post-Case-2-refactor. State: 3 leaf-witness sorries in Alternating.lean, all with verified-achievable signatures. The Case 2 retype was the result of hand-verifying the standard arguments and discovering the original simplification was wrong.*

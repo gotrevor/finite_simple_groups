@@ -32,6 +32,7 @@ chief factors). See `MathlibStubs.lean` for the stub catalog.
 -/
 
 import FeitThompson.MathlibStubs
+import FeitThompson.BGsection1.L1_1
 import Mathlib.GroupTheory.Commutator.Basic
 import Mathlib.GroupTheory.Frattini
 
@@ -112,18 +113,23 @@ noncomputable def puig [Fintype G] : Subgroup G :=
 -- §BGsection1 — Lemmas, Propositions, Theorems
 -- ════════════════════════════════════════════════════════════════════
 
-/-- **STATED** — B & G, Lemma 1.1, first part.
+/-- **PROVED (modulo leaf sorries)** — B & G, Lemma 1.1, first part.
 
 A solvable minimal-normal subgroup is elementary abelian.
+
+Decomposed into a proof tree in `FeitThompson.BGsection1.L1_1`:
+  - Branch A: M is abelian (4 twigs)
+  - Branch B: M has prime exponent (4 twigs)
+  - Top-level: assembles into `IsAbelem M`
 
 UPSTREAM:
   `Lemma minnormal_solvable_abelem gT (M G : {group gT}) :
      minnormal M G -> solvable M -> is_abelem M.`
 -/
 theorem minnormal_solvable_abelem
-    (M : Subgroup G) (_hMin : MinNormal M) (_hSol : IsSolvable M) :
-    IsAbelem M := by
-  sorry
+    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : IsSolvable M) :
+    IsAbelem M :=
+  L1_1.minnormal_solvable_abelem M hMin hSol
 
 /-- **BLOCKED** — B & G, Lemma 1.1, second part / Lemma 1.2.
 

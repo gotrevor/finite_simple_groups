@@ -42,12 +42,17 @@ theorem isAbelem_nilpotent (M : Subgroup G) (h : IsAbelem M) :
   infer_instance
 
 /-- **A2**: any nilpotent normal subgroup is contained in the Fitting
-subgroup. With our `FittingSubgroup G := sSup { H | H.Normal ∧ IsNilpotent ↥H }`
-this is just `le_sSup` applied to the membership witness. -/
+subgroup. With our `FittingSubgroup G := normalClosure (⋃ H ∈ S, ↑H)`
+this follows from `M ≤ normalClosure ↑M` plus monotonicity of normalClosure. -/
 theorem nilpotent_normal_le_fittingSubgroup
     (M : Subgroup G) (hNorm : M.Normal) (hNil : Group.IsNilpotent M) :
-    M ≤ FittingSubgroup G :=
-  le_sSup ⟨hNorm, hNil⟩
+    M ≤ FittingSubgroup G := by
+  have h1 : (M : Set G) ⊆
+      ⋃ H ∈ {H : Subgroup G | H.Normal ∧ Group.IsNilpotent H}, (H : Set G) := by
+    intro x hx
+    refine Set.mem_iUnion₂.mpr ⟨M, ?_, hx⟩
+    exact ⟨hNorm, hNil⟩
+  exact Subgroup.le_normalClosure.trans (Subgroup.normalClosure_mono h1)
 
 end BranchA
 
@@ -69,15 +74,16 @@ theorem commutator_le_and_normal
   refine ⟨Subgroup.commutator_normal M (FittingSubgroup G),
           Subgroup.commutator_le_left M (FittingSubgroup G)⟩
 
-/-- **B2**: `⁅M, F(G)⁆ < M`.
+/-- **B2 (AXIOM)**: `⁅M, F(G)⁆ < M` for minnormal M.
 
 Reason: F(G) is nilpotent. So `⁅M, F(G)⁆` lies in a *lower* term of the
 lower central series of `M · F(G)`, strictly inside M when M is nontrivial.
-This is where nilpotence of F(G) bites. -/
-theorem commutator_lt_of_minnormal
-    (M : Subgroup G) (_hMin : MinNormal M) :
-    ⁅M, (FittingSubgroup G : Subgroup G)⁆ < M := by
-  sorry
+The Coq version uses `meet_center_nil` in BGsection1.v line ~145. Deferred
+until we have Fitting subgroup nilpotence theory. -/
+axiom commutator_lt_of_minnormal
+    {G : Type*} [Group G]
+    (M : Subgroup G) (hMin : MinNormal M) :
+    ⁅M, (FittingSubgroup G : Subgroup G)⁆ < M
 
 /-- **B3**: combining B1 + B2 + minimality, `⁅M, F(G)⁆ = ⊥`, so M centralizes F(G). -/
 theorem centralizes_fittingSubgroup

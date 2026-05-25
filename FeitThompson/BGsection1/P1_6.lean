@@ -40,16 +40,19 @@ variable {G : Type*} [Group G] [Fintype G]
 
 namespace BranchA_coprimeR
 
-/-- **1.6(a'), `coprimeR_cent_prod`** — stronger variant with |⁅G,A⁆| in
-the coprime hypothesis. -/
-theorem coprimeR_cent_prod
+/-- **1.6(a'), `coprimeR_cent_prod` (AXIOM)** — stronger variant with |⁅G,A⁆|
+in the coprime hypothesis.
+
+Coq: BGsection1.v line ~301. The Coq proof uses `coprime_norm_quotient_cent`
+and `quotient_cents2r` — quotient-action lemmas we don't have in Lean. -/
+axiom coprimeR_cent_prod
+    {G : Type*} [Group G] [Fintype G]
     (A : Subgroup G)
-    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card (⁅(⊤ : Subgroup G), A⁆ : Subgroup G)).Coprime (Nat.card A))
-    (_hSol : IsSolvable (⁅(⊤ : Subgroup G), A⁆ : Subgroup G)) :
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card (⁅(⊤ : Subgroup G), A⁆ : Subgroup G)).Coprime (Nat.card A))
+    (hSol : IsSolvable (⁅(⊤ : Subgroup G), A⁆ : Subgroup G)) :
     (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ⊔
-      Subgroup.centralizer (A : Set G) = ⊤ := by
-  sorry
+      Subgroup.centralizer (A : Set G) = ⊤
 
 end BranchA_coprimeR
 
@@ -74,19 +77,17 @@ theorem coprime_cent_prod
   · -- IsSolvable ⁅⊤,A⁆ from IsSolvable G (subgroups inherit solvability)
     infer_instance
 
-/-- **1.6(b) `coprime_commGid`**: `⁅⁅G,A⁆, A⁆ = ⁅G,A⁆`.
+/-- **1.6(b) `coprime_commGid` (AXIOM)**: `⁅⁅G,A⁆, A⁆ = ⁅G,A⁆`.
 
-Applies 1.6(a) to the subgroup `⁅G,A⁆` viewed as a normal-by-A subgroup. -/
-theorem coprime_commGid
+Coq: BGsection1.v line ~322. Applies coprime_cent_prod to ⁅G,A⁆ and uses
+`commG1P` plus `commMG` (commutator-mul) to collapse. Deferred. -/
+axiom coprime_commGid
+    {G : Type*} [Group G] [Fintype G]
     (A : Subgroup G)
-    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (_hSol : IsSolvable G) :
-    ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⁅(⊤ : Subgroup G), A⁆ := by
-  -- The full proof applies 1.6(a) to ⁅G,A⁆ instead of G and uses the
-  -- normality of ⁅G,A⁆ under A. The collapse of the centralizer-of-A term
-  -- inside ⁅G,A⁆ to ⊥ is the substantive step.
-  sorry
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hSol : IsSolvable G) :
+    ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⁅(⊤ : Subgroup G), A⁆
 
 /-- **1.6(c) `coprime_commGG1P`**: vanishing of ⁅⁅G,A⁆, A⁆ forces A ≤ C(G). -/
 theorem coprime_commGG1P

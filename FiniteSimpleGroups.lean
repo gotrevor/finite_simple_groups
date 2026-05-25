@@ -5,6 +5,7 @@ import FiniteSimpleGroups.Alternating
 import FiniteSimpleGroups.LieType
 import FiniteSimpleGroups.Exceptional
 import FiniteSimpleGroups.Sporadics
+import FiniteSimpleGroups.ProofStrategy
 
 /-!
 # Finite Simple Groups — scaffold

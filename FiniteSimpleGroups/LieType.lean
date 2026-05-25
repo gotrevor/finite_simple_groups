@@ -34,6 +34,20 @@ overview.
 
 namespace FiniteSimpleGroups
 
+/-- Enumeration of the four classical families of Lie type. -/
+inductive ClassicalFamily : Type where
+  /-- Type `A_{n-1}`: `PSL_n(F_q) = SL_n / center`. -/
+  | PSL
+  /-- Type `²A_{n-1}`: `PSU_n(F_q) = SU_n(F_{q²}) / center`. -/
+  | PSU
+  /-- Type `C_n`: `PSp_{2n}(F_q) = Sp_{2n} / center`. -/
+  | PSp
+  /-- Types `B_n` / `D_n` / `²D_n`: commutator subgroup of `PO^ε_n(F_q)`. -/
+  | POmega
+  deriving DecidableEq, Repr, Fintype
+
+theorem card_classicalFamily : Fintype.card ClassicalFamily = 4 := by decide
+
 variable (n : ℕ) (q : ℕ) [Fact q.Prime] -- TODO: should be prime power, not prime; placeholder
 
 /-- `PSL_n(F_q)` — the projective special linear group. Simple for `n ≥ 2`

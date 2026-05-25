@@ -23,19 +23,22 @@ namespace FiniteSimpleGroups
 
 variable (p : ℕ) [Fact p.Prime]
 
-/-- `Z/pZ` (as an additive group) is simple for `p` prime. Mathlib has the
-ingredients; we cite rather than prove. -/
-theorem zmod_prime_isSimpleAddGroup : IsSimpleAddGroup (ZMod p) := by
-  sorry -- mathlib: follows from `ZMod p` being a field + `IsSimpleAddGroup` for
-        -- additive groups of prime order. Look for `ZMod.isSimpleGroup` or
-        -- `IsSimpleAddGroup.of_prime_card`.
+/-- `Z/pZ` (as an additive group) is simple for `p` prime. Mathlib provides
+this directly as `ZMod.instIsSimpleAddGroup` in `Mathlib.GroupTheory.SpecificGroups.Cyclic`. -/
+example : IsSimpleAddGroup (ZMod p) := inferInstance
 
-/-- The same fact stated multiplicatively. -/
+/-- `Z/pZ` viewed multiplicatively is a simple group. Mathlib has
+`isSimpleGroup_of_prime_card` for any group of prime cardinality; we apply it
+with `Nat.card (Multiplicative (ZMod p)) = Nat.card (ZMod p) = p`
+(the equality is definitional since `Multiplicative` is a type alias). -/
 theorem zmod_prime_isSimpleGroup : IsSimpleGroup (Multiplicative (ZMod p)) := by
-  sorry
+  apply isSimpleGroup_of_prime_card (p := p)
+  show Nat.card (ZMod p) = p
+  rw [Nat.card_eq_fintype_card]
+  exact ZMod.card p
 
 /-- Bundled: `Z/pZ` is a finite simple group. -/
-instance zmod_prime_isFSG : IsFSG (Multiplicative (ZMod p)) where
+noncomputable instance zmod_prime_isFSG : IsFSG (Multiplicative (ZMod p)) where
   finite := inferInstance
   nontrivial := by
     haveI : Fact (1 < p) := ⟨Fact.out (p := p.Prime) |>.one_lt⟩

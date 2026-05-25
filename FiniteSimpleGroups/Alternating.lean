@@ -212,18 +212,25 @@ private theorem commutator_mem_normalClosure
 
 /-! #### Case 1, 2, 4 witness helpers (leaves — `sorry`)
 
-Each helper produces an `h_perm : Equiv.Perm (Fin n)` that is a 3-cycle and
-whose commutator with `g_perm` is also a 3-cycle. The construction of `h_perm`
-is case-specific (consecutive points in a long cycle / two 3-cycles / one
-2-cycle + free point / two 2-cycles) and is left as a leaf `sorry`.
+**Note (2026-05-25, post-PR #13):** the original "every case is a one-step
+3-cycle commutator" simplification turned out to be **wrong for Case 2**. With
+`g = (a b c)(d e f)` and `τ = (a b d)` (the construction in the old HANDOFF),
+the commutator `[g, τ]` is a **5-cycle** `(a d c e b)`, not a 3-cycle. The
+correct standard argument for Case 2 is **two-step**: produce a 5-cycle in
+`normalClosure({g})` via that commutator, then apply Case 1 to the 5-cycle.
+Case 2's witness is now retyped to match this structure.
 
-Once the leaf closes, the dispatcher above immediately turns into a real
-proof, modulo wrapping `h_perm` as an `alternatingGroup` element (3-cycles are
-even, so `mem_alternatingGroup` handles this). -/
+Case 4 also has a sub-case split (free point vs. no free point); the
+free-point sub-case has a direct construction (and `h_perm` *is* a 3-cycle),
+the no-free-point sub-case needs additional work and is sorried at a finer
+grain inside the witness. -/
 
-/-- Case 1 leaf: given a length-≥-4 cycle, produce a 3-cycle whose commutator
-with `g_perm` is also a 3-cycle. Standard construction: pick three consecutive
-points `a, b, c` of the long cycle and take `h_perm = (a b c)`. -/
+/-- **Case 1 leaf** — given a length-≥-4 cycle, produce a 3-cycle whose
+commutator with `g_perm` is also a 3-cycle. Construction: extract a cycle
+factor `σ_long` with `support.card ≥ 4`, pick `a ∈ σ_long.support`, set
+`b := σ_long a`, `c := σ_long² a`, `d := σ_long³ a` (all distinct since
+cycle length ≥ 4). Take `h_perm := (a b c)`. The commutator `[g, h]` evaluates
+to the 3-cycle `(a b d)`. -/
 private theorem case1_commutator_witness
     {n : ℕ} (g_perm : Equiv.Perm (Fin n))
     (_h_long : ∃ k ∈ g_perm.cycleType, 4 ≤ k) :
@@ -232,25 +239,34 @@ private theorem case1_commutator_witness
       (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle := by
   sorry
 
-/-- Case 2 leaf: given ≥ 2 three-cycles in `g_perm`'s decomposition, produce a
-3-cycle whose commutator with `g_perm` is also a 3-cycle. Standard
-construction: pick points `a, b, c` from one 3-cycle and `d` from a different
-3-cycle, take `h_perm = (a b d)`. -/
-private theorem case2_commutator_witness
-    {n : ℕ} (g_perm : Equiv.Perm (Fin n))
-    (_h_two_threes : 2 ≤ g_perm.cycleType.count 3) :
-    ∃ h_perm : Equiv.Perm (Fin n),
-      h_perm.IsThreeCycle ∧
-      (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle := by
+/-- **Case 2 leaf (retyped)** — given ≥ 2 three-cycles in `g_perm`'s
+decomposition, produce an *intermediate* element `g'` in
+`normalClosure({g_perm})` that has a long cycle (`≥ 4`). Construction: take
+`g' := [g, τ]` where `τ = (a b d)` and `(a b c), (d e f)` are two 3-cycle
+factors of `g_perm`. Then `g' = (a d c e b)`, a 5-cycle. Case 2's main theorem
+then chains this with `exists_threeCycle_of_long_cycle` (i.e., Case 1
+applied to `g'`). -/
+private theorem case2_long_cycle_witness
+    {n : ℕ} (g : alternatingGroup (Fin n))
+    (_h_two_threes : 2 ≤ (g : Equiv.Perm (Fin n)).cycleType.count 3) :
+    ∃ g' : alternatingGroup (Fin n),
+      g' ∈ Subgroup.normalClosure ({g} : Set (alternatingGroup (Fin n))) ∧
+      (∃ k ∈ (g' : Equiv.Perm (Fin n)).cycleType, 4 ≤ k) := by
   sorry
 
-/-- Case 4 leaf: given `g_perm` is a product of disjoint 2-cycles only (and
-`n ≥ 5`), produce a 3-cycle whose commutator with `g_perm` is also a 3-cycle.
-Two sub-cases depending on whether a free point exists:
-* If `support g_perm` doesn't cover all of `Fin n`: pick a 2-cycle `(a b)`
-  and a free point `e`, take `h_perm = (a b e)`.
-* Otherwise (e.g., `n = 8` with 4 disjoint 2-cycles): pick `(a b)` and `(c d)`
-  from two different 2-cycles, take `h_perm = (a b c)`. -/
+/-- **Case 4 leaf** — given `g_perm` is a non-identity product of disjoint
+2-cycles only (and `n ≥ 5`), produce a 3-cycle whose commutator with `g_perm`
+is also a 3-cycle.
+
+Sub-case structure:
+* **Free point exists** (`g_perm.support.card < n`): take `h_perm = (a b c)`
+  where `(a b)` is a 2-cycle of `g_perm` and `c` is the free point. The
+  commutator `[g, h]` equals `h` itself (because `g` conjugates `h` to `h⁻¹`,
+  and `h⁻¹ * h⁻¹ = h` for an order-3 element).
+* **No free point** (`g_perm.support = univ`, e.g. `n = 8` with 4 swaps): no
+  direct one-step construction — needs reduction (e.g., commutator with
+  `(a b c)` gives an element of cycleType `{2, 2}` with smaller support, then
+  recurse). Sorried below at a finer level. -/
 private theorem case4_commutator_witness
     {n : ℕ} (_hn : 5 ≤ n) (g_perm : Equiv.Perm (Fin n))
     (_h_all_swaps : ∀ m ∈ g_perm.cycleType, m = 2)
@@ -297,14 +313,19 @@ theorem exists_threeCycle_of_multiple_three_cycles (hn : 5 ≤ n)
     ∃ τ : alternatingGroup (Fin n),
       (τ : Equiv.Perm (Fin n)).IsThreeCycle ∧
       τ ∈ Subgroup.normalClosure ({g} : Set (alternatingGroup (Fin n))) := by
-  obtain ⟨h_perm, h_perm_three, h_comm_three⟩ :=
-    case2_commutator_witness (g : Equiv.Perm (Fin n)) h_two_threes
-  let h : alternatingGroup (Fin n) := ⟨h_perm, h_perm_three.mem_alternatingGroup⟩
-  refine ⟨g * h * g⁻¹ * h⁻¹, ?_, commutator_mem_normalClosure g h⟩
-  show ((g * h * g⁻¹ * h⁻¹ : alternatingGroup (Fin n)) :
-        Equiv.Perm (Fin n)).IsThreeCycle
-  push_cast
-  exact h_comm_three
+  -- Two-step reduction: get long-cycle intermediate g', then apply Case 1 to g'.
+  obtain ⟨g', g'_mem, g'_long⟩ := case2_long_cycle_witness g h_two_threes
+  have g'_ne_one : g' ≠ 1 := by
+    intro h_eq
+    obtain ⟨k, hk_mem, _⟩ := g'_long
+    have : (g' : Equiv.Perm (Fin n)) = 1 := by rw [h_eq]; rfl
+    rw [this, Equiv.Perm.cycleType_one] at hk_mem
+    exact (Multiset.notMem_zero k) hk_mem
+  obtain ⟨τ, τ_three, τ_mem_g'⟩ :=
+    exists_threeCycle_of_long_cycle hn g'_ne_one g'_long
+  refine ⟨τ, τ_three, ?_⟩
+  -- τ ∈ NC({g'}) ⊆ NC({g}) since g' ∈ NC({g}) and NC({g}) is normal.
+  exact Subgroup.normalClosure_le_normal (by simpa using g'_mem) τ_mem_g'
 
 /-- **Case 3 (one 3-cycle plus 2-cycles).** If `g ∈ A_n` has exactly one
 3-cycle and all other non-trivial cycles are 2-cycles (transpositions), then

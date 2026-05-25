@@ -47,6 +47,149 @@ section GaloisReduction
 
 variable {n : ℕ}
 
+/-! #### Sub-case 3B helpers (private)
+
+When `g` has cycle type `{3, 2, 2, …, 2}` with at least one 2-cycle, `g^2` is
+a 3-cycle. The proof tower:
+
+1. `orderOf g = 6` (lcm of 3 and 2)
+2. `orderOf (g^2) = 3`
+3. `cycleType (g^2)` is a multiset of 3s (mathlib: `cycleType_prime_order`)
+4. That multiset has cardinality 1 (the single 3-cycle of `g` contributes; the
+   2-cycles vanish under squaring)
+5. ⇒ `cycleType (g^2) = {3}` ⇒ `(g^2).IsThreeCycle`.
+
+Each helper is its own `sorry` until proved. -/
+
+private theorem orderOf_g_eq_six_of_3_2_pattern
+    {n : ℕ} (g : Equiv.Perm (Fin n))
+    (h_one_three : g.cycleType.count 3 = 1)
+    (h_rest_swap : ∀ m ∈ g.cycleType, m = 3 ∨ m = 2)
+    (h_has_swap : 1 ≤ g.cycleType.count 2) :
+    orderOf g = 6 := by
+  have h_lcm : g.cycleType.lcm = orderOf g := Equiv.Perm.lcm_cycleType g
+  have h_3_mem : 3 ∈ g.cycleType :=
+    Multiset.one_le_count_iff_mem.mp (by omega)
+  have h_2_mem : 2 ∈ g.cycleType :=
+    Multiset.one_le_count_iff_mem.mp h_has_swap
+  have h_3_dvd : 3 ∣ orderOf g := h_lcm ▸ Multiset.dvd_lcm h_3_mem
+  have h_2_dvd : 2 ∣ orderOf g := h_lcm ▸ Multiset.dvd_lcm h_2_mem
+  have h_6_dvd : 6 ∣ orderOf g := by
+    have := Nat.Coprime.mul_dvd_of_dvd_of_dvd (show Nat.Coprime 2 3 by decide)
+      h_2_dvd h_3_dvd
+    simpa using this
+  have h_lcm_dvd_6 : g.cycleType.lcm ∣ 6 := by
+    rw [Multiset.lcm_dvd]
+    intro m hm
+    rcases h_rest_swap m hm with rfl | rfl <;> decide
+  have h_order_dvd_6 : orderOf g ∣ 6 := h_lcm ▸ h_lcm_dvd_6
+  exact Nat.dvd_antisymm h_order_dvd_6 h_6_dvd
+
+private theorem orderOf_g_sq_eq_three_of_orderOf_six
+    {n : ℕ} (g : Equiv.Perm (Fin n))
+    (h_order : orderOf g = 6) :
+    orderOf (g ^ 2) = 3 := by
+  rw [orderOf_pow, h_order]
+  decide
+
+private theorem cycleType_g_sq_replicate
+    {n : ℕ} (g : Equiv.Perm (Fin n))
+    (h_order_sq : orderOf (g ^ 2) = 3) :
+    (g ^ 2).cycleType = Multiset.replicate (Multiset.card (g ^ 2).cycleType) 3 := by
+  have h_prime : (orderOf (g ^ 2)).Prime := by rw [h_order_sq]; decide
+  obtain ⟨k, hk⟩ := Equiv.Perm.cycleType_prime_order h_prime
+  rw [h_order_sq] at hk
+  rw [hk, Multiset.card_replicate]
+
+private theorem card_cycleType_g_sq_eq_one
+    {n : ℕ} (g : Equiv.Perm (Fin n))
+    (h_one_three : g.cycleType.count 3 = 1)
+    (h_rest_swap : ∀ m ∈ g.cycleType, m = 3 ∨ m = 2)
+    (_h_has_swap : 1 ≤ g.cycleType.count 2) :
+    Multiset.card (g ^ 2).cycleType = 1 := by
+  -- Extract the 3-cycle factor c of g.
+  have h_three_mem : (3 : ℕ) ∈ g.cycleType :=
+    Multiset.one_le_count_iff_mem.mp (by omega)
+  rw [Equiv.Perm.cycleType_def, Multiset.mem_map] at h_three_mem
+  obtain ⟨c, hc_mem, hc_card⟩ := h_three_mem
+  change c.support.card = 3 at hc_card
+  have hc_mem' : c ∈ g.cycleFactorsFinset := hc_mem
+  have hc_isCycle : c.IsCycle :=
+    (Equiv.Perm.mem_cycleFactorsFinset_iff.mp hc_mem').1
+  -- h := g * c⁻¹ is disjoint from c, has cycleType = g.cycleType - {3} (all 2s)
+  set h := g * c⁻¹ with h_def
+  have h_disj : c.Disjoint h := by
+    have := Equiv.Perm.disjoint_mul_inv_of_mem_cycleFactorsFinset hc_mem'
+    exact this.symm
+  have h_g_eq : g = c * h := by
+    have h_comm : c * h = h * c := h_disj.commute.eq
+    rw [h_comm, h_def, inv_mul_cancel_right]
+  have h_cycleType_h : h.cycleType = g.cycleType - {3} := by
+    have := Equiv.Perm.cycleType_mul_inv_mem_cycleFactorsFinset_eq_sub hc_mem'
+    rw [hc_isCycle.cycleType, hc_card] at this
+    exact this
+  have h_h_only_2 : ∀ m ∈ h.cycleType, m = 2 := by
+    intro m hm
+    rw [h_cycleType_h] at hm
+    have hm_in_g : m ∈ g.cycleType :=
+      Multiset.mem_of_le (Multiset.sub_le_self ..) hm
+    rcases h_rest_swap m hm_in_g with rfl | rfl
+    · exfalso
+      have h_count : Multiset.count 3 (g.cycleType - {3}) = 0 := by
+        rw [Multiset.count_sub, h_one_three, Multiset.count_singleton_self]
+      have := Multiset.one_le_count_iff_mem.mpr hm
+      omega
+    · rfl
+  -- orderOf h divides 2 (lcm of cycleType, all 2s, divides 2)
+  have h_h_order_dvd : orderOf h ∣ 2 := by
+    have h_lcm : h.cycleType.lcm = orderOf h := Equiv.Perm.lcm_cycleType h
+    rw [← h_lcm, Multiset.lcm_dvd]
+    intro m hm
+    rw [h_h_only_2 m hm]
+  -- h^2 = 1
+  have h_sq_one : h ^ 2 = 1 := orderOf_dvd_iff_pow_eq_one.mp h_h_order_dvd
+  -- c, h commute (disjoint perms commute)
+  have h_comm : Commute c h := h_disj.commute
+  -- g^2 = c^2 * h^2 = c^2
+  have h_g_sq : g ^ 2 = c ^ 2 := by
+    rw [h_g_eq, h_comm.mul_pow, h_sq_one, mul_one]
+  -- c has order 3, so c^2 = c⁻¹
+  have h_c_order : orderOf c = 3 := by
+    rw [hc_isCycle.orderOf, hc_card]
+  have h_c_pow_three : c ^ 3 = 1 :=
+    orderOf_dvd_iff_pow_eq_one.mp (h_c_order ▸ dvd_refl _)
+  have h_c_sq_inv : c ^ 2 = c⁻¹ := by
+    have : c ^ 2 * c = 1 := by rw [← pow_succ]; exact h_c_pow_three
+    exact eq_inv_of_mul_eq_one_left this
+  -- cycleType (c^2) = cycleType c⁻¹ = cycleType c = {3}
+  have hc_three : c.IsThreeCycle := by
+    rw [Equiv.Perm.IsThreeCycle, hc_isCycle.cycleType, hc_card]
+  have h_c_sq_cycleType : (c ^ 2).cycleType = {3} := by
+    rw [h_c_sq_inv, Equiv.Perm.cycleType_inv]
+    exact hc_three
+  rw [h_g_sq, h_c_sq_cycleType]
+  rfl
+
+/-- Composite: under cycleType `{3, 2, …, 2}` with ≥ 1 swap, `g^2` is a 3-cycle. -/
+private theorem isThreeCycle_g_sq
+    {n : ℕ} (g : Equiv.Perm (Fin n))
+    (h_one_three : g.cycleType.count 3 = 1)
+    (h_rest_swap : ∀ m ∈ g.cycleType, m = 3 ∨ m = 2)
+    (h_has_swap : 1 ≤ g.cycleType.count 2) :
+    (g ^ 2).IsThreeCycle := by
+  have h_order : orderOf g = 6 :=
+    orderOf_g_eq_six_of_3_2_pattern g h_one_three h_rest_swap h_has_swap
+  have h_order_sq : orderOf (g ^ 2) = 3 :=
+    orderOf_g_sq_eq_three_of_orderOf_six g h_order
+  have h_replicate : (g ^ 2).cycleType =
+      Multiset.replicate (Multiset.card (g ^ 2).cycleType) 3 :=
+    cycleType_g_sq_replicate g h_order_sq
+  have h_card : Multiset.card (g ^ 2).cycleType = 1 :=
+    card_cycleType_g_sq_eq_one g h_one_three h_rest_swap h_has_swap
+  show (g ^ 2).cycleType = {3}
+  rw [h_replicate, h_card]
+  rfl
+
 /-- **Case 1 (long cycle).** If `g ∈ A_n` has a cycle of length `k ≥ 4` in
 its decomposition, then there exists a 3-cycle in the normal closure of `g`
 inside `A_n`.
@@ -107,11 +250,15 @@ theorem exists_threeCycle_of_one_three_plus_swaps (hn : 5 ≤ n)
         intro h_mem
         rcases h_rest_swap m h_mem with rfl | rfl <;> contradiction
   -- **Sub-case B:** g has at least one 2-cycle. Then g^2 is the 3-cycle.
-  -- Proof: cycleType (g^2) = {3} via support count (h^2 = 1 kills the
-  -- 2-cycle's support; only the 3-cycle's support remains, size 3, hence
-  -- IsThreeCycle by card_support_eq_three_iff). Requires cycleType-under-
-  -- power machinery that mathlib doesn't have packaged.
-  · sorry
+  -- We invoke the fractal tower `isThreeCycle_g_sq` (see private helpers above).
+  · have h_has_swap : 1 ≤ (g : Equiv.Perm (Fin n)).cycleType.count 2 :=
+      Nat.one_le_iff_ne_zero.mpr h_no_swaps
+    refine ⟨g ^ 2, ?_, pow_mem (Subgroup.mem_zpowers g) 2⟩
+    show ((g ^ 2 : alternatingGroup (Fin n)) : Equiv.Perm (Fin n)).IsThreeCycle
+    have h_coe : ((g ^ 2 : alternatingGroup (Fin n)) : Equiv.Perm (Fin n))
+        = (g : Equiv.Perm (Fin n)) ^ 2 := by push_cast; rfl
+    rw [h_coe]
+    exact isThreeCycle_g_sq _ h_one_three h_rest_swap h_has_swap
 
 /-- **Case 4 (only 2-cycles).** If `g ∈ A_n` is a non-identity product of
 disjoint 2-cycles only (necessarily an even number of them, since `g` is

@@ -92,7 +92,26 @@ theorem exists_threeCycle_of_one_three_plus_swaps (hn : 5 ≤ n)
     ∃ τ : alternatingGroup (Fin n),
       (τ : Equiv.Perm (Fin n)).IsThreeCycle ∧
       τ ∈ Subgroup.zpowers g := by
-  sorry -- g^2 is a 3-cycle; lies in zpowers g.
+  -- **Sub-case A:** g is itself a 3-cycle (no 2-cycles in decomposition).
+  -- Then cycleType g = {3} since count 3 = 1, count 2 = 0, and h_rest_swap.
+  by_cases h_no_swaps : (g : Equiv.Perm (Fin n)).cycleType.count 2 = 0
+  · refine ⟨g, ?_, Subgroup.mem_zpowers g⟩
+    show (g : Equiv.Perm (Fin n)).cycleType = {3}
+    ext m
+    rw [Multiset.count_singleton]
+    split_ifs with h
+    · rw [h]; exact h_one_three
+    · by_cases hm : m = 2
+      · rw [hm]; exact h_no_swaps
+      · apply Multiset.count_eq_zero.mpr
+        intro h_mem
+        rcases h_rest_swap m h_mem with rfl | rfl <;> contradiction
+  -- **Sub-case B:** g has at least one 2-cycle. Then g^2 is the 3-cycle.
+  -- Proof: cycleType (g^2) = {3} via support count (h^2 = 1 kills the
+  -- 2-cycle's support; only the 3-cycle's support remains, size 3, hence
+  -- IsThreeCycle by card_support_eq_three_iff). Requires cycleType-under-
+  -- power machinery that mathlib doesn't have packaged.
+  · sorry
 
 /-- **Case 4 (only 2-cycles).** If `g ∈ A_n` is a non-identity product of
 disjoint 2-cycles only (necessarily an even number of them, since `g` is

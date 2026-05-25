@@ -80,13 +80,14 @@ This scaffold's `FiniteSimpleGroups/Classification.lean` states the theorem; the
 | `FiniteSimpleGroups.lean` | Root — imports everything. |
 | `FiniteSimpleGroups/Basic.lean` | `IsFSG` typeclass (bundles `Finite + Nontrivial + IsSimpleGroup`). |
 | `FiniteSimpleGroups/Classification.lean` | The Big Theorem stated as a disjunction over the five families. Proof: `sorry`. |
-| `FiniteSimpleGroups/Cyclic.lean` | $\mathbb{Z}/p\mathbb{Z}$ simplicity. Cited from mathlib (sorry, but the actual lemma is one search away). |
-| `FiniteSimpleGroups/Alternating.lean` | $A_n$ simplicity for $n \geq 5$. Cited from mathlib (sorry, same). |
-| `FiniteSimpleGroups/LieType.lean` | The four classical families as `opaque` types + simplicity statements with small-case exceptions. All `sorry`. |
-| `FiniteSimpleGroups/Exceptional.lean` | $G_2, F_4, E_{6,7,8}$ + twisted variants as `opaque` types. All `sorry`. |
-| `FiniteSimpleGroups/Sporadics.lean` | All 26 sporadics as `opaque` types, organized by discovery family (Mathieu / Janko / Conway / Fischer / Monster-orbit / pariahs / McL-Suz-HS). Rich docstrings with orders. |
+| `FiniteSimpleGroups/Cyclic.lean` | $\mathbb{Z}/p\mathbb{Z}$ simplicity. **Real proofs** — uses mathlib's `ZMod.instIsSimpleAddGroup` and `isSimpleGroup_of_prime_card`. Provides `IsFSG (Multiplicative (ZMod p))` instance. |
+| `FiniteSimpleGroups/Alternating.lean` | $A_n$ simplicity for $n \geq 5$. **Real proof for $A_5$** via mathlib's `alternatingGroup.isSimpleGroup_five`; general $n \geq 5$ is `sorry` (not yet in mathlib v4.29.1). Provides `IsFSG (alternatingGroup (Fin 5))` instance. |
+| `FiniteSimpleGroups/LieType.lean` | The four classical families as `opaque` types + simplicity statements with small-case exceptions. Adds `ClassicalFamily` inductive (4 cases) with `card = 4` proof. All simplicity claims `sorry`. |
+| `FiniteSimpleGroups/Exceptional.lean` | $G_2, F_4, E_{6,7,8}$ + 5 twisted variants as `opaque` types. Adds `ExceptionalFamily` inductive (10 cases) with `card = 10` proof. |
+| `FiniteSimpleGroups/Sporadics.lean` | All 26 sporadics as `opaque` types, organized by discovery family. **`Sporadic.Name` inductive enumerates them all**, with `Fintype.card Sporadic.Name = 26` provable by `decide`. Pariah / Happy Family split proven (6 + 20 = 26). |
+| `FiniteSimpleGroups/ProofStrategy.lean` | States the architectural milestones: Burnside $p^aq^b$, Feit-Thompson Odd Order, Aschbacher dichotomy (odd / even type), even-type sub-split (component / characteristic-2), quasithin classification. All `sorry`; rich docstrings on the architecture. |
 
-About 350 LOC total. Almost everything is `sorry` or `opaque`.
+About 600 LOC total across 8 files. The `Name` / `Family` inductives, the cyclic-group simplicity, and the $A_5$ simplicity are real; everything past those is `sorry` or `opaque`.
 
 ---
 
@@ -108,12 +109,45 @@ identifier-name drift.
 
 ## References
 
-- Aschbacher, ["The Status of the Classification of the Finite Simple Groups"](https://www.ams.org/notices/200407/fea-aschbacher.pdf) — *Notices AMS*, 2004. The accessible overview. **Start here.**
-- Gorenstein, Lyons, Solomon — *The Classification of the Finite Simple Groups* (12-volume series, AMS, 1994-2023). The "second-generation" proof.
-- Carter, *Simple Groups of Lie Type* (Wiley, 1972) — the standard Lie-type reference.
-- Gonthier et al., ["A Machine-Checked Proof of the Odd Order Theorem"](https://www.cs.cmu.edu/~rwh/courses/llmocaml/papers/feit-thompson.pdf) — Coq, 2013. The Feit-Thompson formalization writeup.
-- [mathlib `cfsg` branch](https://github.com/leanprover-community/mathlib4/tree/cfsg) — current Lean status. WIP.
-- Wilson, *The Finite Simple Groups* (Springer GTM 251, 2009) — modern textbook treatment, ~300pp. The non-Aschbacher choice.
+PDFs are downloaded into `papers/` (git-ignored; fetch yourself from the URLs below).
+
+### Local PDFs (`papers/`)
+
+| File | Pages | Source |
+|------|-------|--------|
+| [`aschbacher-2004-notices-ams.pdf`](papers/aschbacher-2004-notices-ams.pdf) | 5 | Aschbacher, "The Status of the Classification of the Finite Simple Groups." *Notices AMS* 51(7), 2004. **The accessible overview — start here.** [\[Padua mirror\]](https://www.math.unipd.it/~tonolo/didattica/Algebra+2/aschbacher.pdf) [\[AMS\]](https://www.ams.org/notices/200407/fea-aschbacher.pdf) |
+| [`solomon-2001-bulletin-ams.pdf`](papers/solomon-2001-bulletin-ams.pdf) | 10 (of 38) | Solomon, "A Brief History of the Classification of the Finite Simple Groups." *Bull. AMS* 38(3), 2001, 315-352. AMS gates the full article; only the first 10 pages download cleanly via curl. [\[DOI\]](https://doi.org/10.1090/S0273-0979-01-00909-0) |
+| [`solomon-2018-afterword-ams.pdf`](papers/solomon-2018-afterword-ams.pdf) | 1 | Solomon, afterword to the 2001 survey. *Bull. AMS* 55(4), 2018. Brief post-quasithin retrospective. |
+| [`gonthier-2013-feit-thompson.pdf`](papers/gonthier-2013-feit-thompson.pdf) | 6 | Gonthier et al., "A Machine-Checked Proof of the Odd Order Theorem." ITP 2013. The Coq Feit-Thompson formalization writeup. [\[Asperti mirror\]](https://www.cs.unibo.it/~asperti/PAPERS/odd_order.pdf) [\[HAL\]](https://hal.science/hal-00816699v1) |
+| [`gonthier-2014-proof-engineering.pdf`](papers/gonthier-2014-proof-engineering.pdf) | 35 | Gonthier, "Proof Engineering, from the Four Color to the Odd Order Theorem." Longer essay on the formalization architecture across both efforts. [\[MSR\]](https://www.microsoft.com/en-us/research/wp-content/uploads/2014/02/georges-gonthier.pdf) |
+| [`feit-obituary-2005-notices-ams.pdf`](papers/feit-obituary-2005-notices-ams.pdf) | 8 | Scott, Solomon, Thompson, Walter Feit obituary. *Notices AMS* 52(7), 2005. Useful CFSG historical context. [\[AMS\]](https://www.ams.org/notices/200507/fea-feit.pdf) |
+
+To re-fetch:
+```bash
+mkdir -p papers && cd papers
+UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+curl -fsSL -A "$UA" -o aschbacher-2004-notices-ams.pdf "https://www.math.unipd.it/~tonolo/didattica/Algebra+2/aschbacher.pdf"
+curl -fsSL -A "$UA" -e "https://www.ams.org/journals/bull/2001-38-03/S0273-0979-01-00909-0/" -o solomon-2001-bulletin-ams.pdf "https://www.ams.org/journals/bull/2001-38-03/S0273-0979-01-00909-0/S0273-0979-01-00909-0.pdf"
+curl -fsSL -A "$UA" -e "https://www.ams.org/journals/bull/2018-55-04/S0273-0979-2018-01639-X/" -o solomon-2018-afterword-ams.pdf "https://www.ams.org/journals/bull/2018-55-04/S0273-0979-2018-01639-X/S0273-0979-2018-01639-X.pdf"
+curl -fsSL -A "$UA" -o gonthier-2013-feit-thompson.pdf "https://www.cs.unibo.it/~asperti/PAPERS/odd_order.pdf"
+curl -fsSL -A "$UA" -o gonthier-2014-proof-engineering.pdf "https://www.microsoft.com/en-us/research/wp-content/uploads/2014/02/georges-gonthier.pdf"
+curl -fsSL -A "$UA" -e "https://www.ams.org/notices/200507/" -o feit-obituary-2005-notices-ams.pdf "https://www.ams.org/notices/200507/fea-feit.pdf"
+```
+
+(AMS direct PDF URLs are Cloudflare-gated; `-e` Referer header bypasses it. HAL is Anubis-gated.)
+
+### Books (not downloadable as free PDF)
+
+- **Gorenstein, Lyons, Solomon** — *The Classification of the Finite Simple Groups* (12-volume series, AMS, 1994-2023). The "second-generation" self-contained proof. 10 of 12 volumes published.
+- **Aschbacher, Smith** — *The Classification of Quasithin Groups* I & II (AMS, 2004). The last piece of the original CFSG proof — almost 1200 pages closing the hardest sub-case.
+- **Carter** — *Simple Groups of Lie Type* (Wiley, 1972). Standard Lie-type reference.
+- **Wilson** — *The Finite Simple Groups* (Springer GTM 251, 2009). Modern textbook treatment, ~300pp. The non-Aschbacher choice.
+
+### External links
+
+- [mathlib `cfsg` branch](https://github.com/leanprover-community/mathlib4/tree/cfsg) — current Lean state of CFSG-adjacent formalization. WIP.
+- [Wikipedia: Classification of finite simple groups](https://en.wikipedia.org/wiki/Classification_of_finite_simple_groups) — surprisingly thorough.
+- [nLab: classification of finite simple groups](https://ncatlab.org/nlab/show/classification+of+finite+simple+groups) — categorical perspective + monstrous moonshine pointer.
 
 ---
 

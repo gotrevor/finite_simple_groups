@@ -141,5 +141,44 @@ opaque ONan : Type
 opaque Rudvalis : Type
 opaque Lyons : Type
 
+/-- Enumeration of the 26 sporadic simple groups by name.
+
+Useful as a concrete Lean object (`Fintype`, `DecidableEq`) for stating
+theorems that range over all sporadics, without needing to construct
+each group's underlying carrier. -/
+inductive Name : Type where
+  -- Mathieu (1861-73): the five 4- and 5-transitive groups
+  | M11 | M12 | M22 | M23 | M24
+  -- Janko (1965-76): J_1, J_3, J_4 are pariahs; J_2 = HJ is in the Happy Family
+  | J1 | J2 | J3 | J4
+  -- Conway (1968): from automorphisms of the Leech lattice
+  | Co1 | Co2 | Co3
+  -- Fischer (1971): 3-transposition groups; Fi_24' is the derived subgroup of Fi_24
+  | Fi22 | Fi23 | Fi24'
+  -- Monster + close relatives (1973-80)
+  | Monster | BabyMonster | Thompson | HaradaNorton | Held
+  -- McLaughlin / Suzuki sporadic / Higman-Sims
+  | McLaughlin | SuzukiSporadic | HigmanSims
+  -- The remaining pariahs (O'Nan, Rudvalis, Lyons)
+  | ONan | Rudvalis | Lyons
+  deriving DecidableEq, Repr, Fintype
+
+/-- There are exactly **26** sporadic simple groups. -/
+theorem card_name : Fintype.card Name = 26 := by decide
+
+/-- The 6 **pariahs**: sporadics that are not subquotients of the Monster. -/
+def Name.isPariah : Name → Bool
+  | .J1 | .J3 | .J4 | .ONan | .Rudvalis | .Lyons => true
+  | _ => false
+
+/-- There are exactly **6 pariahs**. -/
+theorem card_pariahs : (Finset.univ.filter (fun n : Name => n.isPariah)).card = 6 := by
+  decide
+
+/-- The 20 members of the **Happy Family** (subquotients of the Monster). -/
+theorem card_happy_family :
+    (Finset.univ.filter (fun n : Name => ¬ n.isPariah)).card = 20 := by
+  decide
+
 end Sporadics
 end FiniteSimpleGroups

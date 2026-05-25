@@ -20,20 +20,25 @@ Mathlib **has this**: `Mathlib.GroupTheory.SpecificGroups.Alternating` defines
 
 namespace FiniteSimpleGroups
 
-/-- `A_n` is simple for `n ≥ 5`. Mathlib proves this; we cite rather than
-re-derive. -/
+/-- **`A_5` is simple.** Mathlib has this as an `instance` directly:
+`alternatingGroup.isSimpleGroup_five` in `Mathlib.GroupTheory.SpecificGroups.Alternating`.
+This is the smallest non-abelian finite simple group (order 60). -/
+example : IsSimpleGroup (alternatingGroup (Fin 5)) := inferInstance
+
+/-- `A_n` is simple for `n ≥ 5`. **Status in mathlib v4.29.1:** only `n = 5`
+is proven (as `alternatingGroup.isSimpleGroup_five`). The general case
+remains `sorry` here — proving it requires a normal-subgroup induction
+argument that hasn't yet been formalized at this mathlib version. -/
 theorem alternatingGroup_isSimple (n : ℕ) (hn : 5 ≤ n) :
     IsSimpleGroup (alternatingGroup (Fin n)) := by
-  sorry -- mathlib: `alternatingGroup.isSimple` or
-        -- `alternatingGroup.isSimple_of_five_le_card` (verify exact name).
+  sorry -- Open in mathlib v4.29.1 for n > 5. For n = 5, see the `example` above.
 
-/-- Bundled: `A_n` is a finite simple group for `n ≥ 5`. -/
-@[reducible] def alternating_isFSG (n : ℕ) (hn : 5 ≤ n) :
-    IsFSG (alternatingGroup (Fin n)) where
+/-- Bundled: `A_5` is a finite simple group. Mathlib provides all three
+instances: `Finite`, `Nontrivial (alternatingGroup (Fin (n+3)))`, and
+`isSimpleGroup_five`. -/
+noncomputable instance alternating_five_isFSG : IsFSG (alternatingGroup (Fin 5)) where
   finite := inferInstance
-  nontrivial := by
-    sorry -- `A_n` is nontrivial iff `n ≥ 4` (since `|A_n| = n!/2`); for `n ≥ 5`
-          -- it has order ≥ 60.
-  simple := alternatingGroup_isSimple n hn
+  nontrivial := inferInstance
+  simple := inferInstance
 
 end FiniteSimpleGroups

@@ -34,6 +34,17 @@ in this file are `sorry`.
 
 namespace FiniteSimpleGroups
 
+/-- Enumeration of the 10 exceptional Lie-type families (5 untwisted + 5 twisted). -/
+inductive ExceptionalFamily : Type where
+  -- Untwisted (Chevalley 1955)
+  | G2 | F4 | E6 | E7 | E8
+  -- Twisted: Suzuki (`²B_2`, q = 2^{2n+1}), Ree (`²G_2` q = 3^{2n+1}, `²F_4` q = 2^{2n+1}),
+  -- Steinberg (`³D_4`, `²E_6`)
+  | Suzuki | SmallRee | LargeRee | Steinberg3D4 | Steinberg2E6
+  deriving DecidableEq, Repr, Fintype
+
+theorem card_exceptionalFamily : Fintype.card ExceptionalFamily = 10 := by decide
+
 /-- `G_2(q)` — the exceptional group of type `G_2` over `F_q`. -/
 opaque G2 : Type
 

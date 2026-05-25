@@ -190,6 +190,78 @@ private theorem isThreeCycle_g_sq
   rw [h_replicate, h_card]
   rfl
 
+/-! #### Shared commutator helper (proved)
+
+The three commutator-based cases (1, 2, 4) all reduce to: produce a 3-cycle
+`h_perm` whose commutator with `g` is also a 3-cycle. Membership of the
+commutator in the normal closure of `{g}` is then a one-shot group-theoretic
+fact (this lemma). -/
+
+private theorem commutator_mem_normalClosure
+    {G : Type*} [Group G] (g h : G) :
+    g * h * g⁻¹ * h⁻¹ ∈ Subgroup.normalClosure ({g} : Set G) := by
+  have h_g : g ∈ Subgroup.normalClosure ({g} : Set G) :=
+    Subgroup.subset_normalClosure (Set.mem_singleton g)
+  have h_g_inv : g⁻¹ ∈ Subgroup.normalClosure ({g} : Set G) :=
+    Subgroup.inv_mem _ h_g
+  have h_conj : h * g⁻¹ * h⁻¹ ∈ Subgroup.normalClosure ({g} : Set G) :=
+    Subgroup.normalClosure_normal.conj_mem _ h_g_inv _
+  have h_eq : g * h * g⁻¹ * h⁻¹ = g * (h * g⁻¹ * h⁻¹) := by group
+  rw [h_eq]
+  exact Subgroup.mul_mem _ h_g h_conj
+
+/-! #### Case 1, 2, 4 witness helpers (leaves — `sorry`)
+
+Each helper produces an `h_perm : Equiv.Perm (Fin n)` that is a 3-cycle and
+whose commutator with `g_perm` is also a 3-cycle. The construction of `h_perm`
+is case-specific (consecutive points in a long cycle / two 3-cycles / one
+2-cycle + free point / two 2-cycles) and is left as a leaf `sorry`.
+
+Once the leaf closes, the dispatcher above immediately turns into a real
+proof, modulo wrapping `h_perm` as an `alternatingGroup` element (3-cycles are
+even, so `mem_alternatingGroup` handles this). -/
+
+/-- Case 1 leaf: given a length-≥-4 cycle, produce a 3-cycle whose commutator
+with `g_perm` is also a 3-cycle. Standard construction: pick three consecutive
+points `a, b, c` of the long cycle and take `h_perm = (a b c)`. -/
+private theorem case1_commutator_witness
+    {n : ℕ} (g_perm : Equiv.Perm (Fin n))
+    (_h_long : ∃ k ∈ g_perm.cycleType, 4 ≤ k) :
+    ∃ h_perm : Equiv.Perm (Fin n),
+      h_perm.IsThreeCycle ∧
+      (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle := by
+  sorry
+
+/-- Case 2 leaf: given ≥ 2 three-cycles in `g_perm`'s decomposition, produce a
+3-cycle whose commutator with `g_perm` is also a 3-cycle. Standard
+construction: pick points `a, b, c` from one 3-cycle and `d` from a different
+3-cycle, take `h_perm = (a b d)`. -/
+private theorem case2_commutator_witness
+    {n : ℕ} (g_perm : Equiv.Perm (Fin n))
+    (_h_two_threes : 2 ≤ g_perm.cycleType.count 3) :
+    ∃ h_perm : Equiv.Perm (Fin n),
+      h_perm.IsThreeCycle ∧
+      (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle := by
+  sorry
+
+/-- Case 4 leaf: given `g_perm` is a product of disjoint 2-cycles only (and
+`n ≥ 5`), produce a 3-cycle whose commutator with `g_perm` is also a 3-cycle.
+Two sub-cases depending on whether a free point exists:
+* If `support g_perm` doesn't cover all of `Fin n`: pick a 2-cycle `(a b)`
+  and a free point `e`, take `h_perm = (a b e)`.
+* Otherwise (e.g., `n = 8` with 4 disjoint 2-cycles): pick `(a b)` and `(c d)`
+  from two different 2-cycles, take `h_perm = (a b c)`. -/
+private theorem case4_commutator_witness
+    {n : ℕ} (_hn : 5 ≤ n) (g_perm : Equiv.Perm (Fin n))
+    (_h_all_swaps : ∀ m ∈ g_perm.cycleType, m = 2)
+    (_h_ne_one : g_perm ≠ 1) :
+    ∃ h_perm : Equiv.Perm (Fin n),
+      h_perm.IsThreeCycle ∧
+      (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle := by
+  sorry
+
+/-! #### Case main theorems (wired — proofs depend only on the leaves above) -/
+
 /-- **Case 1 (long cycle).** If `g ∈ A_n` has a cycle of length `k ≥ 4` in
 its decomposition, then there exists a 3-cycle in the normal closure of `g`
 inside `A_n`.
@@ -204,7 +276,14 @@ theorem exists_threeCycle_of_long_cycle (hn : 5 ≤ n)
     ∃ τ : alternatingGroup (Fin n),
       (τ : Equiv.Perm (Fin n)).IsThreeCycle ∧
       τ ∈ Subgroup.normalClosure ({g} : Set (alternatingGroup (Fin n))) := by
-  sorry -- Commutator argument on the long cycle.
+  obtain ⟨h_perm, h_perm_three, h_comm_three⟩ :=
+    case1_commutator_witness (g : Equiv.Perm (Fin n)) h_long
+  let h : alternatingGroup (Fin n) := ⟨h_perm, h_perm_three.mem_alternatingGroup⟩
+  refine ⟨g * h * g⁻¹ * h⁻¹, ?_, commutator_mem_normalClosure g h⟩
+  show ((g * h * g⁻¹ * h⁻¹ : alternatingGroup (Fin n)) :
+        Equiv.Perm (Fin n)).IsThreeCycle
+  push_cast
+  exact h_comm_three
 
 /-- **Case 2 (multiple 3-cycles).** If `g ∈ A_n` has at least two 3-cycles
 in its decomposition, then there exists a 3-cycle in the normal closure of
@@ -218,7 +297,14 @@ theorem exists_threeCycle_of_multiple_three_cycles (hn : 5 ≤ n)
     ∃ τ : alternatingGroup (Fin n),
       (τ : Equiv.Perm (Fin n)).IsThreeCycle ∧
       τ ∈ Subgroup.normalClosure ({g} : Set (alternatingGroup (Fin n))) := by
-  sorry -- Commutator (a b d) with the two 3-cycles.
+  obtain ⟨h_perm, h_perm_three, h_comm_three⟩ :=
+    case2_commutator_witness (g : Equiv.Perm (Fin n)) h_two_threes
+  let h : alternatingGroup (Fin n) := ⟨h_perm, h_perm_three.mem_alternatingGroup⟩
+  refine ⟨g * h * g⁻¹ * h⁻¹, ?_, commutator_mem_normalClosure g h⟩
+  show ((g * h * g⁻¹ * h⁻¹ : alternatingGroup (Fin n)) :
+        Equiv.Perm (Fin n)).IsThreeCycle
+  push_cast
+  exact h_comm_three
 
 /-- **Case 3 (one 3-cycle plus 2-cycles).** If `g ∈ A_n` has exactly one
 3-cycle and all other non-trivial cycles are 2-cycles (transpositions), then
@@ -274,7 +360,18 @@ theorem exists_threeCycle_of_only_swaps (hn : 5 ≤ n)
     ∃ τ : alternatingGroup (Fin n),
       (τ : Equiv.Perm (Fin n)).IsThreeCycle ∧
       τ ∈ Subgroup.normalClosure ({g} : Set (alternatingGroup (Fin n))) := by
-  sorry -- Commutator with (a b c) where c is outside g's support.
+  have h_perm_ne_one : (g : Equiv.Perm (Fin n)) ≠ 1 := by
+    intro h
+    apply hg_ne
+    exact Subtype.ext h
+  obtain ⟨h_perm, h_perm_three, h_comm_three⟩ :=
+    case4_commutator_witness hn (g : Equiv.Perm (Fin n)) h_all_swaps h_perm_ne_one
+  let h : alternatingGroup (Fin n) := ⟨h_perm, h_perm_three.mem_alternatingGroup⟩
+  refine ⟨g * h * g⁻¹ * h⁻¹, ?_, commutator_mem_normalClosure g h⟩
+  show ((g * h * g⁻¹ * h⁻¹ : alternatingGroup (Fin n)) :
+        Equiv.Perm (Fin n)).IsThreeCycle
+  push_cast
+  exact h_comm_three
 
 end GaloisReduction
 

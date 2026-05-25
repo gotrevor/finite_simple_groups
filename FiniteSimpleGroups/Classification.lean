@@ -48,8 +48,8 @@ This statement is the entire point of CFSG. Its proof spans tens of thousands
 of pages across hundreds of papers (1955-2004), with the second-generation
 self-contained proof still being written (10 of 12 volumes by 2023).
 
-In Lean: `sorry`. Will likely remain `sorry` for the foreseeable future. -/
-theorem CFSG (G : Type*) [Group G] [IsFSG G] : IsClassified G := by
-  sorry
+Declared as an `axiom` — established in the math literature; not realistically
+formalizable in any proof assistant for years to come. -/
+axiom CFSG (G : Type*) [Group G] [IsFSG G] : IsClassified G
 
 end FiniteSimpleGroups

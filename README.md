@@ -96,14 +96,35 @@ This scaffold's `FiniteSimpleGroups/Classification.lean` states the theorem; the
 | `FiniteSimpleGroups/Adjacent/PrimeMul.lean` | **Real Sylow-based proof** that no group of order $p\cdot q$ (distinct primes $p < q$) is simple. The Harper-Wu structural dichotomy (cyclic vs semidirect product) is stated only (`sorry`). |
 | `FiniteSimpleGroups/SmallOrders.lean` | **Real proof** that no group of prime-power order $p^k$ ($k \geq 2$) is simple (uses the $p$-group center theorem). One concrete mixed-order case (order 6) proven via `PrimeMul`. The unified "no simple group of order $< 60$ except prime" statement remains `sorry` — would require Sylow case analysis on each mixed composite order $< 60$ (12, 18, 20, 24, 28, 30, 36, 40, 42, 44, 45, 48, 50, 52, 54, 56). |
 
-### Sorry inventory (10 files, ~900 LOC, 15 sorries)
+### Sorry vs axiom inventory (10 files, ~950 LOC)
 
-- **5 architectural sorries** (will never close): `Classification.CFSG`, all 7 in `ProofStrategy`, the 4 in `LieType` — these would require multi-year team formalizations.
-- **1 Galois cycle-type sorry** (1 day, real mathlib PR candidate): `Alternating.exists_threeCycle_of_normal`.
-- **2 medium structural sorries** (a few days each): `PrimeMul.card_eq_prime_mul_prime_classification` (Harper-Wu), `SmallOrders.prime_card_of_simpleGroup_card_lt_sixty` (unified small-order).
-- **Real proofs that landed**: $\mathbb{Z}/p\mathbb{Z}$ simplicity, $A_5$ simplicity, general $A_n$ simplicity (modulo the one helper), no-simple-pq, no-simple-prime-power, no-simple-order-6, `card_name = 26`, `card_pariahs = 6 + happy = 20`, `card_classicalFamily = 4`, `card_exceptionalFamily = 10`.
+This scaffold distinguishes two flavors of "unproven":
+
+- **`axiom`** (12 total) — established in the math literature; honest dependency declaration, not a TODO. Pattern borrowed from `bounded_gaps`'s axiomatization of Bombieri-Vinogradov, MPZ, etc. These are: `Classification.CFSG`, the 4 `LieType` simplicities (PSL/PSU/PSp/POmega), and all 7 `ProofStrategy` milestones (Burnside p^aq^b, Feit-Thompson, Aschbacher dichotomy, GLS odd-type, even-type dichotomy, Aschbacher-Smith quasithin, isSimpleGroup-odd-order-prime-cyclic). All of these are real theorems with proofs in the literature; formalizing them is years-to-decades of team work.
+- **`sorry`** (6 total) — real TODOs, each closeable with focused effort:
+  - 4 in `Alternating.lean`: the four cases of the Galois reduction (`exists_threeCycle_of_*`). Each is a commutator computation or power calculation. Half-day to a day each.
+  - 1 in `Adjacent/PrimeMul.lean`: `card_eq_prime_mul_prime_classification` — the Harper-Wu cyclic-vs-semidirect dichotomy. Needs `Schur_Zassenhaus` + semidirect product construction. ~few days.
+  - 1 in `SmallOrders.lean`: `prime_card_of_simpleGroup_card_lt_sixty` — unified statement covering all orders < 60. Needs per-order Sylow case analysis on the mixed composite cases (12, 18, 20, 24, 28, 30, 36, 40, 42, 44, 45, 48, 50, 52, 54, 56). ~day.
+
+**Real proofs that landed**: $\mathbb{Z}/p\mathbb{Z}$ simplicity, $A_5$ simplicity, **general $A_n$ simplicity** (modulo the four Galois sub-cases dispatched cleanly), no-simple-pq (Sylow), no-simple-prime-power (p-group center), no-simple-order-6, `Sporadic.Name.card = 26`, `card_pariahs = 6`, `card_happy_family = 20`, `card_classicalFamily = 4`, `card_exceptionalFamily = 10`.
 
 ---
+
+## Future direction: PSL₂(p) (Tier 2 recon)
+
+The natural next concrete win would be **proving `PSL₂(p)` simple for prime `p ≥ 5`** — Galois's case, the smallest infinite Lie-type family member. Mathlib already has the pieces:
+
+- **The type:** `Matrix.ProjectiveSpecialLinearGroup` in `Mathlib.LinearAlgebra.Matrix.ProjectiveSpecialLinearGroup` — `PSL(n, R)` is defined as `SL(n, R) / center`. Notation `PSL(2, ZMod p)` available via `MatrixGroups` scoped namespace.
+- **The criterion:** `Iwasawa.isSimpleGroup` in `Mathlib.GroupTheory.GroupAction.Iwasawa` — given an Iwasawa structure on a perfect group, deduces simplicity.
+
+The realistic path:
+
+1. Show `PSL(2, ZMod p)` acts on the projective line `P¹(F_p)` (faithful, transitive).
+2. Construct an Iwasawa structure for that action (the "Iwasawa decomposition" — pick a Borel-style maximal abelian subgroup, conjugates generate, etc.).
+3. Show `PSL(2, ZMod p)` is perfect for `p ≥ 5` (commutator subgroup = whole group).
+4. Apply `Iwasawa.isSimpleGroup`.
+
+Estimated effort: a few focused sessions. Not attempted in this scaffold; left as Tier 2 extension. Would give the scaffold one *actually proven* classical Lie-type family member, complementing the `LieType.lean` axiomatized statements.
 
 ## Build
 

@@ -278,3 +278,84 @@ on them. Multiplier is high on the easy part, mid-range on the hard part.
 - Strategic move: build Fitting + pCore in mathlib first (the
   `mathlib-prs/FittingSubgroup.md` scope doc captures this). That's where
   the next session's leverage lives.
+
+---
+
+# Update — fourth hour: Coq-translation rate measurement
+
+After 8 increments of structural decomposition the next question was:
+what does it actually cost to translate a *single* hard Coq proof into Lean?
+Targeted `coprime_commGid` (B & G 1.6(b), 5 lines of Coq) as the easiest
+remaining axiom.
+
+## What we tried
+
+The Coq proof in 5 lines:
+
+```coq
+move=> nGA coGA solG; apply/eqP; rewrite eqEsubset commSg ?commg_subl //.
+have nAC: 'C_G(A) \subset 'N(A) by rewrite subIset ?cent_sub ?orbT.
+rewrite -{1}(coprime_cent_prod nGA) // commMG //=.
+  by rewrite !normsR // subIset ?normG.
+by rewrite (commG1P (subsetIr _ _)) mulg1.
+```
+
+The decisive step is `commMG`, MathComp's commutator-sup distribution
+`⁅H · K, L⁆ = ⁅H, L⁆ · ⁅K, L⁆` under normalization conditions on L. The
+proof rewrites the LHS `G` as `⁅G,A⁆ · C_G(A)` (via `coprime_cent_prod`),
+distributes the outer commutator via `commMG`, then collapses
+`⁅C_G(A), A⁆ = 1` because the centralizer commutes with A.
+
+## Where it stalled
+
+Mathlib does **not** have a `commutator_sup_le` or `commMG`-style lemma
+in any form. Searched:
+- `Mathlib/GroupTheory/Commutator/Basic.lean` (the obvious home)
+- `Mathlib/GroupTheory/Commutator/Finite.lean`
+- broad `grep -rE "commutator.*(sup|⊔)"` across all of mathlib
+
+Closest hits: `commutator_mono`, `commutator_le_inf` (the *other* direction),
+`Subgroup.Normal.commutator_le_of_self_sup_commutative_eq_top` (specialized).
+
+Proving `⁅H ⊔ K, A⁆ ≤ ⁅H, A⁆ ⊔ ⁅K, A⁆` inline is non-trivial: it requires
+the identity `⁅xy, l⁆ = ⁅x, l⁆^y · ⁅y, l⁆` and an induction over `H ⊔ K`
+that handles the conjugate term. Without the right normalization hypothesis
+the conjugate isn't necessarily in `⁅H, A⁆ ⊔ ⁅K, A⁆`. The plan's 60-min
+time-box was insufficient.
+
+## Decision: off-ramp + measurement
+
+Reverted `coprime_commGid` to its `axiom` form. Pivoted to Phase 2 (5 new
+tree decompositions: Props 1.6d, 1.6e, 1.9 base, 1.9, 1.10), which all
+landed in ~10-15 min apiece as predicted.
+
+## Data point
+
+| Task                                  | Time   | Outcome                           |
+|---------------------------------------|--------|-----------------------------------|
+| Discharge `coprime_commGid` (1 axiom) | 60 min | **blocked** on missing mathlib lemma |
+| 5 new tree decompositions (axioms at leaves) | ~50 min | **5/5 green, zero sorries** |
+
+Structural decomposition: ~10 min/lemma.
+Hard-leaf translation: **gated on missing mathlib bricks**.
+
+## Implication for the revised estimate
+
+The previous estimate split work into:
+- ~500 hr "library bricks" (mathlib-side, AI 3-5×)
+- ~300 hr "easy port" once bricks exist (AI 10-20×)
+
+This session sharpens the picture: even *one* missing brick (commutator-sup
+distribution) blocks ~5 lines of Coq from porting. The "library bricks"
+bucket isn't only the obviously-missing big definitions (Fitting, pCore,
+chief, Hall) — it also includes a long tail of small commutator/group-action
+lemmas that MathComp accumulated over 15 years.
+
+**Inflated estimate**: bricks bucket is closer to **~800-1000 hr**, with
+proportionally less risk of additional surprises since the long tail can
+be picked up incrementally as porting demands surface it. Total revised:
+~1,700-1,900 hr ≈ 11-12 months full-time.
+
+The next session's leverage is still the same: build Fitting + pCore
+upstream. But now: also queue commutator-sup distribution as the second
+mathlib PR — every single coprime-action proof in BG §1 needs it.

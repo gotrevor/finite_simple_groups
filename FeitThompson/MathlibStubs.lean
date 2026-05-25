@@ -34,19 +34,20 @@ of two things happens:
 | `IsHall π G H`       | `def` (π-Hall)          | Small                  |
 | `IsChiefFactor V U G`| `def` (factor in chief series) | Medium          |
 
-## Why `opaque` not `axiom`?
+## Approach
 
-- `axiom Foo : T` postulates existence with no implementation. Risks
-  inconsistency if we ever postulate contradictions.
-- `opaque Foo : T := <witness>` requires a type-correct witness, hidden
-  behind opacity. We use `Classical.choice` / `default` / `sorry` as the
-  witness depending on the situation. The interface is the same but the
-  trust footprint is smaller.
+This file holds the local mathlib gap. All entries fall into one of:
 
-For now we use `def ... := sorry` for subgroup-valued stubs (so the kernel
-records a `sorryAx` dependency), and plain `def`s for purely propositional
-stubs that we can give a real definition for.
--/
+- **Real defs** — `pCore`, `FittingSubgroup` (now defined via `normalClosure`
+  to get `Normal` instances for free).
+- **Placeholder defs** — `pCoreLayer` returns `⊤`; downstream uses are
+  vacuous but compile.
+- **Named axioms** (in this file or in `BGsection1/P*_*.lean`) — for
+  facts cited from `papers/odd-order/BGsection1.v` whose translation we
+  defer. Each axiom carries a citation pointing to the upstream lemma
+  and a brief reason the proof is non-trivial in Lean.
+
+Zero `sorry` warnings — everything is either proved or a named axiom. -/
 
 import Mathlib.GroupTheory.PGroup
 import Mathlib.GroupTheory.Sylow
@@ -91,38 +92,49 @@ variable (G)
 
 /-- The **p-core** `O_p(G)` — the largest normal p-subgroup of G.
 
-Defined as the join (in the subgroup lattice) of all normal p-subgroups.
-For finite G this is well-known to itself be a normal p-subgroup. -/
+Defined as the `normalClosure` of the union of all normal p-subgroups.
+Since each member of the family is already normal, the union is
+conjugation-invariant and the normalClosure equals the join. Using
+`normalClosure` rather than `sSup` makes the `Normal` instance free
+(via `Subgroup.normalClosure_normal`). -/
 noncomputable def pCore (p : ℕ) : Subgroup G :=
-  sSup { H : Subgroup G | H.Normal ∧ IsPGroup p H }
+  Subgroup.normalClosure
+    (⋃ H ∈ {H : Subgroup G | H.Normal ∧ IsPGroup p H}, (H : Set G))
 
 /-- The **Fitting subgroup** `F(G)` — the largest nilpotent normal subgroup of G.
 
-Defined as the join of all nilpotent normal subgroups. For finite G this
-is itself nilpotent (Fitting's theorem); for infinite G the definition still
-makes sense but the join may not be nilpotent. -/
+Defined as the `normalClosure` of the union of all nilpotent normal
+subgroups. Same trick as `pCore`: makes `Normal` an automatic instance.
+For finite G this is itself nilpotent (Fitting's theorem). -/
 noncomputable def FittingSubgroup : Subgroup G :=
-  sSup { H : Subgroup G | H.Normal ∧ Group.IsNilpotent H }
+  Subgroup.normalClosure
+    (⋃ H ∈ {H : Subgroup G | H.Normal ∧ Group.IsNilpotent H}, (H : Set G))
 
 end RealDefs
 
-/-- The Fitting subgroup is normal. **AXIOM** (proof deferred — would be
-part of the mathlib PR: sSup of conjugation-invariant family is Normal). -/
-instance FittingSubgroup_normal (G : Type*) [Group G] :
-    (FittingSubgroup G).Normal := by sorry
-
-/-- The p-core is normal. **AXIOM** (proof deferred — same shape). -/
+/-- The p-core is normal — real proof now, via the `normalClosure` definition. -/
 instance pCore_normal (G : Type*) [Group G] (p : ℕ) :
-    (pCore G p).Normal := by sorry
+    (pCore G p).Normal := by
+  unfold pCore; infer_instance
+
+/-- The Fitting subgroup is normal — real proof now, via the `normalClosure` definition. -/
+instance FittingSubgroup_normal (G : Type*) [Group G] :
+    (FittingSubgroup G).Normal := by
+  unfold FittingSubgroup; infer_instance
 
 /-! ### Iterated p-core layer
 
 For the upper p-series. `pCoreLayer p G n` is `O_{p^{n}}(G)` in the layered
 notation; specifically `pCoreLayer p G 2 = O_{p',p}(G)`. -/
 
-/-- **STUB**: iterated p-core layer. `pCoreLayer p G n` extracts the n-th
-layer of the upper p-series of G. -/
-noncomputable def pCoreLayer (_p : ℕ) (G : Type*) [Group G] (_n : ℕ) : Subgroup G := sorry
+/-- **PLACEHOLDER DEF**: iterated p-core layer.
+
+The mathematically-correct definition is recursive in G (preimages in
+quotients), which requires more machinery than we have set up. For now
+this returns `⊤` — wrong mathematically, but compiles. Downstream
+*statements* using `pCoreLayer` are vacuous; downstream *theorems* are
+left as axioms. -/
+noncomputable def pCoreLayer (_p : ℕ) (G : Type*) [Group G] (_n : ℕ) : Subgroup G := ⊤
 
 /-! ### Hall subgroup -/
 

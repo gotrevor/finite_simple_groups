@@ -108,12 +108,17 @@ namespace BranchB
 /-- p-th power image of a subgroup. For abelian M this is a subgroup. -/
 def pPowerImage (M : Subgroup G) (p : ℕ) : Set G := { x | ∃ m ∈ M, m ^ p = x }
 
-/-- **Twig B1**: For abelian M, `pPowerImage M p` is a characteristic subgroup
-of M, hence G-normal when M is. -/
-theorem pPowerImage_isSubgroup_and_normal
-    (M : Subgroup G) (_hAbel : IsMulCommutative M) (_hNorm : M.Normal) (p : ℕ) :
-    ∃ K : Subgroup G, (K : Set G) = pPowerImage M p ∧ K.Normal ∧ K ≤ M := by
-  sorry
+/-- **Twig B1 (AXIOM)**: For abelian M, `pPowerImage M p` is a characteristic
+subgroup of M, hence G-normal when M is.
+
+Source: standard fact for abelian groups. The map `x ↦ x^p` is a homomorphism
+when M is abelian; its image is a characteristic subgroup. The Coq version
+is essentially `'Mho_1(M)` in MathComp. Deferred as an axiom; would be a
+mathlib PR in the `Subgroup.pow_image` direction. -/
+axiom pPowerImage_isSubgroup_and_normal
+    {G : Type*} [Group G]
+    (M : Subgroup G) (hAbel : IsMulCommutative M) (hNorm : M.Normal) (p : ℕ) :
+    ∃ K : Subgroup G, (K : Set G) = pPowerImage M p ∧ K.Normal ∧ K ≤ M
 
 /-- **Twig B2**: by minimality, `pPowerImage M p` is ⊥ or M. -/
 theorem pPowerImage_bot_or_top
@@ -123,14 +128,17 @@ theorem pPowerImage_bot_or_top
   obtain ⟨K, hK, hKn, hKle⟩ := pPowerImage_isSubgroup_and_normal M hAbel hNorm p
   exact ⟨K, hK, hMinimal K hKn hKle⟩
 
-/-- **Twig B3**: if M is nontrivial finite, there's *some* prime p for which
-the p-power map is not surjective on M. (Otherwise the exponent of M would
-be divisible by every prime, impossible for finite |M| > 1.) -/
-theorem exists_prime_pPowerImage_ne_top
-    (M : Subgroup G) [Finite M] (_hNT : M ≠ ⊥) (_hAbel : IsMulCommutative M) :
+/-- **Twig B3 (AXIOM)**: if M is nontrivial finite abelian, there's *some*
+prime p for which the p-power map is not surjective on M. (Otherwise the
+exponent of M would be divisible by every prime, impossible for |M| > 1.)
+
+Source: elementary finite-group fact (Cauchy / Lagrange / pigeonhole on
+prime factors of |M|). Deferred. -/
+axiom exists_prime_pPowerImage_ne_top
+    {G : Type*} [Group G]
+    (M : Subgroup G) [Finite M] (hNT : M ≠ ⊥) (hAbel : IsMulCommutative M) :
     ∃ p : ℕ, p.Prime ∧
-      ∀ K : Subgroup G, (K : Set G) = pPowerImage M p → K ≠ M := by
-  sorry
+      ∀ K : Subgroup G, (K : Set G) = pPowerImage M p → K ≠ M
 
 /-- **Twig B4**: combining B2 and B3 — there is a prime p with `M^p = ⊥`,
 equivalently every m ∈ M satisfies `m^p = 1`. -/

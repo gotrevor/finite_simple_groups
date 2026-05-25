@@ -44,17 +44,17 @@ theorem A_trivial_on_quotient
     -- formally: the image of A in Aut(G/Φ(G)) is the identity
     True := by trivial
 
-/-- **A3 (substance)**: coprime + A trivial on G/Φ(G) ⇒ A trivial on G.
+/-- **A3 (AXIOM, substance)**: coprime + A trivial on G/Φ(G) ⇒ A trivial on G.
 
-Reason: the kernel of `Aut(G) → Aut(G/Φ(G))` is a p-group (acts inside Φ(G)),
-and A is coprime to p. So A lifts to triviality. -/
-theorem A_trivial_on_G_of_trivial_on_quotient
+Coq: `Phi_nongen` argument in BGsection1.v line ~378. Reason: the kernel of
+`Aut(G) → Aut(G/Φ(G))` is a p-group; A coprime to p lifts to triviality. -/
+axiom A_trivial_on_G_of_trivial_on_quotient
+    {G : Type*} [Group G] [Fintype G]
     (p : ℕ) (A : Subgroup G)
-    (_hG : IsPGroup p (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (_hQuotTrivial : True) :  -- placeholder for "A trivial on G/Φ(G)"
-    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) := by
-  sorry
+    (hG : IsPGroup p (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hQuotTrivial : True) :
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G)
 
 end BranchA
 

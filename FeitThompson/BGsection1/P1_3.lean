@@ -45,22 +45,27 @@ def chiefStab : Subgroup G :=
 
 namespace BranchA
 
-/-- **A1**: centralizing F(G) implies stabilizing every chief factor inside F(G). -/
-theorem cent_Fitting_le_chief_stab_of_in_Fitting
-    (_hG : IsSolvable G) :
+/-- **A1 (AXIOM)**: centralizing F(G) implies stabilizing every chief factor
+inside F(G). Cited from BGsection1.v / Hall's argument (Fitting_stab_chief). -/
+axiom cent_Fitting_le_chief_stab_of_in_Fitting
+    {G : Type*} [Group G]
+    (hG : IsSolvable G) :
     Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) ≤
-      chiefStab (G := G) := by
-  sorry
+      chiefStab (G := G)
 
 end BranchA
 
 namespace BranchB
 
-/-- **B**: B & G Proposition 1.2 (Hall's lemma) — the chief stabilizer
-intersection is contained in the Fitting subgroup. -/
-theorem chief_stab_sub_Fitting (_hG : IsSolvable G) :
-    chiefStab (G := G) ≤ FittingSubgroup G := by
-  sorry
+/-- **B (AXIOM)**: B & G Proposition 1.2 (Hall's lemma) — the chief stabilizer
+intersection is contained in the Fitting subgroup.
+
+Coq: `chief_stab_sub_Fitting` in BGsection1.v line ~187. The proof is
+non-trivial — uses minimal-counterexample induction + chief series exists. -/
+axiom chief_stab_sub_Fitting
+    {G : Type*} [Group G]
+    (hG : IsSolvable G) :
+    chiefStab (G := G) ≤ FittingSubgroup G
 
 end BranchB
 

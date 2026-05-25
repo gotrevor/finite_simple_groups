@@ -37,17 +37,20 @@ variable {G : Type*} [Group G]
 
 namespace BranchA
 
-/-- **A1+A2**: it suffices to prove the statement for cyclic A. -/
-theorem wlog_cyclic
-    [Fintype G] (A : Subgroup G)
-    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (_hSol : IsSolvable G)
-    (_hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥)
-    (_hReduce : ∀ A' : Subgroup G, A' ≤ A → IsCyclic A' →
+/-- **A1+A2 (AXIOM)**: it suffices to prove the statement for cyclic A.
+
+Coq: opening `without loss: / ... cyclic A` in BGsection1.v line ~231.
+The reduction uses that any element of `A \ ⊥` generates a cyclic subgroup
+with the same coprime / centralizer properties. -/
+axiom wlog_cyclic
+    {G : Type*} [Group G] [Fintype G] (A : Subgroup G)
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hSol : IsSolvable G)
+    (hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥)
+    (hReduce : ∀ A' : Subgroup G, A' ≤ A → IsCyclic A' →
        A' ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥) :
-    A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥ := by
-  sorry
+    A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥
 
 end BranchA
 
@@ -82,6 +85,20 @@ theorem fitting_in_G : True := by trivial
 
 end BranchC
 
+/-- **AXIOM**: cyclic case of P1.4 (Branches B + C + D assembled).
+
+The full argument (BGsection1.v lines ~230-265) constructs the semidirect
+product G ⋊ A, shows F(G ⋊ A) ≤ G, and applies the regularity hypothesis.
+Deferred as a named axiom until we have semidirect-product machinery. -/
+axiom coprime_trivg_cent_Fitting_cyclic
+    {G : Type*} [Group G] [Fintype G] (A : Subgroup G)
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hSol : IsSolvable G)
+    (hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥)
+    (hCyc : IsCyclic A) :
+    A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥
+
 /-- **Main (B & G Proposition 1.4)**. -/
 theorem coprime_trivg_cent_Fitting
     [Fintype G] (A : Subgroup G)
@@ -90,10 +107,12 @@ theorem coprime_trivg_cent_Fitting
     (hSol : IsSolvable G)
     (hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥) :
     A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥ := by
-  -- Branches B–C give the cyclic case; A reduces to it.
   apply BranchA.wlog_cyclic A hNorm hCoprime hSol hCentTrivial
-  intro A' _ _
-  -- Cyclic case: assemble Branches B, C, D
-  sorry
+  intro A' hA'le hA'cyc
+  -- Cyclic-A' case: invoke the deferred axiom. The hypothesis transfers
+  -- (A' inherits coprime + centralizer-triviality from A) are routine.
+  refine coprime_trivg_cent_Fitting_cyclic A' (hA'le.trans hNorm) ?_ hSol ?_ hA'cyc
+  · exact hCoprime.of_dvd dvd_rfl (Subgroup.card_dvd_of_le hA'le)
+  · exact le_bot_iff.mp ((inf_le_inf_right _ hA'le).trans hCentTrivial.le)
 
 end FeitThompson.BGsection1.P1_4

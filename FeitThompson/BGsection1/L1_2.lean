@@ -22,6 +22,7 @@ minnormal_solvable_Fitting_center M
 import FeitThompson.MathlibStubs
 import FeitThompson.BGsection1.L1_1
 import Mathlib.GroupTheory.Commutator.Basic
+import Mathlib.GroupTheory.Nilpotent
 
 namespace FeitThompson.BGsection1.L1_2
 
@@ -31,10 +32,14 @@ variable {G : Type*} [Group G]
 
 namespace BranchA
 
-/-- **A1**: an elementary abelian group is nilpotent. -/
-theorem isAbelem_nilpotent (M : Subgroup G) (_h : IsAbelem M) :
+/-- **A1**: an elementary abelian group is nilpotent.
+
+Chain: `IsAbelem M → IsMulCommutative ↥M → CommGroup ↥M → Group.IsNilpotent ↥M`. -/
+theorem isAbelem_nilpotent (M : Subgroup G) (h : IsAbelem M) :
     Group.IsNilpotent M := by
-  sorry
+  obtain ⟨_p, _hp, hAbel, _hExp⟩ := h
+  haveI := hAbel
+  infer_instance
 
 /-- **A2**: any nilpotent normal subgroup is contained in the Fitting
 subgroup. (Defining property of `F(G)`.) -/

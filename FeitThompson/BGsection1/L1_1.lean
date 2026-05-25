@@ -27,6 +27,8 @@ are the steps a mathematician writes as "hence" / "by Lagrange" / "clearly".
 
 import FeitThompson.MathlibStubs
 import Mathlib.GroupTheory.Commutator.Basic
+import Mathlib.GroupTheory.Subgroup.Centralizer
+import Mathlib.GroupTheory.Solvable
 
 namespace FeitThompson.BGsection1.L1_1
 
@@ -40,17 +42,25 @@ variable {G : Type*} [Group G]
 
 namespace BranchA
 
-/-- **Twig A1**: For any subgroup M of G, the commutator subgroup `⁅M,M⁆` is
-contained in M and is normal in M. When M itself is G-normal, this makes
-`⁅M,M⁆` G-normal as well. -/
-theorem commutator_self_normal_of_normal (M : Subgroup G) (_hM : M.Normal) :
+/-- **Twig A1**: For any G-normal subgroup M, `⁅M,M⁆` is G-normal.
+Mathlib provides `Subgroup.commutator_normal` as an instance. -/
+theorem commutator_self_normal_of_normal (M : Subgroup G) (hM : M.Normal) :
     (⁅M, M⁆ : Subgroup G).Normal := by
-  sorry
+  haveI := hM
+  exact Subgroup.commutator_normal M M
 
-/-- **Twig A2**: A nontrivial solvable subgroup has proper commutator subgroup. -/
-theorem commutator_lt_self (M : Subgroup G) (_hSol : IsSolvable M) (_hNT : M ≠ ⊥) :
+/-- **Twig A2**: A nontrivial solvable subgroup has proper commutator subgroup.
+
+Mirrors mathlib's `IsSolvable.commutator_lt_of_ne_bot` but with `IsSolvable ↥M`
+instead of `IsSolvable G` (we don't need the ambient group to be solvable). -/
+theorem commutator_lt_self (M : Subgroup G) (hSol : IsSolvable M) (hNT : M ≠ ⊥) :
     ⁅M, M⁆ < M := by
-  sorry
+  haveI := hSol
+  haveI : Nontrivial ↥M := M.nontrivial_iff_ne_bot.mpr hNT
+  have h : _root_.commutator ↥M < ⊤ := IsSolvable.commutator_lt_top_of_nontrivial ↥M
+  rw [← M.range_subtype, MonoidHom.range_eq_map, ← Subgroup.map_commutator,
+      Subgroup.map_subtype_lt_map_subtype]
+  exact h
 
 /-- **Twig A3**: Apply minimality of M to ⁅M,M⁆.
 
@@ -68,12 +78,17 @@ theorem commutator_eq_bot
   | inl h => exact h
   | inr h => exact absurd h hLt.ne
 
-/-- **Twig A4**: `⁅M, M⁆ = ⊥` iff M is abelian. This is in mathlib as
-`Subgroup.commutator_eq_bot_iff_le_centralizer` (or via `IsMulCommutative`). -/
+/-- **Twig A4**: `⁅M, M⁆ = ⊥` iff M is abelian.
+
+Composes two mathlib lemmas:
+  - `Subgroup.commutator_eq_bot_iff_le_centralizer : ⁅H₁,H₂⁆ = ⊥ ↔ H₁ ≤ centralizer H₂`
+  - `Subgroup.le_centralizer_iff_isMulCommutative : K ≤ centralizer K ↔ IsMulCommutative K`
+-/
 theorem isMulCommutative_of_commutator_eq_bot
-    (M : Subgroup G) (_h : (⁅M, M⁆ : Subgroup G) = ⊥) :
-    IsMulCommutative M := by
-  sorry
+    (M : Subgroup G) (h : (⁅M, M⁆ : Subgroup G) = ⊥) :
+    IsMulCommutative M :=
+  Subgroup.le_centralizer_iff_isMulCommutative.mp
+    (Subgroup.commutator_eq_bot_iff_le_centralizer.mp h)
 
 end BranchA
 
@@ -160,8 +175,10 @@ theorem minnormal_solvable_abelem
   obtain ⟨p, hp, hExp⟩ := prime_exp_of_minnormal_abelian M hMin hAbel
   -- Assemble into IsAbelem
   -- IsAbelem M needs: ∃ p prime, IsMulCommutative M ∧ ∀ g, g^p = 1
-  refine ⟨p, hp, ?_, ?_⟩
-  · sorry  -- IsMulCommutative ↥M from hAbel (subtype coercion bookkeeping)
-  · sorry  -- ∀ g : ↥M, g^p = 1 from hExp (subtype coercion)
+  refine ⟨p, hp, hAbel, ?_⟩
+  intro g
+  apply Subtype.ext
+  push_cast
+  exact hExp g.val g.property
 
 end FeitThompson.BGsection1.L1_1

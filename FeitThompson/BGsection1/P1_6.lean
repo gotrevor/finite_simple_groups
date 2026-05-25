@@ -57,15 +57,22 @@ end BranchA_coprimeR
 theorem coprime_cent_prod
     (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (_hSol : IsSolvable G) :
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hSol : IsSolvable G) :
     (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ⊔
       Subgroup.centralizer (A : Set G) = ⊤ := by
+  haveI := hSol
   apply BranchA_coprimeR.coprimeR_cent_prod A hNorm
-  · -- coprime |⁅G,A⁆| |A| follows from coprime |G| |A| since ⁅G,A⁆ ≤ G
-    sorry
-  · -- solvable ⁅G,A⁆ follows from solvable G since ⁅G,A⁆ ≤ G
-    sorry
+  · -- coprime |⁅⊤,A⁆| |A| from coprime |G| |A|: |⁅⊤,A⁆| ∣ |⊤| = |G|
+    have hCard : Nat.card (↥(⁅(⊤ : Subgroup G), A⁆)) ∣ Nat.card G := by
+      have h1 : Nat.card (↥(⁅(⊤ : Subgroup G), A⁆)) ∣ Nat.card (↥(⊤ : Subgroup G)) :=
+        Subgroup.card_dvd_of_le le_top
+      have h2 : Nat.card (↥(⊤ : Subgroup G)) = Nat.card G :=
+        Nat.card_congr Subgroup.topEquiv.toEquiv
+      exact h2 ▸ h1
+    exact hCoprime.of_dvd_left hCard
+  · -- IsSolvable ⁅⊤,A⁆ from IsSolvable G (subgroups inherit solvability)
+    infer_instance
 
 /-- **1.6(b) `coprime_commGid`**: `⁅⁅G,A⁆, A⁆ = ⁅G,A⁆`.
 
@@ -94,7 +101,10 @@ theorem coprime_commGG1P
     coprime_commGid A hNorm hCoprime hSol
   have hCommBot : ⁅(⊤ : Subgroup G), A⁆ = ⊥ := by
     rw [← hId]; exact hVanish
-  -- ⁅G, A⁆ = ⊥ ↔ A centralizes G (the iff is in mathlib as a commutator-eq-bot lemma)
-  sorry
+  -- Swap arguments via commutator_comm, then apply the iff:
+  -- ⁅A, ⊤⁆ = ⊥ ↔ A ≤ centralizer ⊤
+  have hCommBot' : ⁅A, (⊤ : Subgroup G)⁆ = ⊥ := by
+    rw [Subgroup.commutator_comm]; exact hCommBot
+  exact Subgroup.commutator_eq_bot_iff_le_centralizer.mp hCommBot'
 
 end FeitThompson.BGsection1.P1_6

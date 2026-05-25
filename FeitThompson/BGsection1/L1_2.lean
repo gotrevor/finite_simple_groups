@@ -42,11 +42,12 @@ theorem isAbelem_nilpotent (M : Subgroup G) (h : IsAbelem M) :
   infer_instance
 
 /-- **A2**: any nilpotent normal subgroup is contained in the Fitting
-subgroup. (Defining property of `F(G)`.) -/
+subgroup. With our `FittingSubgroup G := sSup { H | H.Normal ∧ IsNilpotent ↥H }`
+this is just `le_sSup` applied to the membership witness. -/
 theorem nilpotent_normal_le_fittingSubgroup
-    (M : Subgroup G) (_hNorm : M.Normal) (_hNil : Group.IsNilpotent M) :
-    M ≤ FittingSubgroup G := by
-  sorry
+    (M : Subgroup G) (hNorm : M.Normal) (hNil : Group.IsNilpotent M) :
+    M ≤ FittingSubgroup G :=
+  le_sSup ⟨hNorm, hNil⟩
 
 end BranchA
 
@@ -61,10 +62,12 @@ namespace BranchB
 
 /-- **B1**: `⁅M, F(G)⁆ ≤ M`, and is G-normal. -/
 theorem commutator_le_and_normal
-    (M : Subgroup G) (_hMn : M.Normal) :
+    (M : Subgroup G) (hMn : M.Normal) :
     (⁅M, (FittingSubgroup G : Subgroup G)⁆ : Subgroup G).Normal ∧
       ⁅M, (FittingSubgroup G : Subgroup G)⁆ ≤ M := by
-  sorry
+  haveI := hMn
+  refine ⟨Subgroup.commutator_normal M (FittingSubgroup G),
+          Subgroup.commutator_le_left M (FittingSubgroup G)⟩
 
 /-- **B2**: `⁅M, F(G)⁆ < M`.
 
@@ -88,8 +91,7 @@ theorem centralizes_fittingSubgroup
     cases hMinimal _ hCommN hLt.le with
     | inl h => exact h
     | inr h => exact absurd h hLt.ne
-  -- ⁅M, F(G)⁆ = ⊥ ⇔ M ≤ C(F(G))
-  sorry
+  exact Subgroup.commutator_eq_bot_iff_le_centralizer.mp hBot
 
 end BranchB
 

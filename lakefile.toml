@@ -1,0 +1,17 @@
+name = "finite_simple_groups"
+version = "0.1.0"
+keywords = ["math", "group-theory", "cfsg"]
+defaultTargets = ["FiniteSimpleGroups"]
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+relaxedAutoImplicit = false
+maxSynthPendingDepth = 3
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.29.1"
+
+[[lean_lib]]
+name = "FiniteSimpleGroups"

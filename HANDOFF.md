@@ -4,7 +4,21 @@ Trevor's framing for whoever picks this up (human or AI):
 
 > Lean into really fractal theorems — top down. Lots of sorries — ultimately, the sorries drop like flies. **Pretty at the top, ugly in the details (smooth-brained).**
 
-After PRs #11, #13, and the current PR, the Galois proof tree has been pushed down to leaf-witness level. The dispatcher is real proof; the case main theorems are real proof; the **leaf witnesses** are the only sorries — with **corrected and verified signatures**.
+After PRs #11, #13, #14, #16, the Galois proof tree has been pushed down to leaf-witness level. The dispatcher is real proof; the case main theorems are real proof; the **leaf witnesses** are the only sorries — with **corrected and verified signatures**.
+
+## 🚨 Strong recommendation for the next session: TRANSLATE FROM MATHCOMP
+
+Everything in `FiniteSimpleGroups/Alternating.lean` so far has been built from scratch against textbook arguments. This is how the Case 2 bug slipped in: the old HANDOFF's recommended construction was simply wrong (gives 5-cycle, not 3-cycle), and nobody caught it until I sat down with pen and paper.
+
+**A_n simple is fully formalized in mathcomp** as a prerequisite for the Gonthier Feit-Thompson proof. The proof lives somewhere around `mathcomp/solvable/alt.v` or `mathcomp/perm/perm.v` (the same library family already partially translated for FT in the `-ft` worktree). The structural decomposition (cases 1–4), the cycle-extraction lemmas, and especially the **commutator computations** are all already worked out — and mathcomp's `perm_on` / `cycle_decompose` / ssreflect automation makes the commutator pointwise checks dramatically shorter than what mathlib forces you to write by hand.
+
+**Suggested next-session workflow:**
+1. Locate the mathcomp proof of `alt_simple` (or the equivalent name). Likely candidates: `mathcomp/solvable/alt.v`, `mathcomp/perm/alt.v`, or a section of `mathcomp/solvable/finmodule.v`. Reading the prerequisite chain (~50–200 lines total) gives the full proof skeleton.
+2. For each leaf below, identify the mathcomp lemma(s) it corresponds to and the intermediate facts they call. Note which intermediates already exist in mathlib vs. need to be ported.
+3. Translate proof-step-by-proof-step (not line-by-line). The structural casework will land cleanly into my existing scaffold; only the leaf-level commutator computations need fresh Lean code.
+4. The FT side in the `-ft` worktree (translating `papers/odd-order/BGsection1.v`) is already doing exactly this pattern. Same workflow applies here.
+
+Confidence ~80% that translation is net-faster than continuing from scratch. The Case 2 bug is the empirical evidence: a translator catches it for free because mathcomp's proof is sound; a scratch-builder doesn't.
 
 ## State of the scaffold (post-current-PR)
 

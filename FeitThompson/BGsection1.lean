@@ -36,6 +36,8 @@ import FeitThompson.BGsection1.L1_1
 import FeitThompson.BGsection1.L1_2
 import FeitThompson.BGsection1.P1_3
 import FeitThompson.BGsection1.P1_4
+import FeitThompson.BGsection1.P1_6
+import FeitThompson.BGsection1.P1_8
 import Mathlib.GroupTheory.Commutator.Basic
 import Mathlib.GroupTheory.Frattini
 
@@ -194,12 +196,12 @@ UPSTREAM:
 -/
 theorem coprime_cent_prod
     [Fintype G] (A : Subgroup G)
-    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (_hSol : IsSolvable G) :
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hSol : IsSolvable G) :
     (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ⊔
-      Subgroup.centralizer (A : Set G) = ⊤ := by
-  sorry
+      Subgroup.centralizer (A : Set G) = ⊤ :=
+  P1_6.coprime_cent_prod A hNorm hCoprime hSol
 
 /-- **STATED** — B & G, Proposition 1.6(b) (`coprime_commGid`).
 
@@ -212,11 +214,11 @@ UPSTREAM:
 -/
 theorem coprime_commGid
     [Fintype G] (A : Subgroup G)
-    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (_hSol : IsSolvable G) :
-    ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⁅(⊤ : Subgroup G), A⁆ := by
-  sorry
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hSol : IsSolvable G) :
+    ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⁅(⊤ : Subgroup G), A⁆ :=
+  P1_6.coprime_commGid A hNorm hCoprime hSol
 
 /-- **STATED** — B & G, Proposition 1.6(c) (`coprime_commGG1P`).
 
@@ -229,12 +231,12 @@ UPSTREAM:
 -/
 theorem coprime_commGG1P
     [Fintype G] (A : Subgroup G)
-    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (_hSol : IsSolvable G)
-    (_hVanish : ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⊥) :
-    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) := by
-  sorry
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hSol : IsSolvable G)
+    (hVanish : ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⊥) :
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
+  P1_6.coprime_commGG1P A hNorm hCoprime hSol hVanish
 
 /-- **STATED** — B & G, Proposition 1.8 / Aschbacher 24.1 (`coprime_cent_Phi`).
 
@@ -249,10 +251,10 @@ This one uses mathlib's real `frattini` definition — no stub needed for
 the Frattini subgroup, only for the rest of the apparatus. -/
 theorem coprime_cent_Phi
     [Fintype G] (p : ℕ) (A : Subgroup G)
-    (_hG : IsPGroup p (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (_hCommInPhi : (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ≤ frattini G) :
-    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) := by
-  sorry
+    (hG : IsPGroup p (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hCommInPhi : (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ≤ frattini G) :
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
+  P1_8.coprime_cent_Phi p A hG hCoprime hCommInPhi
 
 end FeitThompson.BGsection1

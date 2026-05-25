@@ -6,6 +6,8 @@ import FiniteSimpleGroups.LieType
 import FiniteSimpleGroups.Exceptional
 import FiniteSimpleGroups.Sporadics
 import FiniteSimpleGroups.ProofStrategy
+import FiniteSimpleGroups.SmallOrders
+import FiniteSimpleGroups.Adjacent.PrimeMul
 
 /-!
 # Finite Simple Groups — scaffold

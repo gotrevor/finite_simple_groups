@@ -75,19 +75,33 @@ This scaffold's `FiniteSimpleGroups/Classification.lean` states the theorem; the
 
 ## What's in this scaffold
 
+### Family modules
+
 | File | Contents |
 |------|----------|
 | `FiniteSimpleGroups.lean` | Root — imports everything. |
 | `FiniteSimpleGroups/Basic.lean` | `IsFSG` typeclass (bundles `Finite + Nontrivial + IsSimpleGroup`). |
 | `FiniteSimpleGroups/Classification.lean` | The Big Theorem stated as a disjunction over the five families. Proof: `sorry`. |
 | `FiniteSimpleGroups/Cyclic.lean` | $\mathbb{Z}/p\mathbb{Z}$ simplicity. **Real proofs** — uses mathlib's `ZMod.instIsSimpleAddGroup` and `isSimpleGroup_of_prime_card`. Provides `IsFSG (Multiplicative (ZMod p))` instance. |
-| `FiniteSimpleGroups/Alternating.lean` | $A_n$ simplicity for $n \geq 5$. **Real proof for $A_5$** via mathlib's `alternatingGroup.isSimpleGroup_five`; general $n \geq 5$ is `sorry` (not yet in mathlib v4.29.1). Provides `IsFSG (alternatingGroup (Fin 5))` instance. |
-| `FiniteSimpleGroups/LieType.lean` | The four classical families as `opaque` types + simplicity statements with small-case exceptions. Adds `ClassicalFamily` inductive (4 cases) with `card = 4` proof. All simplicity claims `sorry`. |
-| `FiniteSimpleGroups/Exceptional.lean` | $G_2, F_4, E_{6,7,8}$ + 5 twisted variants as `opaque` types. Adds `ExceptionalFamily` inductive (10 cases) with `card = 10` proof. |
-| `FiniteSimpleGroups/Sporadics.lean` | All 26 sporadics as `opaque` types, organized by discovery family. **`Sporadic.Name` inductive enumerates them all**, with `Fintype.card Sporadic.Name = 26` provable by `decide`. Pariah / Happy Family split proven (6 + 20 = 26). |
-| `FiniteSimpleGroups/ProofStrategy.lean` | States the architectural milestones: Burnside $p^aq^b$, Feit-Thompson Odd Order, Aschbacher dichotomy (odd / even type), even-type sub-split (component / characteristic-2), quasithin classification. All `sorry`; rich docstrings on the architecture. |
+| `FiniteSimpleGroups/Alternating.lean` | $A_n$ simplicity for $n \geq 5$. **Real proof for $A_5$** via mathlib's `alternatingGroup.isSimpleGroup_five`, and **real structural proof for general $n \geq 5$** modulo a single helper `exists_threeCycle_of_normal` (the Galois cycle-type case analysis, sorry — but [a real mathlib PR candidate](../../personal/claude/knowledge/core/projects/lean-journey/side-quests/finite-simple-groups.md), ~half-day work). |
+| `FiniteSimpleGroups/LieType.lean` | The four classical families as `opaque` types + simplicity statements with small-case exceptions. `ClassicalFamily` inductive (4 cases, `card = 4`). All simplicity claims `sorry`. |
+| `FiniteSimpleGroups/Exceptional.lean` | $G_2, F_4, E_{6,7,8}$ + 5 twisted variants as `opaque` types. `ExceptionalFamily` inductive (10 cases, `card = 10`). |
+| `FiniteSimpleGroups/Sporadics.lean` | All 26 sporadics as `opaque` types, organized by discovery family. **`Sporadic.Name` inductive enumerates them all**, with `card = 26` by `decide`. Pariah / Happy Family split proven (6 + 20). |
+| `FiniteSimpleGroups/ProofStrategy.lean` | States the architectural milestones: Burnside $p^aq^b$, Feit-Thompson Odd Order, Aschbacher dichotomy (odd / even type), even-type sub-split, quasithin classification. All `sorry`; rich docstrings on the architecture. |
 
-About 600 LOC total across 8 files. The `Name` / `Family` inductives, the cyclic-group simplicity, and the $A_5$ simplicity are real; everything past those is `sorry` or `opaque`.
+### Adjacent classification results
+
+| File | Contents |
+|------|----------|
+| `FiniteSimpleGroups/Adjacent/PrimeMul.lean` | **Real Sylow-based proof** that no group of order $p\cdot q$ (distinct primes $p < q$) is simple. The Harper-Wu structural dichotomy (cyclic vs semidirect product) is stated only (`sorry`). |
+| `FiniteSimpleGroups/SmallOrders.lean` | **Real proof** that no group of prime-power order $p^k$ ($k \geq 2$) is simple (uses the $p$-group center theorem). One concrete mixed-order case (order 6) proven via `PrimeMul`. The unified "no simple group of order $< 60$ except prime" statement remains `sorry` — would require Sylow case analysis on each mixed composite order $< 60$ (12, 18, 20, 24, 28, 30, 36, 40, 42, 44, 45, 48, 50, 52, 54, 56). |
+
+### Sorry inventory (10 files, ~900 LOC, 15 sorries)
+
+- **5 architectural sorries** (will never close): `Classification.CFSG`, all 7 in `ProofStrategy`, the 4 in `LieType` — these would require multi-year team formalizations.
+- **1 Galois cycle-type sorry** (1 day, real mathlib PR candidate): `Alternating.exists_threeCycle_of_normal`.
+- **2 medium structural sorries** (a few days each): `PrimeMul.card_eq_prime_mul_prime_classification` (Harper-Wu), `SmallOrders.prime_card_of_simpleGroup_card_lt_sixty` (unified small-order).
+- **Real proofs that landed**: $\mathbb{Z}/p\mathbb{Z}$ simplicity, $A_5$ simplicity, general $A_n$ simplicity (modulo the one helper), no-simple-pq, no-simple-prime-power, no-simple-order-6, `card_name = 26`, `card_pariahs = 6 + happy = 20`, `card_classicalFamily = 4`, `card_exceptionalFamily = 10`.
 
 ---
 

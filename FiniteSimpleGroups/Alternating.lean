@@ -47,6 +47,237 @@ section GaloisReduction
 
 variable {n : ℕ}
 
+/-! #### Sub-case 3B helpers (private)
+
+When `g` has cycle type `{3, 2, 2, …, 2}` with at least one 2-cycle, `g^2` is
+a 3-cycle. The proof tower:
+
+1. `orderOf g = 6` (lcm of 3 and 2)
+2. `orderOf (g^2) = 3`
+3. `cycleType (g^2)` is a multiset of 3s (mathlib: `cycleType_prime_order`)
+4. That multiset has cardinality 1 (the single 3-cycle of `g` contributes; the
+   2-cycles vanish under squaring)
+5. ⇒ `cycleType (g^2) = {3}` ⇒ `(g^2).IsThreeCycle`.
+
+Each helper is its own `sorry` until proved. -/
+
+private theorem orderOf_g_eq_six_of_3_2_pattern
+    {n : ℕ} (g : Equiv.Perm (Fin n))
+    (h_one_three : g.cycleType.count 3 = 1)
+    (h_rest_swap : ∀ m ∈ g.cycleType, m = 3 ∨ m = 2)
+    (h_has_swap : 1 ≤ g.cycleType.count 2) :
+    orderOf g = 6 := by
+  have h_lcm : g.cycleType.lcm = orderOf g := Equiv.Perm.lcm_cycleType g
+  have h_3_mem : 3 ∈ g.cycleType :=
+    Multiset.one_le_count_iff_mem.mp (by omega)
+  have h_2_mem : 2 ∈ g.cycleType :=
+    Multiset.one_le_count_iff_mem.mp h_has_swap
+  have h_3_dvd : 3 ∣ orderOf g := h_lcm ▸ Multiset.dvd_lcm h_3_mem
+  have h_2_dvd : 2 ∣ orderOf g := h_lcm ▸ Multiset.dvd_lcm h_2_mem
+  have h_6_dvd : 6 ∣ orderOf g := by
+    have := Nat.Coprime.mul_dvd_of_dvd_of_dvd (show Nat.Coprime 2 3 by decide)
+      h_2_dvd h_3_dvd
+    simpa using this
+  have h_lcm_dvd_6 : g.cycleType.lcm ∣ 6 := by
+    rw [Multiset.lcm_dvd]
+    intro m hm
+    rcases h_rest_swap m hm with rfl | rfl <;> decide
+  have h_order_dvd_6 : orderOf g ∣ 6 := h_lcm ▸ h_lcm_dvd_6
+  exact Nat.dvd_antisymm h_order_dvd_6 h_6_dvd
+
+private theorem orderOf_g_sq_eq_three_of_orderOf_six
+    {n : ℕ} (g : Equiv.Perm (Fin n))
+    (h_order : orderOf g = 6) :
+    orderOf (g ^ 2) = 3 := by
+  rw [orderOf_pow, h_order]
+  decide
+
+private theorem cycleType_g_sq_replicate
+    {n : ℕ} (g : Equiv.Perm (Fin n))
+    (h_order_sq : orderOf (g ^ 2) = 3) :
+    (g ^ 2).cycleType = Multiset.replicate (Multiset.card (g ^ 2).cycleType) 3 := by
+  have h_prime : (orderOf (g ^ 2)).Prime := by rw [h_order_sq]; decide
+  obtain ⟨k, hk⟩ := Equiv.Perm.cycleType_prime_order h_prime
+  rw [h_order_sq] at hk
+  rw [hk, Multiset.card_replicate]
+
+private theorem card_cycleType_g_sq_eq_one
+    {n : ℕ} (g : Equiv.Perm (Fin n))
+    (h_one_three : g.cycleType.count 3 = 1)
+    (h_rest_swap : ∀ m ∈ g.cycleType, m = 3 ∨ m = 2)
+    (_h_has_swap : 1 ≤ g.cycleType.count 2) :
+    Multiset.card (g ^ 2).cycleType = 1 := by
+  -- Extract the 3-cycle factor c of g.
+  have h_three_mem : (3 : ℕ) ∈ g.cycleType :=
+    Multiset.one_le_count_iff_mem.mp (by omega)
+  rw [Equiv.Perm.cycleType_def, Multiset.mem_map] at h_three_mem
+  obtain ⟨c, hc_mem, hc_card⟩ := h_three_mem
+  change c.support.card = 3 at hc_card
+  have hc_mem' : c ∈ g.cycleFactorsFinset := hc_mem
+  have hc_isCycle : c.IsCycle :=
+    (Equiv.Perm.mem_cycleFactorsFinset_iff.mp hc_mem').1
+  -- h := g * c⁻¹ is disjoint from c, has cycleType = g.cycleType - {3} (all 2s)
+  set h := g * c⁻¹ with h_def
+  have h_disj : c.Disjoint h := by
+    have := Equiv.Perm.disjoint_mul_inv_of_mem_cycleFactorsFinset hc_mem'
+    exact this.symm
+  have h_g_eq : g = c * h := by
+    have h_comm : c * h = h * c := h_disj.commute.eq
+    rw [h_comm, h_def, inv_mul_cancel_right]
+  have h_cycleType_h : h.cycleType = g.cycleType - {3} := by
+    have := Equiv.Perm.cycleType_mul_inv_mem_cycleFactorsFinset_eq_sub hc_mem'
+    rw [hc_isCycle.cycleType, hc_card] at this
+    exact this
+  have h_h_only_2 : ∀ m ∈ h.cycleType, m = 2 := by
+    intro m hm
+    rw [h_cycleType_h] at hm
+    have hm_in_g : m ∈ g.cycleType :=
+      Multiset.mem_of_le (Multiset.sub_le_self ..) hm
+    rcases h_rest_swap m hm_in_g with rfl | rfl
+    · exfalso
+      have h_count : Multiset.count 3 (g.cycleType - {3}) = 0 := by
+        rw [Multiset.count_sub, h_one_three, Multiset.count_singleton_self]
+      have := Multiset.one_le_count_iff_mem.mpr hm
+      omega
+    · rfl
+  -- orderOf h divides 2 (lcm of cycleType, all 2s, divides 2)
+  have h_h_order_dvd : orderOf h ∣ 2 := by
+    have h_lcm : h.cycleType.lcm = orderOf h := Equiv.Perm.lcm_cycleType h
+    rw [← h_lcm, Multiset.lcm_dvd]
+    intro m hm
+    rw [h_h_only_2 m hm]
+  -- h^2 = 1
+  have h_sq_one : h ^ 2 = 1 := orderOf_dvd_iff_pow_eq_one.mp h_h_order_dvd
+  -- c, h commute (disjoint perms commute)
+  have h_comm : Commute c h := h_disj.commute
+  -- g^2 = c^2 * h^2 = c^2
+  have h_g_sq : g ^ 2 = c ^ 2 := by
+    rw [h_g_eq, h_comm.mul_pow, h_sq_one, mul_one]
+  -- c has order 3, so c^2 = c⁻¹
+  have h_c_order : orderOf c = 3 := by
+    rw [hc_isCycle.orderOf, hc_card]
+  have h_c_pow_three : c ^ 3 = 1 :=
+    orderOf_dvd_iff_pow_eq_one.mp (h_c_order ▸ dvd_refl _)
+  have h_c_sq_inv : c ^ 2 = c⁻¹ := by
+    have : c ^ 2 * c = 1 := by rw [← pow_succ]; exact h_c_pow_three
+    exact eq_inv_of_mul_eq_one_left this
+  -- cycleType (c^2) = cycleType c⁻¹ = cycleType c = {3}
+  have hc_three : c.IsThreeCycle := by
+    rw [Equiv.Perm.IsThreeCycle, hc_isCycle.cycleType, hc_card]
+  have h_c_sq_cycleType : (c ^ 2).cycleType = {3} := by
+    rw [h_c_sq_inv, Equiv.Perm.cycleType_inv]
+    exact hc_three
+  rw [h_g_sq, h_c_sq_cycleType]
+  rfl
+
+/-- Composite: under cycleType `{3, 2, …, 2}` with ≥ 1 swap, `g^2` is a 3-cycle. -/
+private theorem isThreeCycle_g_sq
+    {n : ℕ} (g : Equiv.Perm (Fin n))
+    (h_one_three : g.cycleType.count 3 = 1)
+    (h_rest_swap : ∀ m ∈ g.cycleType, m = 3 ∨ m = 2)
+    (h_has_swap : 1 ≤ g.cycleType.count 2) :
+    (g ^ 2).IsThreeCycle := by
+  have h_order : orderOf g = 6 :=
+    orderOf_g_eq_six_of_3_2_pattern g h_one_three h_rest_swap h_has_swap
+  have h_order_sq : orderOf (g ^ 2) = 3 :=
+    orderOf_g_sq_eq_three_of_orderOf_six g h_order
+  have h_replicate : (g ^ 2).cycleType =
+      Multiset.replicate (Multiset.card (g ^ 2).cycleType) 3 :=
+    cycleType_g_sq_replicate g h_order_sq
+  have h_card : Multiset.card (g ^ 2).cycleType = 1 :=
+    card_cycleType_g_sq_eq_one g h_one_three h_rest_swap h_has_swap
+  show (g ^ 2).cycleType = {3}
+  rw [h_replicate, h_card]
+  rfl
+
+/-! #### Shared commutator helper (proved)
+
+The three commutator-based cases (1, 2, 4) all reduce to: produce a 3-cycle
+`h_perm` whose commutator with `g` is also a 3-cycle. Membership of the
+commutator in the normal closure of `{g}` is then a one-shot group-theoretic
+fact (this lemma). -/
+
+private theorem commutator_mem_normalClosure
+    {G : Type*} [Group G] (g h : G) :
+    g * h * g⁻¹ * h⁻¹ ∈ Subgroup.normalClosure ({g} : Set G) := by
+  have h_g : g ∈ Subgroup.normalClosure ({g} : Set G) :=
+    Subgroup.subset_normalClosure (Set.mem_singleton g)
+  have h_g_inv : g⁻¹ ∈ Subgroup.normalClosure ({g} : Set G) :=
+    Subgroup.inv_mem _ h_g
+  have h_conj : h * g⁻¹ * h⁻¹ ∈ Subgroup.normalClosure ({g} : Set G) :=
+    Subgroup.normalClosure_normal.conj_mem _ h_g_inv _
+  have h_eq : g * h * g⁻¹ * h⁻¹ = g * (h * g⁻¹ * h⁻¹) := by group
+  rw [h_eq]
+  exact Subgroup.mul_mem _ h_g h_conj
+
+/-! #### Case 1, 2, 4 witness helpers (leaves — `sorry`)
+
+**Note (2026-05-25, post-PR #13):** the original "every case is a one-step
+3-cycle commutator" simplification turned out to be **wrong for Case 2**. With
+`g = (a b c)(d e f)` and `τ = (a b d)` (the construction in the old HANDOFF),
+the commutator `[g, τ]` is a **5-cycle** `(a d c e b)`, not a 3-cycle. The
+correct standard argument for Case 2 is **two-step**: produce a 5-cycle in
+`normalClosure({g})` via that commutator, then apply Case 1 to the 5-cycle.
+Case 2's witness is now retyped to match this structure.
+
+Case 4 also has a sub-case split (free point vs. no free point); the
+free-point sub-case has a direct construction (and `h_perm` *is* a 3-cycle),
+the no-free-point sub-case needs additional work and is sorried at a finer
+grain inside the witness. -/
+
+/-- **Case 1 leaf** — given a length-≥-4 cycle, produce a 3-cycle whose
+commutator with `g_perm` is also a 3-cycle. Construction: extract a cycle
+factor `σ_long` with `support.card ≥ 4`, pick `a ∈ σ_long.support`, set
+`b := σ_long a`, `c := σ_long² a`, `d := σ_long³ a` (all distinct since
+cycle length ≥ 4). Take `h_perm := (a b c)`. The commutator `[g, h]` evaluates
+to the 3-cycle `(a b d)`. -/
+private theorem case1_commutator_witness
+    {n : ℕ} (g_perm : Equiv.Perm (Fin n))
+    (_h_long : ∃ k ∈ g_perm.cycleType, 4 ≤ k) :
+    ∃ h_perm : Equiv.Perm (Fin n),
+      h_perm.IsThreeCycle ∧
+      (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle := by
+  sorry
+
+/-- **Case 2 leaf (retyped)** — given ≥ 2 three-cycles in `g_perm`'s
+decomposition, produce an *intermediate* element `g'` in
+`normalClosure({g_perm})` that has a long cycle (`≥ 4`). Construction: take
+`g' := [g, τ]` where `τ = (a b d)` and `(a b c), (d e f)` are two 3-cycle
+factors of `g_perm`. Then `g' = (a d c e b)`, a 5-cycle. Case 2's main theorem
+then chains this with `exists_threeCycle_of_long_cycle` (i.e., Case 1
+applied to `g'`). -/
+private theorem case2_long_cycle_witness
+    {n : ℕ} (g : alternatingGroup (Fin n))
+    (_h_two_threes : 2 ≤ (g : Equiv.Perm (Fin n)).cycleType.count 3) :
+    ∃ g' : alternatingGroup (Fin n),
+      g' ∈ Subgroup.normalClosure ({g} : Set (alternatingGroup (Fin n))) ∧
+      (∃ k ∈ (g' : Equiv.Perm (Fin n)).cycleType, 4 ≤ k) := by
+  sorry
+
+/-- **Case 4 leaf** — given `g_perm` is a non-identity product of disjoint
+2-cycles only (and `n ≥ 5`), produce a 3-cycle whose commutator with `g_perm`
+is also a 3-cycle.
+
+Sub-case structure:
+* **Free point exists** (`g_perm.support.card < n`): take `h_perm = (a b c)`
+  where `(a b)` is a 2-cycle of `g_perm` and `c` is the free point. The
+  commutator `[g, h]` equals `h` itself (because `g` conjugates `h` to `h⁻¹`,
+  and `h⁻¹ * h⁻¹ = h` for an order-3 element).
+* **No free point** (`g_perm.support = univ`, e.g. `n = 8` with 4 swaps): no
+  direct one-step construction — needs reduction (e.g., commutator with
+  `(a b c)` gives an element of cycleType `{2, 2}` with smaller support, then
+  recurse). Sorried below at a finer level. -/
+private theorem case4_commutator_witness
+    {n : ℕ} (_hn : 5 ≤ n) (g_perm : Equiv.Perm (Fin n))
+    (_h_all_swaps : ∀ m ∈ g_perm.cycleType, m = 2)
+    (_h_ne_one : g_perm ≠ 1) :
+    ∃ h_perm : Equiv.Perm (Fin n),
+      h_perm.IsThreeCycle ∧
+      (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle := by
+  sorry
+
+/-! #### Case main theorems (wired — proofs depend only on the leaves above) -/
+
 /-- **Case 1 (long cycle).** If `g ∈ A_n` has a cycle of length `k ≥ 4` in
 its decomposition, then there exists a 3-cycle in the normal closure of `g`
 inside `A_n`.
@@ -61,7 +292,14 @@ theorem exists_threeCycle_of_long_cycle (hn : 5 ≤ n)
     ∃ τ : alternatingGroup (Fin n),
       (τ : Equiv.Perm (Fin n)).IsThreeCycle ∧
       τ ∈ Subgroup.normalClosure ({g} : Set (alternatingGroup (Fin n))) := by
-  sorry -- Commutator argument on the long cycle.
+  obtain ⟨h_perm, h_perm_three, h_comm_three⟩ :=
+    case1_commutator_witness (g : Equiv.Perm (Fin n)) h_long
+  let h : alternatingGroup (Fin n) := ⟨h_perm, h_perm_three.mem_alternatingGroup⟩
+  refine ⟨g * h * g⁻¹ * h⁻¹, ?_, commutator_mem_normalClosure g h⟩
+  show ((g * h * g⁻¹ * h⁻¹ : alternatingGroup (Fin n)) :
+        Equiv.Perm (Fin n)).IsThreeCycle
+  push_cast
+  exact h_comm_three
 
 /-- **Case 2 (multiple 3-cycles).** If `g ∈ A_n` has at least two 3-cycles
 in its decomposition, then there exists a 3-cycle in the normal closure of
@@ -75,7 +313,19 @@ theorem exists_threeCycle_of_multiple_three_cycles (hn : 5 ≤ n)
     ∃ τ : alternatingGroup (Fin n),
       (τ : Equiv.Perm (Fin n)).IsThreeCycle ∧
       τ ∈ Subgroup.normalClosure ({g} : Set (alternatingGroup (Fin n))) := by
-  sorry -- Commutator (a b d) with the two 3-cycles.
+  -- Two-step reduction: get long-cycle intermediate g', then apply Case 1 to g'.
+  obtain ⟨g', g'_mem, g'_long⟩ := case2_long_cycle_witness g h_two_threes
+  have g'_ne_one : g' ≠ 1 := by
+    intro h_eq
+    obtain ⟨k, hk_mem, _⟩ := g'_long
+    have : (g' : Equiv.Perm (Fin n)) = 1 := by rw [h_eq]; rfl
+    rw [this, Equiv.Perm.cycleType_one] at hk_mem
+    exact (Multiset.notMem_zero k) hk_mem
+  obtain ⟨τ, τ_three, τ_mem_g'⟩ :=
+    exists_threeCycle_of_long_cycle hn g'_ne_one g'_long
+  refine ⟨τ, τ_three, ?_⟩
+  -- τ ∈ NC({g'}) ⊆ NC({g}) since g' ∈ NC({g}) and NC({g}) is normal.
+  exact Subgroup.normalClosure_le_normal (by simpa using g'_mem) τ_mem_g'
 
 /-- **Case 3 (one 3-cycle plus 2-cycles).** If `g ∈ A_n` has exactly one
 3-cycle and all other non-trivial cycles are 2-cycles (transpositions), then
@@ -92,7 +342,30 @@ theorem exists_threeCycle_of_one_three_plus_swaps (hn : 5 ≤ n)
     ∃ τ : alternatingGroup (Fin n),
       (τ : Equiv.Perm (Fin n)).IsThreeCycle ∧
       τ ∈ Subgroup.zpowers g := by
-  sorry -- g^2 is a 3-cycle; lies in zpowers g.
+  -- **Sub-case A:** g is itself a 3-cycle (no 2-cycles in decomposition).
+  -- Then cycleType g = {3} since count 3 = 1, count 2 = 0, and h_rest_swap.
+  by_cases h_no_swaps : (g : Equiv.Perm (Fin n)).cycleType.count 2 = 0
+  · refine ⟨g, ?_, Subgroup.mem_zpowers g⟩
+    show (g : Equiv.Perm (Fin n)).cycleType = {3}
+    ext m
+    rw [Multiset.count_singleton]
+    split_ifs with h
+    · rw [h]; exact h_one_three
+    · by_cases hm : m = 2
+      · rw [hm]; exact h_no_swaps
+      · apply Multiset.count_eq_zero.mpr
+        intro h_mem
+        rcases h_rest_swap m h_mem with rfl | rfl <;> contradiction
+  -- **Sub-case B:** g has at least one 2-cycle. Then g^2 is the 3-cycle.
+  -- We invoke the fractal tower `isThreeCycle_g_sq` (see private helpers above).
+  · have h_has_swap : 1 ≤ (g : Equiv.Perm (Fin n)).cycleType.count 2 :=
+      Nat.one_le_iff_ne_zero.mpr h_no_swaps
+    refine ⟨g ^ 2, ?_, pow_mem (Subgroup.mem_zpowers g) 2⟩
+    show ((g ^ 2 : alternatingGroup (Fin n)) : Equiv.Perm (Fin n)).IsThreeCycle
+    have h_coe : ((g ^ 2 : alternatingGroup (Fin n)) : Equiv.Perm (Fin n))
+        = (g : Equiv.Perm (Fin n)) ^ 2 := by push_cast; rfl
+    rw [h_coe]
+    exact isThreeCycle_g_sq _ h_one_three h_rest_swap h_has_swap
 
 /-- **Case 4 (only 2-cycles).** If `g ∈ A_n` is a non-identity product of
 disjoint 2-cycles only (necessarily an even number of them, since `g` is
@@ -108,7 +381,18 @@ theorem exists_threeCycle_of_only_swaps (hn : 5 ≤ n)
     ∃ τ : alternatingGroup (Fin n),
       (τ : Equiv.Perm (Fin n)).IsThreeCycle ∧
       τ ∈ Subgroup.normalClosure ({g} : Set (alternatingGroup (Fin n))) := by
-  sorry -- Commutator with (a b c) where c is outside g's support.
+  have h_perm_ne_one : (g : Equiv.Perm (Fin n)) ≠ 1 := by
+    intro h
+    apply hg_ne
+    exact Subtype.ext h
+  obtain ⟨h_perm, h_perm_three, h_comm_three⟩ :=
+    case4_commutator_witness hn (g : Equiv.Perm (Fin n)) h_all_swaps h_perm_ne_one
+  let h : alternatingGroup (Fin n) := ⟨h_perm, h_perm_three.mem_alternatingGroup⟩
+  refine ⟨g * h * g⁻¹ * h⁻¹, ?_, commutator_mem_normalClosure g h⟩
+  show ((g * h * g⁻¹ * h⁻¹ : alternatingGroup (Fin n)) :
+        Equiv.Perm (Fin n)).IsThreeCycle
+  push_cast
+  exact h_comm_three
 
 end GaloisReduction
 
@@ -183,18 +467,32 @@ theorem exists_threeCycle_of_normal {n : ℕ} (hn : 5 ≤ n)
     exact ⟨τ, hτ_three, Subgroup.normalClosure_le_normal
       (by simpa using hg_mem) hτ_mem⟩
 
-/-- `A_n` is simple for `n ≥ 5`. **Status in mathlib v4.29.1:** only `n = 5`
-proven directly (`alternatingGroup.isSimpleGroup_five`); the general case is
-listed as a TODO at the top of `Mathlib.GroupTheory.SpecificGroups.Alternating`.
+/-- `A_n` is simple for `n ≥ 5`.
 
-Trevor's [side-quest doc](../../../../personal/claude/knowledge/core/projects/lean-journey/side-quests/finite-simple-groups.md)
-notes this is a genuine half-day mathlib PR (90% confidence) once you take the
-`exists_threeCycle_of_normal` step seriously.
+**Status (2026-05-25):** The pinned mathlib here is v4.29.1, which only ships
+`alternatingGroup.isSimpleGroup_five` (the `n = 5` instance). The general
+`n ≥ 5` case was shipped upstream by Antoine Chambert-Loir in
+[mathlib PR #36524](https://github.com/leanprover-community/mathlib4/pull/36524)
+as `alternatingGroup.isSimpleGroup`, in
+`Mathlib/GroupTheory/SpecificGroups/Alternating/Simple.lean`. Strategy used
+upstream: Iwasawa criterion (action-theoretic), NOT the cycle-decomposition
+Galois argument scaffolded below.
 
-Given that helper, the simplicity proof is immediate: any non-trivial normal
-subgroup contains a 3-cycle (by the helper), so its normal closure contains
-all 3-cycles (by `IsThreeCycle.alternating_Subgroup.normalClosure`), which equals the
-whole `A_n` (by `closure_three_cycles_eq_alternating'`). -/
+**TODO when this repo's mathlib pin catches up past #36524:** replace the body
+of this theorem with the one-liner
+```lean
+  alternatingGroup.isSimpleGroup (n := Fin n) (by simpa using hn)
+```
+and retire the case-decomposition leaves (`case{1,2,4}_*_witness`) below to
+teaching-material status.
+
+**Current proof (v4.29.1-native, Galois 1832 argument):** any non-trivial
+normal subgroup contains a 3-cycle (via `exists_threeCycle_of_normal`), so its
+normal closure contains all 3-cycles (via `IsThreeCycle.alternating_normalClosure`),
+which equals the whole `A_n` (via `closure_three_cycles_eq_alternating`). The
+3-cycle existence helper currently bottoms out in 3 leaf sorries
+(`case{1,2,4}_*_witness`) corresponding to the standard case analysis on
+`cycleType`; see [`HANDOFF.md`](../HANDOFF.md) for the full story. -/
 theorem alternatingGroup_isSimple (n : ℕ) (hn : 5 ≤ n) :
     IsSimpleGroup (alternatingGroup (Fin n)) := by
   haveI : Nontrivial (alternatingGroup (Fin n)) :=

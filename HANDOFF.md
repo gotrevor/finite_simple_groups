@@ -1,143 +1,73 @@
-# HANDOFF — FT-port experiment
+# HANDOFF: A_n simple — upstream landed before us 🪜
 
-**As-of**: 2026-05-26, end of Inc 19
-**Branch**: `ft-port-experiment` (clean, at `822e5b7`)
-**Repo**: `~/src/finite_simple_groups-ft/` → `gotrevor/finite_simple_groups`
+> **Read this first.** This document was rewritten 2026-05-25 after a session discovered that everything below was working toward a target that no longer exists. Previous versions recommended translating from mathcomp; that recommendation was empirically wrong and is retracted.
 
-## Read this first
+## TL;DR
 
-This is the **FT-port experiment** — measuring AI-collaborative cost of
-porting MathComp's Coq `BGsection1.v` (Bender-Glauberman §1) to Lean.
-Theme: **structural decomposition + axiomatize leaves + cite Coq lines**.
-Not first-principles proving.
+1. **`alternatingGroup.isSimpleGroup` for `5 ≤ Nat.card α` is already in mathlib master.** Antoine Chambert-Loir, PR #36524, merged ~2026-04. File: `Mathlib/GroupTheory/SpecificGroups/Alternating/Simple.lean:201`. Strategy: Iwasawa criterion (action-theoretic), not cycle decomposition.
+2. **Mathcomp's `simple_Alt5`** (`solvable/alt.v:394`) also uses an action-theoretic proof (2-transitive → primitive + Sylow base + induction via point-stabilizer). Mathcomp has **no commutator-with-3-cycle leaf lemmas** to plunder. Translation from mathcomp into our cycle-decomposition scaffold is not possible.
+3. **Our scratch-build** (case-by-cycleType skeleton with 3 leaf-witness `sorry`s in `FiniteSimpleGroups/Alternating.lean`) was always a learning exercise. The mathlib PR ambition referenced in earlier HANDOFFs is stale.
+4. **The remaining upstream TODO** at `Mathlib/GroupTheory/SpecificGroups/Alternating.lean:57` is the **iff packaging** ("simple iff `Fintype.card α ≠ 4`"). The hard direction is done; what remains is small-n bookkeeping (n=4 not-simple via Klein four, n ≤ 3 edge cases). Probably a few-hour PR.
 
-Full session history + cost model: `FeitThompson/findings.md`.
-Side-quest doc in Trevor's KB: `claude/knowledge/core/projects/lean-journey/side-quests/finite-simple-groups.md`.
+## What was actually contributed by the scratch-build sessions
 
-## Current state
+- **Proof-tree architecture**: case-by-cycleType skeleton with named cases, axiomatized leaves, real `commutator_mem_normalClosure`, real Case 3 helpers. Pedagogically clean if anyone wants to teach the Galois 1832 proof from a top-down scaffold.
+- **Case 2 bug catch**: the textbook "one-step commutator" argument for Case 2 (`g = (a b c)(d e f)`, `τ = (a b d)`) produces a **5-cycle, not a 3-cycle**. Hand-verified. Case 2's witness signature was retyped to be a two-step argument (commutator gives 5-cycle, chain through Case 1).
+- **Empirical refutation** of the prior HANDOFF's "translate from mathcomp will be net-faster" claim (which carried 80% confidence on no evidence).
 
-| Metric                | Value |
-|-----------------------|-------|
-| Top-level BG §1 thms  | 17    |
-| Real axioms           | 18    |
-| `sorry` warnings      | **0** |
-| True-placeholder axs  | **0** |
-| PRs merged total      | 30    |
+These are real artifacts. The proof of `alternatingGroup_isSimple` in this repo is not.
 
-All 17 top-level theorems re-exported from `FeitThompson/BGsection1.lean`.
-Build green: `lake build FeitThompson`.
+## State of the files
 
-## Worktree theme (don't violate)
+`FiniteSimpleGroups/Alternating.lean` has **3 sorries**, all in leaf-witness helpers (Case 1, Case 2 retyped, Case 4). Signatures are verified-achievable per hand-verification. Case main theorems and the top-level `alternatingGroup_isSimple` wire through correctly modulo those three sorries.
 
-1. **Zero `sorry`** — every leaf is either a real proof or a named
-   `axiom` with a Coq line citation. `sorry` means WIP; `axiom` means
-   scaffolding. See `feedback_axioms_at_leaves.md` memory.
-2. **Cite-then-chain over inline-prove** — when blocked on a missing
-   mathlib lemma, push the unknown one level deeper into 2-3 named
-   MathComp-cited axioms (Inc 11 pattern) rather than proving inline.
-3. **Lean-collapse simplification** — Coq's `G : {group gT}` is our
-   `⊤ : Subgroup G`. When the ambient is abelian, many Coq-side proofs
-   collapse trivially (Inc 15 pattern).
-4. **No True-hypothesis axioms** — `(h : True)` axioms are silently
-   unsound. Grep `: True` in any new axiom declarations and refactor.
-5. **Increment style** — one focused PR per increment, merged via
-   `gh pr merge <N> --admin --merge` (bypasses the perpetually-queued
-   CI runner).
+`commutator_mem_normalClosure` is real proof. Case 3 helpers (`orderOf_g_eq_six_of_3_2_pattern` etc.) are real proof.
 
-## What got done in the last session (Inc 11-19)
+## Options for the next session
 
-- Inc 11: discharged `coprime_commGid` via 3 new CommutatorExtras bricks
-- Inc 12: discharged `pPowerImage_isSubgroup_and_normal` (powMonoidHom+conj_pow)
-- Inc 13: added Theorem 1.11, Corollary 1.12, Theorem 1.13 trees
-- Inc 14: discharged `exists_prime_pPowerImage_ne_top` (Cauchy chain)
-- Inc 15: discharged `inf_bot` (Lean-collapse: abelian → ⁅⊤,A⁆ = ⊥)
-- Inc 16: soundness cleanup (3 True-hypothesis axioms removed)
-- Inc 17: discharged `Phi_nongen` (mathlib has it as `frattini_nongenerating`)
-- Inc 18: discharged `wlog_cyclic` (zpowers argument, 7 lines)
-- Inc 19: updated `findings.md` with fifth-hour summary
+Pick one based on appetite. None is "the right answer" — that was already taken upstream.
 
-## Next-session options (pick one, time-box)
+### Option A: Wire to upstream, retire the scaffold
 
-### Deep (axiom discharge) — easy wins likely
+Replace `alternatingGroup_isSimple` with a one-liner using `alternatingGroup.isSimpleGroup`. Mark the case-decomposition files as `/-! Teaching material — for the actual proof see Mathlib... -/`. Honest retirement.
 
-**1. `commutator_lt_of_minnormal` (L1_2)** — `⁅M, F(G)⁆ < M` for
-minnormal M. Needs F(G) nilpotence + meet_center_nil. ~1 hr if mathlib
-has the right pieces. **First check**: grep mathlib for `meet_center`
-or "subgroup of nilpotent meets center nontrivially".
+Smallest, cleanest. Loses the learning artifact's pedagogical value if you delete the scaffold; preserves it if you keep the files and just stop trying to close sorries.
 
-**2. `norm_C_eq_top` (P1_10)** — uses MathComp's `nilpotent_sub_norm`
-("every proper subgroup of nilpotent G has strictly larger normalizer").
-Mathlib has `NormalizerCondition` and `normalizerCondition_of_isNilpotent`
-(`Mathlib/GroupTheory/Nilpotent.lean:877`). Might be a direct discharge
-similar to Inc 17's Phi_nongen win.
+### Option B: Port Chambert-Loir's Iwasawa proof
 
-**3. Search-by-statement-shape pass over all 18 axioms** — Inc 17 found
-`Phi_nongen` ↔ `frattini_nongenerating` literally in mathlib. There
-are probably more. For each axiom, grep mathlib for the statement
-shape rather than the name. ~30-60 min for a full sweep.
+Read `Mathlib/GroupTheory/SpecificGroups/Alternating/Simple.lean` deeply. Replicate the proof here using the same `IwasawaStructure`, `IsPreprimitive`, `powersetCard` action machinery. Real practice with the upstream technique — the case-decomposition skeleton in this repo doesn't touch any of it.
 
-### Deep (refactor needed)
+Higher-leverage learning than scratch-building leaves. Probably the most-useful-skill-per-hour next step.
 
-**4. `stable_factor_data` (P1_10) latent soundness issue** — claims
-`(centralizer A).Normal` without `A.Normal`. False in general. Fix
-requires P1_10 structural refactor to track `N_G(C_G(A))` rather than
-collapsing to `⊤`. Bigger work, ~2-3 hr.
+### Option C: Take the small iff TODO upstream
 
-**5. `series_cent_of_stable` (P1_9)** — list induction discharge. Needs
-~30-60 min of Lean-side list bookkeeping (`List.reverseRecOn` or
-strong induction over indices). Doable but fiddly.
+The `Alternating.lean:57` TODO asks for the iff version (`simple ↔ card ≠ 4`). Hard direction is shipped; what's missing is small-n cases: n=4 is not simple (Klein four obstruction), n ≤ 3 are edge cases. Translate `not_simple_Alt_4` from mathcomp (the proof structure transfers — it's a Sylow + Klein-four argument), wire small-n cases.
 
-### Wide (structural decomposition)
+Estimated few-hour PR. Smaller and more bookkeeping-heavy than the original scaffold goal, but a real mathlib contribution.
 
-**6. Lemma 1.14 (4 sub-lemmas)** — coprime quotient pgroup normalizer /
-centralizer. Needs quotient-group infrastructure (`G ⧸ M` for `M.Normal`).
-Coq lines 567-614. Each sub-lemma can be a tree with the quotient
-construction packaged as an axiom.
+### Option D: Keep scratch-building the 3 leaves
 
-**7. Props 1.15a, 1.15b, 1.16** — denser p-local machinery. 1.15a
-(solvable_p_constrained) needs `pcore_normal`. 1.16 uses bigUnion of
-centralizers over cyclic quotients — heavy.
+Pure exercise value, no upstream destination. The leaves are well-scoped — Case 4-A is the cleanest (`[g, h] = h` identity, free-point sub-case). 2-4 hours of `Equiv.ext` + pointwise commutator work. Honest about being practice.
 
-## Workflow reminders
+## Lessons (please read before committing this session's work)
 
-- **Build**: `cd ~/src/finite_simple_groups-ft && lake build FeitThompson` (~30s clean, <5s incremental)
-- **Single file**: `lake build FeitThompson.BGsection1.P1_X`
-- **Axiom count**: `grep -rcE "^axiom [a-zA-Z_]" FeitThompson/ | grep -v ':0$' | awk -F: '{s+=$2} END {print s}'`
-- **PR pattern**:
-  ```
-  git add <files> && git -c commit.gpgsign=false commit -m "Increment N: ..."
-  git push
-  gh pr create --base main --head ft-port-experiment --title "..." --body "..."
-  gh pr merge <N> --admin --merge
-  ```
-- **No upstream PRs** — Trevor doesn't want anything submitted to mathlib
-  itself from this worktree (decision 2026-05-26: "build my own stuff
-  independently"). Stay local.
+- **Check current state of the target before claiming "still a TODO".** The KB doc that motivated the scaffold (`claude/knowledge/core/projects/lean-journey/side-quests/finite-simple-groups.md`) made the "still a TODO" claim without verifying mathlib master. That claim propagated into the original HANDOFF, which then recommended scratch-building. Stale-target diagnosis cost both sessions.
+- **WebFetch on raw GitHub gives paraphrased summaries.** Clone the repo and grep — verbatim proof bodies are the whole point in translation work. Lesson saved to user feedback memory.
+- **Don't paste textbook arguments without hand-verifying small cases.** The Case 2 bug (one-step commutator gives 5-cycle, not 3-cycle) was in the prior HANDOFF as a "standard" construction. Took pen-and-paper to catch.
 
-## What NOT to do
+## Mathlib pointers (for whoever picks this up)
 
-- ❌ Don't submit to mathlib upstream — local-only by Trevor's preference
-- ❌ Don't touch `~/src/bounded_gaps/` — different parallel session
-- ❌ Don't introduce `sorry` — the zero-sorry invariant is load-bearing
-- ❌ Don't add `axiom ... (h : True) : ...` — silently unsound
-- ❌ Don't refactor the Coq source — `papers/odd-order/` is vendored, read-only
-- ❌ Don't try to formalize CFSG itself — this is BG §1 port, scoped
+- `Mathlib/GroupTheory/SpecificGroups/Alternating/Simple.lean` — the actual proof.
+- `Mathlib/GroupTheory/SpecificGroups/Alternating.lean:57` — remaining iff TODO.
+- `Mathlib/GroupTheory/SpecificGroups/Alternating/KleinFour.lean` — n=4 machinery.
+- `Mathlib/GroupTheory/SpecificGroups/Alternating/Centralizer.lean` — adjacent infrastructure.
+- `Mathlib/GroupTheory/GroupAction/Iwasawa.lean` — the Iwasawa criterion itself.
 
-## Useful refs
+## Local clones (if you don't have them)
 
-- `papers/odd-order/BGsection1.v` — source of truth (1335 lines, 89 declarations)
-- `FeitThompson/findings.md` — full session log with cost model
-- `FeitThompson/CommutatorExtras.lean` — 3 MathComp-cited bricks (Inc 11)
-- `FeitThompson/MathlibStubs.lean` — local stubs (pCore, FittingSubgroup,
-  IsAbelem, MinNormal, IsHall, IsChiefFactor, pCoreLayer)
-- `mathlib-prs/FittingSubgroup.md` — scoped (but not started) mathlib PR
-  for the biggest unblock
+- `~/src/mathlib4` (shallow clone)
+- `~/src/math-comp` (shallow clone) — for reading mathcomp's action proof if curious
 
-## Memory pointers (Trevor's KB)
+---
 
-- `reference_lean_tactics_gotchas.md` — accumulated Lean 4 / mathlib v4.29.1
-  gotchas; updated tonight with `frattini_nongenerating`, zpowers patterns,
-  `powMonoidHom`, True-axiom audit
-- `feedback_axioms_at_leaves.md` — the zero-sorry / axioms-at-leaves principle
-- `user_compelling_problems.md` — Trevor's compelling-problem filter (BB,
-  FLT, FSG, prime pairs, Collatz) — useful when picking what to discharge
+*Rewritten 2026-05-25 after upstream-shipped discovery. Prior versions recommending mathcomp translation are retracted.*

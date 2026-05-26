@@ -29,18 +29,15 @@ variable {G : Type*} [Group G] [Fintype G]
 
 namespace BranchA
 
-/-- **AXIOM** — Phi-nongen / Frattini's argument (`Phi_nongen` in MathComp).
-
-If `Φ(G) ⊔ H = ⊤` for some subgroup `H`, then `H = ⊤`.
-
-Equivalently: Frattini elements are non-generating. MathComp source:
-`Phi_nongen` in `maximal.v`. The mathlib analog would be a corollary
-of `frattini_le_coatom`. -/
-axiom Phi_nongen
-    {G : Type*} [Group G]
+/-- **Phi-nongen / Frattini's argument** — proved via mathlib's
+`frattini_nongenerating`. If `Φ(G) ⊔ H = ⊤`, then `H = ⊤`. -/
+theorem Phi_nongen [Finite G]
     (H : Subgroup G)
-    (_h : (frattini G) ⊔ H = ⊤) :
-    H = ⊤
+    (h : (frattini G) ⊔ H = ⊤) :
+    H = ⊤ := by
+  -- Mathlib uses `K ⊔ frattini G = ⊤`; we have `frattini G ⊔ H = ⊤`.
+  have h' : H ⊔ frattini G = ⊤ := by rw [sup_comm]; exact h
+  exact frattini_nongenerating h'
 
 /-- **AXIOM** — packaged 1.8 step. Combines `Phi_nongen` with 1.6(a)
 `coprime_cent_prod` and `pgroup_sol` to chain through Coq's 5-line proof.

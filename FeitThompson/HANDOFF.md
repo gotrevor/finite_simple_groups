@@ -25,10 +25,10 @@ Side-quest doc in Trevor's KB: `claude/knowledge/core/projects/lean-journey/side
 | Metric                | Value |
 |-----------------------|-------|
 | Top-level BG §1 thms  | 17    |
-| Real axioms           | 18    |
+| Real axioms           | **16** |
 | `sorry` warnings      | **0** |
 | True-placeholder axs  | **0** |
-| FT-port PRs merged    | 19 (Inc 1-19) |
+| FT-port PRs merged    | 21 (Inc 1-21) |
 
 All 17 top-level theorems re-exported from `FeitThompson/BGsection1.lean`.
 Build green: `lake build FeitThompson`.
@@ -64,47 +64,88 @@ Build green: `lake build FeitThompson`.
 - Inc 18: discharged `wlog_cyclic` (zpowers argument, 7 lines)
 - Inc 19: updated `findings.md` with fifth-hour summary
 
+## What got done in Inc 20-21 (sixth hour, sweep)
+
+Targeted handoff option 3 (search-by-statement-shape sweep) and
+discharged the two CommutatorExtras candidates that fell out:
+
+- **Inc 20** — `le_normalizer_centralizer` (`A ≤ N(C(A))`). No mathlib
+  analog; provable from `mem_normalizer_iff` + `mem_centralizer_iff` +
+  `group` tactic (~15 LOC).
+- **Inc 21** — `commg_normr` (`A ≤ N(⁅⊤, A⁆)`). Closure-induction on
+  `⁅⊤, A⁆` with a `conj_into` helper; backward direction via the same
+  helper applied to `a'⁻¹` (~35 LOC).
+
+**Sweep result**: the other 16 axioms all require infrastructure not
+in scope for shape-discharge (see ❌ list under "Next-session options"
+below). Don't re-run the full sweep blindly — see the classification
+table in `findings.md` sixth-hour update.
+
 ## Next-session options (pick one, time-box)
 
-### Deep (axiom discharge) — easy wins likely
+### Sweep-discharged ✅ (do NOT re-attempt)
 
-**1. `commutator_lt_of_minnormal` (L1_2)** — `⁅M, F(G)⁆ < M` for
-minnormal M. Needs F(G) nilpotence + meet_center_nil. ~1 hr if mathlib
-has the right pieces. **First check**: grep mathlib for `meet_center`
-or "subgroup of nilpotent meets center nontrivially".
+- Option 2 (`norm_C_eq_top`) — turned out to be an orphan/dead axiom
+  in the *current* P1_10 proof (which uses `stable_factor_data`
+  directly). The axiom is earmarked for the P1_10 structural refactor
+  per option 4 — don't remove it standalone, that's premature.
+- Option 3 (axiom shape sweep) — completed Inc 20-21. Two wins, then
+  exhausted. Remaining axioms classified in `findings.md` sixth-hour.
 
-**2. `norm_C_eq_top` (P1_10)** — uses MathComp's `nilpotent_sub_norm`
-("every proper subgroup of nilpotent G has strictly larger normalizer").
-Mathlib has `NormalizerCondition` and `normalizerCondition_of_isNilpotent`
-(`Mathlib/GroupTheory/Nilpotent.lean:877`). Might be a direct discharge
-similar to Inc 17's Phi_nongen win.
+### Blocked on missing mathlib bricks ❌ (skip until brick lands)
 
-**3. Search-by-statement-shape pass over all 18 axioms** — Inc 17 found
-`Phi_nongen` ↔ `frattini_nongenerating` literally in mathlib. There
-are probably more. For each axiom, grep mathlib for the statement
-shape rather than the name. ~30-60 min for a full sweep.
+- **`commutator_lt_of_minnormal` (L1_2)** — needs Fitting's theorem
+  (F(G).IsNilpotent). Blocked on the upstream-Fitting-subgroup PR.
+- **P1_3 axioms** (`cent_Fitting_le_chief_stab_of_in_Fitting`,
+  `chief_stab_sub_Fitting`) — Hall theory / chief factor machinery.
+- **`coprime_trivg_cent_Fitting_cyclic` (P1_4)** — needs semidirect
+  product machinery (G ⋊ A construction).
+- **Quotient-action axioms** (`coprimeR_cent_prod`,
+  `coprime_cent_Phi_chain`, `stable_factor_cent_chain`,
+  `series_cent_of_stable`) — need `quotient_cents2`, `quotientSGK`
+  family of lemmas; not in mathlib.
+- **`abelian_charsimple_special`, `nontrivial_assembly` (T1_11)** —
+  Aschbacher 24.7 / charsimple-special structure.
+- **`critical_subgroup_exists` (T1_13)** — Thompson critical subgroup
+  via group cohomology.
+- **`corollary_assembly` (C1_12)** — bundled via 1.10 + 1.11 + OhmE.
+- **`wlog_comm_eq_top` (T1_11)** — packaged 1.6(a)+1.6(b) reduction.
+- **`commutator_sup_le` (CommutatorExtras)** — MathComp `commMG` sup
+  distribution. Inc 11 Phase 1 blocker; flagged off-ramp.
 
-### Deep (refactor needed)
+### Deep (refactor) — only if you have ~hours
 
 **4. `stable_factor_data` (P1_10) latent soundness issue** — claims
 `(centralizer A).Normal` without `A.Normal`. False in general. Fix
 requires P1_10 structural refactor to track `N_G(C_G(A))` rather than
-collapsing to `⊤`. Bigger work, ~2-3 hr.
+collapsing to `⊤`. This also resurrects `norm_C_eq_top` as a load-
+bearing intermediate. Bigger work, ~2-3 hr.
 
-**5. `series_cent_of_stable` (P1_9)** — list induction discharge. Needs
-~30-60 min of Lean-side list bookkeeping (`List.reverseRecOn` or
-strong induction over indices). Doable but fiddly.
+**5. `series_cent_of_stable` (P1_9)** — list induction discharge.
+~30-60 min as the handoff originally estimated, but the underlying
+`stable_factor_cent_chain` is itself an axiom (it depends on
+quotient-action lemmas mathlib lacks). Discharging only flattens
+the dependency; net axiom count drops by 1.
 
-### Wide (structural decomposition)
+### Wide (structural decomposition) — adds new axioms
 
 **6. Lemma 1.14 (4 sub-lemmas)** — coprime quotient pgroup normalizer /
 centralizer. Needs quotient-group infrastructure (`G ⧸ M` for `M.Normal`).
 Coq lines 567-614. Each sub-lemma can be a tree with the quotient
-construction packaged as an axiom.
+construction packaged as an axiom. **Net axiom count goes UP** but
+proof-tree breadth increases.
 
 **7. Props 1.15a, 1.15b, 1.16** — denser p-local machinery. 1.15a
 (solvable_p_constrained) needs `pcore_normal`. 1.16 uses bigUnion of
 centralizers over cyclic quotients — heavy.
+
+### Better strategic move (per `findings.md` Hour 2 / Hour 4)
+
+**Build the Fitting subgroup mathlib PR upstream.** Discharges ~5 of
+the 16 remaining axioms cascade-style (Fitting nilpotence unblocks
+L1_2; pCore unblocks P1_3, T1_11 chain). The "build bricks" strategy
+was the recommendation from earlier hours and is still the highest-
+leverage move once the cheap inline discharges are gone.
 
 ## Workflow reminders
 

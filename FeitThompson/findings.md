@@ -432,3 +432,94 @@ the bottleneck.
 **Soundness audit was overdue** — three `True`-hypothesis axioms were
 silently unsound. Inc 16 fixed all three. Any axiom with `(h : True)`
 is a red flag.
+
+---
+
+# Update — sixth hour: targeted sweep (Inc 20, 21)
+
+Picked up the morning after the autonomous overnight run. Trevor was
+stepping away ("chip away at the mountain"); explicitly autonomous
+mode. Ran handoff option 3 (search-by-statement-shape sweep over the
+18 remaining axioms) end-to-end.
+
+## What landed
+
+**Inc 20** — `le_normalizer_centralizer` (CommutatorExtras). The
+"every subgroup normalizes its own centralizer" lemma. No mathlib
+analog, but provable in ~15 lines from `mem_normalizer_iff` +
+`mem_centralizer_iff` + the `group` tactic. Conjugation by `a ∈ A`
+preserves `A` setwise; the algebraic sandwich
+`(a⁻¹*b*a) * x = x * (a⁻¹*b*a) ⇒ b * (a*x*a⁻¹) = (a*x*a⁻¹) * b`
+discharges the `mem` step.
+
+**Inc 21** — `commg_normr` (CommutatorExtras). The "second arg of a
+commutator normalizes the commutator subgroup" lemma. Discharged via
+closure-induction on `⁅⊤, A⁆ = closure { ⁅g, a⁆ | g ∈ ⊤, a ∈ A }`:
+
+| Case | Step |
+|------|------|
+| `mem` | `conjugate_commutatorElement` |
+| `one` | `simp` |
+| `mul` | `a'*(xy)*a'⁻¹ = (a'xa'⁻¹)(a'ya'⁻¹)`; mul-mem with IHs |
+| `inv` | `a'*x⁻¹*a'⁻¹ = (a'xa'⁻¹)⁻¹`; inv-mem with IH |
+
+Backward direction via the same helper with `a'⁻¹ ∈ A`.
+
+## Sweep result: low-hanging fruit exhausted
+
+The 18-axiom statement-shape sweep produced exactly 2 wins, both in
+`CommutatorExtras`. The other 16 axioms break down:
+
+| Bucket | Count | Reason can't shape-discharge |
+|--------|-------|------------------------------|
+| Need Fitting nilpotence (Fitting's Theorem) | 1 | `commutator_lt_of_minnormal` (L1_2) — needs F(G).IsNilpotent which depends on the Fitting subgroup mathlib brick |
+| Need Hall theory / chief-factor machinery | 2 | P1_3 axioms (`cent_Fitting_le_chief_stab_of_in_Fitting`, `chief_stab_sub_Fitting`) |
+| Need semidirect product machinery | 1 | `coprime_trivg_cent_Fitting_cyclic` (P1_4) — Coq proof goes through G ⋊ A |
+| Need quotient-action lemmas | 4 | `coprimeR_cent_prod` (P1_6), `coprime_cent_Phi_chain` (P1_8), `stable_factor_cent_chain` (P1_9_base), `series_cent_of_stable` (P1_9) |
+| Need Aschbacher 24.7 / charsimple-special | 2 | `abelian_charsimple_special`, `nontrivial_assembly` (T1_11) |
+| Need Thompson critical / group cohomology | 1 | `critical_subgroup_exists` (T1_13) |
+| Bundled assembly through 1.10, 1.11, OhmE | 1 | `corollary_assembly` (C1_12) |
+| Packaged 1.6 reductions | 1 | `wlog_comm_eq_top` (T1_11) |
+| Latent soundness issue (handoff opt 4) | 2 | `stable_factor_data`, `norm_C_eq_top` (P1_10) — P1_10 structural refactor |
+| MathComp `commMG` sup distribution | 1 | `commutator_sup_le` (CommutatorExtras) — Inc 11 Phase 1 blocker |
+
+Two of these (`norm_C_eq_top` is the orphan note above; `stable_factor_data` is the latent unsoundness one) are coupled — P1_10 structural refactor would touch both.
+
+## Multiplier on the sweep
+
+| Task | Time | Outcome |
+|------|------|---------|
+| 18-axiom sweep (read all statements, grep mathlib for each) | ~25 min | 2 candidates surfaced |
+| `le_normalizer_centralizer` discharge | ~12 min | 1 probe iteration to fix `group` import + `linarith`→`trans` |
+| `commg_normr` discharge | ~15 min | 1 probe iteration to fix `commutator_def` rewrite scope |
+
+Pattern: **mathlib statement-shape grep is the best ROI play left**
+for `CommutatorExtras`-style "missing utility lemma" axioms. Every
+discharge that doesn't need new structural infrastructure goes in
+one PR for ~12-15 min. The bottleneck is the *next* search-by-shape
+sweep finding something proveable — not the proving itself.
+
+## Final state (post-Inc 21)
+
+| Metric                | Post-night (after Inc 19) | After Inc 20-21 |
+|-----------------------|---------------------------|-----------------|
+| Top-level BG §1 thms  | 17                        | 17              |
+| Real axioms           | 18                        | **16**          |
+| `sorry` warnings      | 0                         | 0               |
+| True-placeholder axs  | 0                         | 0               |
+| CommutatorExtras axs  | 3                         | **1** (`commutator_sup_le` remains) |
+
+## Where the next leverage lives
+
+The two paths forward:
+
+1. **Build mathlib bricks upstream.** Fitting subgroup + pCore as the
+   first PR (per the Hour 2 / Hour 4 strategic note). Discharging
+   ~5 of the 16 remaining axioms cascades from these two definitions
+   alone.
+2. **Structural decomposition (handoff options 6, 7).** Adds new
+   theorems but also new leaves/axioms. Net axiom count likely goes
+   up not down, which trades raw count for proof tree completeness.
+
+Both are real work, ~hours each. The 12-15-min-per-axiom regime is
+genuinely over for what `CommutatorExtras` can offer.

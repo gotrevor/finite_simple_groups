@@ -70,36 +70,19 @@ theorem wlog_cyclic
 
 end BranchA
 
-namespace BranchB
+/-
+**Branches B, C, D** of the tree (`semidirect_solvable`,
+`piPart_Fitting_trivial`, `fitting_in_G`) were placeholder
+`True`-returning theorems carrying no content. They captured the
+intended Coq tree decomposition for documentation purposes but the
+actual Lean proof shortcuts via `coprime_trivg_cent_Fitting_cyclic`
+(the bundled axiom below). The placeholders were removed in Inc 24
+since they cluttered the file without contributing soundness.
 
-/-- **B1**: the semidirect product X = G ⋊ A is solvable.
-
-We axiomatize the construction abstractly: there exists a solvable group X
-containing G as a normal subgroup, with G·A = X. -/
-theorem semidirect_solvable
-    [Fintype G] (_A : Subgroup G) (_hSol : IsSolvable G) (_hCyc : True)  -- cyclic A stub
-    : True := by
-  trivial
-
-/-- **B3 (headline of Branch B)**: the π-part of F(X) lies in A and is trivial.
-
-This is the technical heart of P1.4. Inside the semidirect product,
-regularity of the A-action on G forces the π-Sylow of F(X) to be trivial. -/
-theorem piPart_Fitting_trivial : True := by trivial
-
-end BranchB
-
-namespace BranchC
-
-/-- **C (headline)**: F(X) ≤ G, viewed via the canonical inclusion.
-
-In our axiomatic setting this is the statement that F of the semidirect
-product lies in the G-subgroup. We don't need to formally construct X; the
-statement we use is the corollary that F(G·A) ⊆ G, which combined with
-B3 gives the key implication. -/
-theorem fitting_in_G : True := by trivial
-
-end BranchC
+A future refactor that constructs the semidirect product `G ⋊ A` and
+proves these intermediates as real theorems would re-introduce them
+under their meaningful types.
+-/
 
 /-- **AXIOM**: cyclic case of P1.4 (Branches B + C + D assembled).
 

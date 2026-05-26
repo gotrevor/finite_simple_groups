@@ -11,6 +11,7 @@ as real theorems instead of axioms.
 -/
 
 import Mathlib.GroupTheory.Commutator.Basic
+import Mathlib.Tactic.Group
 
 namespace FeitThompson.CommutatorExtras
 
@@ -52,21 +53,48 @@ axiom commg_normr
     (A : Subgroup G) :
     A ≤ Subgroup.normalizer ((⁅(⊤ : Subgroup G), A⁆ : Subgroup G) : Set G)
 
-/-- **AXIOM** — every subgroup normalizes its own centralizer
-(MathComp `cent_norm` / `subset_norm_cent`).
+/-- Every subgroup normalizes its own centralizer (MathComp `cent_norm` /
+`subset_norm_cent`).
 
 For any subgroup `A`: `A ≤ N(C(A))`.
 
-Proof (sketch): for `a ∈ A`, conjugation by `a` is an automorphism of `A`,
-hence permutes elements of `A`. So if `x` commutes with every element of `A`,
-so does `axa⁻¹`. Hence `axa⁻¹ ∈ C(A)`.
+Proved directly: for `a ∈ A` and `x ∈ C(A)`, conjugation by `a` sends `x`
+to `a*x*a⁻¹`. To show this is in `C(A)`, take `b ∈ A`. Since `A` is a
+subgroup, `a⁻¹*b*a ∈ A`, so `x` commutes with it. Sandwiching by `a, a⁻¹`
+gives `(a*x*a⁻¹) * b = b * (a*x*a⁻¹)`.
 
-Mathlib has `Subgroup.le_normalizer : H ≤ N(H)`. The analog for "N(C(H))"
-isn't immediately surfaced. MathComp source: derivable from `normsI` +
-`cent_sub`. -/
-axiom le_normalizer_centralizer
+(Was Increment 11's third "extras" axiom; discharged at Inc 20 via direct
+`mem_normalizer_iff` + `mem_centralizer_iff` unfolding + `group` tactic.) -/
+theorem le_normalizer_centralizer
     {G : Type*} [Group G]
     (A : Subgroup G) :
-    A ≤ Subgroup.normalizer ((Subgroup.centralizer (A : Set G) : Subgroup G) : Set G)
+    A ≤ Subgroup.normalizer
+      ((Subgroup.centralizer (A : Set G) : Subgroup G) : Set G) := by
+  intro a ha
+  rw [Subgroup.mem_normalizer_iff]
+  intro x
+  constructor
+  · intro hxC
+    rw [Subgroup.mem_centralizer_iff] at hxC ⊢
+    intro b hb
+    have hc : a⁻¹ * b * a ∈ A :=
+      A.mul_mem (A.mul_mem (A.inv_mem ha) hb) ha
+    have hcomm := hxC (a⁻¹ * b * a) hc
+    have key : a * ((a⁻¹ * b * a) * x) * a⁻¹
+             = a * (x * (a⁻¹ * b * a)) * a⁻¹ := by rw [hcomm]
+    have lhs : a * ((a⁻¹ * b * a) * x) * a⁻¹ = b * (a * x * a⁻¹) := by group
+    have rhs : a * (x * (a⁻¹ * b * a)) * a⁻¹ = (a * x * a⁻¹) * b := by group
+    exact lhs.symm.trans (key.trans rhs)
+  · intro hxC
+    rw [Subgroup.mem_centralizer_iff] at hxC ⊢
+    intro b hb
+    have hc : a * b * a⁻¹ ∈ A :=
+      A.mul_mem (A.mul_mem ha hb) (A.inv_mem ha)
+    have hcomm := hxC (a * b * a⁻¹) hc
+    have key : a⁻¹ * ((a*b*a⁻¹) * (a*x*a⁻¹)) * a
+             = a⁻¹ * ((a*x*a⁻¹) * (a*b*a⁻¹)) * a := by rw [hcomm]
+    have lhs : a⁻¹ * ((a*b*a⁻¹) * (a*x*a⁻¹)) * a = b * x := by group
+    have rhs : a⁻¹ * ((a*x*a⁻¹) * (a*b*a⁻¹)) * a = x * b := by group
+    exact lhs.symm.trans (key.trans rhs)
 
 end FeitThompson.CommutatorExtras

@@ -43,6 +43,9 @@ import FeitThompson.BGsection1.P1_8
 import FeitThompson.BGsection1.P1_9_base
 import FeitThompson.BGsection1.P1_9
 import FeitThompson.BGsection1.P1_10
+import FeitThompson.BGsection1.T1_11
+import FeitThompson.BGsection1.C1_12
+import FeitThompson.BGsection1.T1_13
 import Mathlib.GroupTheory.Commutator.Basic
 import Mathlib.GroupTheory.Frattini
 import Mathlib.GroupTheory.Nilpotent
@@ -361,5 +364,70 @@ theorem coprime_nil_faithful_cent_stab
       ≤ Subgroup.centralizer (A : Set G)) :
     A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
   P1_10.coprime_nil_faithful_cent_stab A hNorm hCoprime hNil hSelfCent
+
+/-- **STATED** — B & G, Theorem 1.11 (`coprime_odd_faithful_Ohm1`).
+
+For an odd-order p-group G with A normalizing G and `coprime |G| |A|`,
+faithful action of A on `Ω₁(G)` implies faithful action on G.
+
+UPSTREAM:
+  `Theorem coprime_odd_faithful_Ohm1 gT p (A G : {group gT}) :
+     p.-group G -> A \subset 'N(G) -> coprime #|G| #|A| -> odd #|G| ->
+     A \subset 'C('Ohm_1(G)) -> A \subset 'C(G).`
+-/
+theorem coprime_odd_faithful_Ohm1
+    [Fintype G] (p : ℕ) (A : Subgroup G)
+    (hG : IsPGroup p (⊤ : Subgroup G))
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hOdd : Odd (Nat.card G))
+    (hFaith : A ≤ Subgroup.centralizer ((P1_6e.Ohm1 G : Subgroup G) : Set G)) :
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
+  T1_11.coprime_odd_faithful_Ohm1 p A hG hNorm hCoprime hOdd hFaith
+
+/-- **STATED** — B & G, Corollary 1.12 (`coprime_odd_faithful_cent_abelem`).
+
+For an elementary abelian p-subgroup E of an odd-order p-group G with A
+acting coprimely, if A centralizes the p-torsion of `C_G(E)`, then
+A centralizes G. Direct corollary of 1.11.
+
+UPSTREAM:
+  `Corollary coprime_odd_faithful_cent_abelem gT p (A G E : {group gT}) :
+     E \in 'E_p(G) -> p.-group G ->
+     A \subset 'N(G) -> coprime #|G| #|A| -> odd #|G| ->
+     A \subset 'C('Ldiv_p('C_G(E))) -> A \subset 'C(G).`
+-/
+theorem coprime_odd_faithful_cent_abelem
+    [Fintype G] (p : ℕ) (A E : Subgroup G)
+    (hE_le_G : E ≤ ⊤)
+    (hE_abelem : IsAbelem E)
+    (hG : IsPGroup p (⊤ : Subgroup G))
+    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (hOdd : Odd (Nat.card G))
+    (hFaith : A ≤ Subgroup.centralizer
+        ((C1_12.Ldiv_p p (Subgroup.centralizer (E : Set G)) : Subgroup G) : Set G)) :
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
+  C1_12.coprime_odd_faithful_cent_abelem p A E hE_le_G hE_abelem hG hNorm
+    hCoprime hOdd hFaith
+
+/-- **STATED** — B & G, Theorem 1.13 (`critical_odd`, Thompson critical subgroup).
+
+For an odd-order nontrivial p-group, there exists a characteristic subgroup
+H with five strong properties (nilpotency class ≤ 2, exponent p, …).
+
+UPSTREAM:
+  `Theorem critical_odd gT p (G : {group gT}) :
+     p.-group G -> odd #|G| -> G :!=: 1 ->
+     {H : {group gT} |
+        [/\ H \char G, [~: H, G] \subset 'Z(H), nil_class H <= 2,
+            exponent H = p & p.-group 'C(H | [Aut G])]}.`
+-/
+theorem critical_odd
+    [Fintype G] (p : ℕ) (hG : IsPGroup p (⊤ : Subgroup G))
+    (hOdd : Odd (Nat.card G))
+    (hNT : (⊤ : Subgroup G) ≠ ⊥) :
+    ∃ H : Subgroup G, T1_13.IsCritical p H :=
+  T1_13.critical_odd p hG hOdd hNT
 
 end FeitThompson.BGsection1

@@ -38,8 +38,9 @@ jobs:
           echo "sorry/sorryAx mentions in source: $new"
           # Soft check only: log, don't fail. Sorries are expected during port.
 
-      - name: Detect orphan axioms in FeitThompson/
-        run: FeitThompson/scripts/orphan-axioms.sh
-        # Soft check: exits 0 when no orphans, prints them when present.
-        # Pass --strict via a separate job if you want CI to fail on
-        # regression. Cf. Inc 23 cleanup of 3 long-standing orphans.
+      - name: Detect orphan axioms + dead placeholders in FeitThompson/
+        run: FeitThompson/scripts/orphan-axioms.sh --strict
+        # **Hard check**: any regression fails CI. We hit zero orphans
+        # and zero dead-True placeholders in Inc 23-24; the invariant is
+        # locked in here. To temporarily allow a regression during WIP,
+        # drop the `--strict` flag locally and re-add before merging.

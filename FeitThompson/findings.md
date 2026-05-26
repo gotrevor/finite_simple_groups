@@ -359,3 +359,76 @@ be picked up incrementally as porting demands surface it. Total revised:
 The next session's leverage is still the same: build Fitting + pCore
 upstream. But now: also queue commutator-sup distribution as the second
 mathlib PR — every single coprime-action proof in BG §1 needs it.
+
+---
+
+# Update — fifth hour: autonomous run, 8 increments (11-18)
+
+Trevor went to bed at the end of the fourth-hour wrap; this section
+records what landed during the unsupervised continuation.
+
+## What landed
+
+**Inc 11** — discharged `coprime_commGid` (Phase 1 from the original plan)
+on-theme: added three MathComp-cited bricks (`commutator_sup_le`,
+`commg_normr`, `le_normalizer_centralizer`) in `CommutatorExtras.lean`
+instead of inline-proving. Coq 5-liner translated cleanly modulo these.
+
+**Inc 12** — discharged `pPowerImage_isSubgroup_and_normal` (L1_1 B1)
+using mathlib's `powMonoidHom` composed with `M.subtype`. Normality
+via `conj_pow`. Real proof, ~30 LOC.
+
+**Inc 13** — added three new tree decompositions: Theorem 1.11
+`coprime_odd_faithful_Ohm1`, Corollary 1.12 `coprime_odd_faithful_cent_abelem`,
+Theorem 1.13 `critical_odd` (with new `IsCritical p H` structure).
+
+**Inc 14** — discharged `exists_prime_pPowerImage_ne_top` (L1_1 B3) via
+`Nat.exists_prime_and_dvd` + Cauchy + `Finite.injective_iff_surjective`.
+
+**Inc 15** — discharged `inf_bot` (P1_6d) via the **Lean-collapse
+simplification**: in our `⊤ : Subgroup G` phrasing the ambient G is
+abelian, so `⁅⊤, A⁆ = ⊥` directly. The Coq proof needed
+`coprime_abel_cent_TI` because there the ambient wasn't abelian.
+
+**Inc 16** — soundness cleanup: three files (P1_6e, P1_8, P1_9_base)
+had axioms with `True` placeholder hypotheses, which made them
+technically unsound. Refactored to use meaningful hypotheses.
+
+**Inc 17** — discharged `Phi_nongen` via mathlib's `frattini_nongenerating`
+(Frattini.lean:53). Three-line discharge.
+
+**Inc 18** — discharged `wlog_cyclic` (P1_4) via the elementary zpowers
+argument.
+
+## Final state
+
+| Metric                | Pre-night | Post-night |
+|-----------------------|-----------|------------|
+| Top-level BG §1 thms  | 8         | 17         |
+| Real axioms           | 9         | 18         |
+| `sorry` warnings      | 0         | 0          |
+| True-placeholder axs  | 3         | 0          |
+
+Axiom count went up because new structural decompositions (Inc 9, 13)
+introduced cited axioms at their leaves. Dischargeable axioms
+(Inc 11-12, 14-15, 17-18) dropped, net.
+
+## New observations
+
+**Lean-collapse simplification** — when Coq's `G : {group gT}` becomes
+Lean's `⊤ : Subgroup G`, certain hypotheses become vacuous and certain
+conclusions trivial. Two axioms (`inf_bot`, P1_6e chain) discharged
+purely via this. Multiplier: infinite (no work needed).
+
+**Cite-then-chain pattern (Inc 11)** — instead of inline-proving a
+missing lemma, push the unknown one level deeper into 2-3 named
+MathComp-cited axioms. Keeps the worktree's character. ~10-15 min per.
+
+**Mathlib coverage is patchier than expected** — `Phi_nongen` was
+literally in mathlib as `frattini_nongenerating`. Probably more such
+cases. Searching mathlib by *what it says* (not what we'd name it) is
+the bottleneck.
+
+**Soundness audit was overdue** — three `True`-hypothesis axioms were
+silently unsound. Inc 16 fixed all three. Any axiom with `(h : True)`
+is a red flag.

@@ -29,6 +29,8 @@ import FeitThompson.MathlibStubs
 import Mathlib.GroupTheory.Commutator.Basic
 import Mathlib.GroupTheory.Subgroup.Centralizer
 import Mathlib.GroupTheory.Solvable
+import Mathlib.Algebra.Group.Hom.Basic
+import Mathlib.Algebra.Group.Conj
 
 namespace FeitThompson.BGsection1.L1_1
 
@@ -108,17 +110,44 @@ namespace BranchB
 /-- p-th power image of a subgroup. For abelian M this is a subgroup. -/
 def pPowerImage (M : Subgroup G) (p : ℕ) : Set G := { x | ∃ m ∈ M, m ^ p = x }
 
-/-- **Twig B1 (AXIOM)**: For abelian M, `pPowerImage M p` is a characteristic
-subgroup of M, hence G-normal when M is.
+/-- **Twig B1**: For abelian M, `pPowerImage M p` is a subgroup of M,
+G-normal when M is.
 
-Source: standard fact for abelian groups. The map `x ↦ x^p` is a homomorphism
-when M is abelian; its image is a characteristic subgroup. The Coq version
-is essentially `'Mho_1(M)` in MathComp. Deferred as an axiom; would be a
-mathlib PR in the `Subgroup.pow_image` direction. -/
-axiom pPowerImage_isSubgroup_and_normal
-    {G : Type*} [Group G]
+Construction: the p-power map on the commutative group `↥M` is a monoid
+homomorphism (`powMonoidHom`), composed with `M.subtype` gives `↥M →* G`,
+whose range carries the desired subgroup. Normality follows from
+`conj_pow`: conjugation commutes with the p-power. -/
+theorem pPowerImage_isSubgroup_and_normal
     (M : Subgroup G) (hAbel : IsMulCommutative M) (hNorm : M.Normal) (p : ℕ) :
-    ∃ K : Subgroup G, (K : Set G) = pPowerImage M p ∧ K.Normal ∧ K ≤ M
+    ∃ K : Subgroup G, (K : Set G) = pPowerImage M p ∧ K.Normal ∧ K ≤ M := by
+  haveI := hAbel
+  let f : ↥M →* G := M.subtype.comp (powMonoidHom p)
+  refine ⟨f.range, ?_, ?_, ?_⟩
+  · -- (f.range : Set G) = pPowerImage M p
+    ext x
+    constructor
+    · rintro ⟨m, rfl⟩
+      refine ⟨(m : G), m.2, ?_⟩
+      simp [f, powMonoidHom, Subgroup.coe_subtype]
+    · rintro ⟨m, hm, rfl⟩
+      refine ⟨⟨m, hm⟩, ?_⟩
+      simp [f, powMonoidHom, Subgroup.coe_subtype]
+  · -- f.range.Normal
+    refine ⟨?_⟩
+    rintro _ ⟨m, rfl⟩ g
+    -- Goal: g * f m * g⁻¹ ∈ f.range
+    -- f m = (m : G)^p; conj by g commutes with pow, lands at (g m g⁻¹)^p
+    have hConj : (g * (m : G) * g⁻¹) ^ p = g * (m : G) ^ p * g⁻¹ := conj_pow
+    refine ⟨⟨g * (m : G) * g⁻¹, hNorm.conj_mem (m : G) m.2 g⟩, ?_⟩
+    simp only [f, powMonoidHom, MonoidHom.coe_comp, MonoidHom.coe_mk, OneHom.coe_mk,
+      Function.comp_apply, Subgroup.coe_subtype, Subgroup.coe_pow]
+    exact hConj
+  · -- f.range ≤ M
+    rintro _ ⟨m, rfl⟩
+    show f m ∈ M
+    simp only [f, powMonoidHom, MonoidHom.coe_comp, MonoidHom.coe_mk, OneHom.coe_mk,
+      Function.comp_apply, Subgroup.coe_subtype]
+    exact M.pow_mem m.2 p
 
 /-- **Twig B2**: by minimality, `pPowerImage M p` is ⊥ or M. -/
 theorem pPowerImage_bot_or_top

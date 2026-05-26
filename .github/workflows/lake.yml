@@ -37,3 +37,9 @@ jobs:
           new=$(grep -RnE "\bsorry\b|sorryAx" FeitThompson FiniteSimpleGroups 2>/dev/null | grep -v "^Binary" | wc -l | tr -d ' ')
           echo "sorry/sorryAx mentions in source: $new"
           # Soft check only: log, don't fail. Sorries are expected during port.
+
+      - name: Detect orphan axioms in FeitThompson/
+        run: FeitThompson/scripts/orphan-axioms.sh
+        # Soft check: exits 0 when no orphans, prints them when present.
+        # Pass --strict via a separate job if you want CI to fail on
+        # regression. Cf. Inc 23 cleanup of 3 long-standing orphans.

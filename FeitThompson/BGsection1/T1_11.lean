@@ -12,11 +12,13 @@ Aschbacher 24.7 (`abelian_charsimple_special`).
 ```
 1.11 coprime_odd_faithful_Ohm1
 ├── Branch A: trivial G case (G = ⊥)        — proved
-└── Branch B: nontrivial G case               — AXIOM (assembly)
-    Decomposed conceptually into:
+└── Branch B: nontrivial G case               — AXIOM (`nontrivial_assembly`)
+    Bundled as one cited axiom; would conceptually decompose into:
       B1: wlog ⁅⊤, A⁆ = ⊤  (via 1.6(a), 1.6(b))
       B2: abelian_charsimple_special ⇒ Ω₁(G) = Z(G)
       B3: A ≤ C(Z(G)) lifts to A ≤ C(G) in p-special G
+    A future refactor that splits the assembly into B1+B2+B3 will need
+    to re-introduce the corresponding axiom statements.
 ```
 -/
 
@@ -46,36 +48,6 @@ theorem trivial_case (A : Subgroup G) (hG : (⊤ : Subgroup G) = ⊥) :
 end BranchA_trivial
 
 namespace BranchB_nontrivial
-
-/-- **B1 (AXIOM)** — wlog reduction to `⁅⊤, A⁆ = ⊤`.
-
-Coq: BGsection1.v lines ~439-443. Uses 1.6(a) `coprime_cent_prod` plus
-1.6(b) `coprime_commGid` to reduce to the case where the commutator is
-the whole group. -/
-axiom wlog_comm_eq_top
-    {G : Type*} [Group G] [Fintype G]
-    (p : ℕ) (A : Subgroup G)
-    (_hG : IsPGroup p (⊤ : Subgroup G))
-    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (_hOdd : Odd (Nat.card G))
-    (_hFaith : A ≤ Subgroup.centralizer ((Ohm1 G : Subgroup G) : Set G)) :
-    A ≤ Subgroup.centralizer ((⁅(⊤ : Subgroup G), A⁆ : Subgroup G) : Set G) →
-      A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G)
-
-/-- **B2 (AXIOM)** — Aschbacher 24.7 / `abelian_charsimple_special`.
-
-Under `⁅G,A⁆ = G`, the p-group G is p-special and `Ω₁(G) = Z(G)`.
-
-Coq: BGsection1.v lines ~444-454. Packages `abelian_charsimple_special`
-plus the `Ohm1_id`/`center_special_abelem` chain. -/
-axiom abelian_charsimple_special
-    {G : Type*} [Group G] [Fintype G]
-    (p : ℕ) (_A : Subgroup G)
-    (_hG : IsPGroup p (⊤ : Subgroup G))
-    (_hCoprime : (Nat.card G).Coprime (Nat.card _A))
-    (_hCommTop : (⁅(⊤ : Subgroup G), _A⁆ : Subgroup G) = ⊤) :
-    Ohm1 G = Subgroup.center G
 
 /-- **B-assembly (AXIOM)** — nontrivial-case assembly.
 

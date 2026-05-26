@@ -9,19 +9,23 @@ fixed-point subgroup. Combined with nilpotency it forces the action on G
 to be trivial via the normalizer-of-normalizer argument
 (`nilpotent_sub_norm`).
 
-## Tree
+## Tree (as currently implemented)
 
 ```
 1.10 coprime_nil_faithful_cent_stab
-├── Branch A: it suffices to prove A ⊆ C(N) where N = N_G(C)
-│   └── Twig: nilpotent_sub_norm — proper subgroup of nilpotent G has strictly
-│             larger normalizer, so C_G(C) ≤ C ⇒ N_G(C) = G
-├── Branch B: N is solvable (nilpotent ⇒ solvable)
-└── Branch C: apply stable_factor_cent to the pair (N, C)
-    ├── Twig 1: A centralizes C (= C_G(A)) by definition
-    ├── Twig 2: AXIOM — C is N-normal, ⁅N, A⁆ ≤ C (the stable-factor data)
-    └── Twig 3: A ⊆ C(N) by stable_factor_cent
+├── A centralizes C (= C_G(A)) by definition       — proved
+├── nilpotent ⇒ solvable                            — proved
+└── apply stable_factor_cent to (⊤, C)              — uses 1.9-base
+    └── AXIOM stable_factor_data: C is ⊤-normal, ⁅⊤, A⁆ ≤ C
 ```
+
+The Coq proof routes through `N := N_G(C)` (using nilpotent_sub_norm to
+get `N = ⊤`), but the Lean implementation shortcuts to ambient = ⊤
+directly via the `stable_factor_data` axiom. This has a latent
+soundness issue: `stable_factor_data` claims `C.Normal` in ⊤ without
+`A.Normal`, which is false in general. The structural fix (track
+`N_G(C_G(A))` instead) is the P1_10 refactor (HANDOFF option 4) and
+will re-introduce `norm_C_eq_top` as a load-bearing intermediate.
 -/
 
 import FeitThompson.MathlibStubs
@@ -34,26 +38,6 @@ namespace FeitThompson.BGsection1.P1_10
 open FeitThompson.Stubs
 
 variable {G : Type*} [Group G] [Fintype G]
-
-namespace BranchA_norm
-
-/-- **A (AXIOM)** — under the self-centralizing hypothesis `C_G(C) ≤ C`,
-the normalizer of `C` in G equals G. (Combined with nilpotency this is
-`nilpotent_sub_norm`: a proper subgroup of a nilpotent group has strictly
-larger normalizer, so a self-normalizing subgroup is the whole group.)
-
-Coq: `nilpotent_sub_norm` step in `BGsection1.v` line ~419. -/
-axiom norm_C_eq_top
-    {G : Type*} [Group G] [Fintype G]
-    (A : Subgroup G)
-    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
-    (_hNil : Group.IsNilpotent G)
-    (_hSelfCent : Subgroup.centralizer
-        ((Subgroup.centralizer (A : Set G) : Subgroup G) : Set G)
-      ≤ Subgroup.centralizer (A : Set G)) :
-    Subgroup.normalizer ((Subgroup.centralizer (A : Set G) : Subgroup G) : Set G) = ⊤
-
-end BranchA_norm
 
 namespace BranchC_stable
 

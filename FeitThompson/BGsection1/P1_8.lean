@@ -1,24 +1,19 @@
 /-
 # B & G, Proposition 1.8 / Aschbacher 24.1 — `coprime_cent_Phi`
 
-If G is a p-group, |A| is coprime to |G|, and `⁅G,A⁆ ⊆ Φ(G)`, then `A ⊆ C(G)`.
-
-The substance is the **Frattini argument**: elements of Φ(G) are
-non-generating, so if A pushes G into Φ(G), the action is "trivial" in the
-generation sense, which combined with coprimality forces full triviality.
+If G is a p-group, `|A|` is coprime to `|G|`, and `⁅G,A⁆ ⊆ Φ(G)`, then `A ⊆ C(G)`.
 
 ## Tree
 
 ```
 coprime_cent_Phi
-├── Branch A: ⁅G,A⁆ ⊆ Φ(G) ⇒ C_G(A) covers a generating set of G
-│   ├── A1: G/Φ(G) is elementary abelian (Phi quotient is abelem)
-│   ├── A2: A acts trivially on G/Φ(G) (since ⁅G,A⁆ ⊆ Φ(G))
-│   └── A3: coprime + A trivial on G/Φ(G) ⇒ A trivial on G (lifting)
-└── Branch B: A trivial on G ⇔ A ⊆ C(G)        (definitional)
+└── Single cited axiom: Phi_nongen + coprime_cent_prod chain
+    (Coq BGsection1.v:374-383, 5 lines)
 ```
 
-Uses **mathlib's real `frattini`** — no stub for the Frattini subgroup.
+Previous version had a `True` placeholder hypothesis that made the
+declaration technically unsound. Refactored: the entire 1.8 statement
+is now a single axiom with meaningful hypotheses, citing the Coq line.
 -/
 
 import FeitThompson.MathlibStubs
@@ -34,26 +29,30 @@ variable {G : Type*} [Group G] [Fintype G]
 
 namespace BranchA
 
-/-- **A1**: for a p-group G, the quotient G/Φ(G) is elementary abelian. -/
-theorem phi_quotient_abelem (p : ℕ) (_hG : IsPGroup p (⊤ : Subgroup G)) :
-    True := by trivial  -- placeholder for the elementary abelian fact
+/-- **AXIOM** — Phi-nongen / Frattini's argument (`Phi_nongen` in MathComp).
 
-/-- **A2**: if `⁅G,A⁆ ⊆ Φ(G)`, then A acts trivially on G/Φ(G). -/
-theorem A_trivial_on_quotient
-    (A : Subgroup G) (_hCommInPhi : (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ≤ frattini G) :
-    -- formally: the image of A in Aut(G/Φ(G)) is the identity
-    True := by trivial
+If `Φ(G) ⊔ H = ⊤` for some subgroup `H`, then `H = ⊤`.
 
-/-- **A3 (AXIOM, substance)**: coprime + A trivial on G/Φ(G) ⇒ A trivial on G.
+Equivalently: Frattini elements are non-generating. MathComp source:
+`Phi_nongen` in `maximal.v`. The mathlib analog would be a corollary
+of `frattini_le_coatom`. -/
+axiom Phi_nongen
+    {G : Type*} [Group G]
+    (H : Subgroup G)
+    (_h : (frattini G) ⊔ H = ⊤) :
+    H = ⊤
 
-Coq: `Phi_nongen` argument in BGsection1.v line ~378. Reason: the kernel of
-`Aut(G) → Aut(G/Φ(G))` is a p-group; A coprime to p lifts to triviality. -/
-axiom A_trivial_on_G_of_trivial_on_quotient
+/-- **AXIOM** — packaged 1.8 step. Combines `Phi_nongen` with 1.6(a)
+`coprime_cent_prod` and `pgroup_sol` to chain through Coq's 5-line proof.
+
+Coq: BGsection1.v:374-383. Citing as a single axiom rather than the
+prior `True`-hypothesis chain (which was technically unsound). -/
+axiom coprime_cent_Phi_chain
     {G : Type*} [Group G] [Fintype G]
     (p : ℕ) (A : Subgroup G)
-    (hG : IsPGroup p (⊤ : Subgroup G))
-    (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hQuotTrivial : True) :
+    (_hG : IsPGroup p (⊤ : Subgroup G))
+    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (_hCommInPhi : (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ≤ frattini G) :
     A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G)
 
 end BranchA
@@ -64,8 +63,7 @@ theorem coprime_cent_Phi
     (hG : IsPGroup p (⊤ : Subgroup G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
     (hCommInPhi : (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ≤ frattini G) :
-    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) := by
-  have hQuotTrivial := BranchA.A_trivial_on_quotient A hCommInPhi
-  exact BranchA.A_trivial_on_G_of_trivial_on_quotient p A hG hCoprime hQuotTrivial
+    A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
+  BranchA.coprime_cent_Phi_chain p A hG hCoprime hCommInPhi
 
 end FeitThompson.BGsection1.P1_8

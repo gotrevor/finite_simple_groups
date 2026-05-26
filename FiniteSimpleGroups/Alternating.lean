@@ -467,18 +467,32 @@ theorem exists_threeCycle_of_normal {n : ℕ} (hn : 5 ≤ n)
     exact ⟨τ, hτ_three, Subgroup.normalClosure_le_normal
       (by simpa using hg_mem) hτ_mem⟩
 
-/-- `A_n` is simple for `n ≥ 5`. **Status in mathlib v4.29.1:** only `n = 5`
-proven directly (`alternatingGroup.isSimpleGroup_five`); the general case is
-listed as a TODO at the top of `Mathlib.GroupTheory.SpecificGroups.Alternating`.
+/-- `A_n` is simple for `n ≥ 5`.
 
-Trevor's [side-quest doc](../../../../personal/claude/knowledge/core/projects/lean-journey/side-quests/finite-simple-groups.md)
-notes this is a genuine half-day mathlib PR (90% confidence) once you take the
-`exists_threeCycle_of_normal` step seriously.
+**Status (2026-05-25):** The pinned mathlib here is v4.29.1, which only ships
+`alternatingGroup.isSimpleGroup_five` (the `n = 5` instance). The general
+`n ≥ 5` case was shipped upstream by Antoine Chambert-Loir in
+[mathlib PR #36524](https://github.com/leanprover-community/mathlib4/pull/36524)
+as `alternatingGroup.isSimpleGroup`, in
+`Mathlib/GroupTheory/SpecificGroups/Alternating/Simple.lean`. Strategy used
+upstream: Iwasawa criterion (action-theoretic), NOT the cycle-decomposition
+Galois argument scaffolded below.
 
-Given that helper, the simplicity proof is immediate: any non-trivial normal
-subgroup contains a 3-cycle (by the helper), so its normal closure contains
-all 3-cycles (by `IsThreeCycle.alternating_Subgroup.normalClosure`), which equals the
-whole `A_n` (by `closure_three_cycles_eq_alternating'`). -/
+**TODO when this repo's mathlib pin catches up past #36524:** replace the body
+of this theorem with the one-liner
+```lean
+  alternatingGroup.isSimpleGroup (n := Fin n) (by simpa using hn)
+```
+and retire the case-decomposition leaves (`case{1,2,4}_*_witness`) below to
+teaching-material status.
+
+**Current proof (v4.29.1-native, Galois 1832 argument):** any non-trivial
+normal subgroup contains a 3-cycle (via `exists_threeCycle_of_normal`), so its
+normal closure contains all 3-cycles (via `IsThreeCycle.alternating_normalClosure`),
+which equals the whole `A_n` (via `closure_three_cycles_eq_alternating`). The
+3-cycle existence helper currently bottoms out in 3 leaf sorries
+(`case{1,2,4}_*_witness`) corresponding to the standard case analysis on
+`cycleType`; see [`HANDOFF.md`](../HANDOFF.md) for the full story. -/
 theorem alternatingGroup_isSimple (n : ℕ) (hn : 5 ≤ n) :
     IsSimpleGroup (alternatingGroup (Fin n)) := by
   haveI : Nontrivial (alternatingGroup (Fin n)) :=

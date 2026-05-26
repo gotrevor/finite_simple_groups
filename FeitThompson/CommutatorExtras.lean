@@ -37,21 +37,54 @@ axiom commutator_sup_le
     (_hLK : L ≤ Subgroup.normalizer ((K : Subgroup G) : Set G)) :
     ⁅H ⊔ K, L⁆ ≤ ⁅H, L⁆ ⊔ ⁅K, L⁆
 
-/-- **AXIOM** — the second argument of a commutator normalizes the
-commutator subgroup (MathComp `commg_normr`).
+/-- The second argument of a commutator normalizes the commutator subgroup
+(MathComp `commg_normr`).
 
-For `H, A` subgroups of `G`: `A ≤ N(⁅H, A⁆)`.
+For `A` a subgroup of `G`: `A ≤ N(⁅⊤, A⁆)`.
 
-Proof (sketch): conjugating a generator `⁅h, a⁆` by `a' ∈ A` yields
-`⁅a'ha'⁻¹, a'aa'⁻¹⁆`. The first arg is in `H` only if `A` normalizes `H`;
-in our use case `H = ⊤` so this is automatic. The second arg is in `A`
-trivially. Closure under conjugation by `A` follows.
+Proved by closure-induction on `⁅⊤, A⁆`. For a generator `⁅g, a⁆`,
+conjugation by `a' ∈ A` gives `⁅a'ga'⁻¹, a'aa'⁻¹⁆` (via
+`conjugate_commutatorElement`), and `a'aa'⁻¹ ∈ A`. The multiplicative
+and inverse closure cases reduce to a group-algebra rearrangement.
+The backward direction of `mem_normalizer_iff` is obtained by applying
+the forward helper with `a'⁻¹ ∈ A`.
 
-MathComp source: `math-comp/algebra/commutator.v`, lemma `commg_normr`. -/
-axiom commg_normr
+(Was Increment 11's second "extras" axiom; discharged at Inc 21.) -/
+theorem commg_normr
     {G : Type*} [Group G]
     (A : Subgroup G) :
-    A ≤ Subgroup.normalizer ((⁅(⊤ : Subgroup G), A⁆ : Subgroup G) : Set G)
+    A ≤ Subgroup.normalizer
+      ((⁅(⊤ : Subgroup G), A⁆ : Subgroup G) : Set G) := by
+  -- Helper: conjugation by an element of A maps `⁅⊤, A⁆` into itself.
+  have conj_into : ∀ (a' : G), a' ∈ A → ∀ g ∈ (⁅(⊤ : Subgroup G), A⁆ : Subgroup G),
+      a' * g * a'⁻¹ ∈ (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) := by
+    intro a' ha' g hg
+    rw [Subgroup.commutator_def] at hg
+    induction hg using Subgroup.closure_induction with
+    | mem y hy =>
+      obtain ⟨g₁, _hg₁, g₂, hg₂, rfl⟩ := hy
+      rw [conjugate_commutatorElement]
+      exact Subgroup.commutator_mem_commutator (Subgroup.mem_top _)
+        (A.mul_mem (A.mul_mem ha' hg₂) (A.inv_mem ha'))
+    | one => simp
+    | mul x y _hx _hy ihx ihy =>
+      have heq : a' * (x * y) * a'⁻¹ = (a' * x * a'⁻¹) * (a' * y * a'⁻¹) := by group
+      rw [heq]
+      exact Subgroup.mul_mem _ ihx ihy
+    | inv x _hx ihx =>
+      have heq : a' * x⁻¹ * a'⁻¹ = (a' * x * a'⁻¹)⁻¹ := by group
+      rw [heq]
+      exact Subgroup.inv_mem _ ihx
+  intro a' ha'
+  rw [Subgroup.mem_normalizer_iff]
+  intro h
+  refine ⟨fun hh => conj_into a' ha' h hh, fun hh => ?_⟩
+  have key : a'⁻¹ * (a' * h * a'⁻¹) * (a'⁻¹)⁻¹
+           ∈ (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) :=
+    conj_into a'⁻¹ (A.inv_mem ha') _ hh
+  have eq : a'⁻¹ * (a' * h * a'⁻¹) * (a'⁻¹)⁻¹ = h := by group
+  rw [eq] at key
+  exact key
 
 /-- Every subgroup normalizes its own centralizer (MathComp `cent_norm` /
 `subset_norm_cent`).

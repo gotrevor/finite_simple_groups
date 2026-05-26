@@ -25,10 +25,11 @@ Side-quest doc in Trevor's KB: `claude/knowledge/core/projects/lean-journey/side
 | Metric                | Value |
 |-----------------------|-------|
 | Top-level BG §1 thms  | 17    |
-| Real axioms           | **16** |
+| Real axioms           | **13** |
 | `sorry` warnings      | **0** |
-| True-placeholder axs  | **0** |
-| FT-port PRs merged    | 21 (Inc 1-21) |
+| Orphan axioms         | **0** (CI-strict) |
+| Dead-True placeholders | **0** (CI-strict) |
+| FT-port PRs merged    | 25 (Inc 1-25) |
 
 All 17 top-level theorems re-exported from `FeitThompson/BGsection1.lean`.
 Build green: `lake build FeitThompson`.
@@ -48,7 +49,12 @@ Build green: `lake build FeitThompson`.
    collapse trivially (Inc 15 pattern).
 4. **No True-hypothesis axioms** — `(h : True)` axioms are silently
    unsound. Grep `: True` in any new axiom declarations and refactor.
-5. **Increment style** — one focused PR per increment, merged via
+5. **No orphan axioms or dead-True placeholder theorems** — CI runs
+   `FeitThompson/scripts/orphan-axioms.sh --strict` (Inc 23-25). If
+   you add a tree-decomposition branch as a separate declaration,
+   wire it into a proof in the same PR, or leave it as a comment.
+   Don't materialize aspirational structure as code.
+6. **Increment style** — one focused PR per increment, merged via
    `gh pr merge <N> --admin --merge` (bypasses the perpetually-queued
    CI runner).
 
@@ -64,19 +70,26 @@ Build green: `lake build FeitThompson`.
 - Inc 18: discharged `wlog_cyclic` (zpowers argument, 7 lines)
 - Inc 19: updated `findings.md` with fifth-hour summary
 
-## What got done in Inc 20-21 (sixth hour, sweep)
-
-Targeted handoff option 3 (search-by-statement-shape sweep) and
-discharged the two CommutatorExtras candidates that fell out:
+## What got done in Inc 20-25 (sixth hour, sweep + cleanup)
 
 - **Inc 20** — `le_normalizer_centralizer` (`A ≤ N(C(A))`). No mathlib
   analog; provable from `mem_normalizer_iff` + `mem_centralizer_iff` +
   `group` tactic (~15 LOC).
 - **Inc 21** — `commg_normr` (`A ≤ N(⁅⊤, A⁆)`). Closure-induction on
-  `⁅⊤, A⁆` with a `conj_into` helper; backward direction via the same
-  helper applied to `a'⁻¹` (~35 LOC).
+  `⁅⊤, A⁆` with a `conj_into` helper (~35 LOC).
+- **Inc 22** — docs (findings + HANDOFF refresh).
+- **Inc 23** — orphan-axiom audit: removed `norm_C_eq_top`,
+  `wlog_comm_eq_top`, `abelian_charsimple_special` (all zero refs,
+  leftover from original tree decompositions). Added
+  `FeitThompson/scripts/orphan-axioms.sh` detector + soft CI hook.
+- **Inc 24** — dead-True placeholder cleanup: removed P1_4's
+  `semidirect_solvable`, `piPart_Fitting_trivial`, `fitting_in_G`
+  (all `True := by trivial` with zero refs). Extended detector to
+  catch this pattern.
+- **Inc 25** — promoted detector to **strict** mode in CI (this
+  increment). Any future regression fails the build.
 
-**Sweep result**: the other 16 axioms all require infrastructure not
+**Sweep result**: the other 13 axioms all require infrastructure not
 in scope for shape-discharge (see ❌ list under "Next-session options"
 below). Don't re-run the full sweep blindly — see the classification
 table in `findings.md` sixth-hour update.
@@ -85,10 +98,11 @@ table in `findings.md` sixth-hour update.
 
 ### Sweep-discharged ✅ (do NOT re-attempt)
 
-- Option 2 (`norm_C_eq_top`) — turned out to be an orphan/dead axiom
-  in the *current* P1_10 proof (which uses `stable_factor_data`
-  directly). The axiom is earmarked for the P1_10 structural refactor
-  per option 4 — don't remove it standalone, that's premature.
+- Option 2 (`norm_C_eq_top`) — **removed** in Inc 23 as an orphan
+  axiom (zero references; the actual P1_10 proof shortcuts via
+  `stable_factor_data`). The P1_10 structural refactor (option 4
+  below) will need to re-introduce an equivalent intermediate; that's
+  fine, the orphan removal doesn't pre-empt the refactor.
 - Option 3 (axiom shape sweep) — completed Inc 20-21. Two wins, then
   exhausted. Remaining axioms classified in `findings.md` sixth-hour.
 

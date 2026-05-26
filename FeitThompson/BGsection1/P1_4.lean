@@ -28,6 +28,7 @@ coprime_trivg_cent_Fitting
 import FeitThompson.MathlibStubs
 import FeitThompson.BGsection1.P1_3
 import Mathlib.GroupTheory.Solvable
+import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 
 namespace FeitThompson.BGsection1.P1_4
 
@@ -37,20 +38,35 @@ variable {G : Type*} [Group G]
 
 namespace BranchA
 
-/-- **A1+A2 (AXIOM)**: it suffices to prove the statement for cyclic A.
+/-- **A1+A2**: it suffices to prove the statement for cyclic A.
 
-Coq: opening `without loss: / ... cyclic A` in BGsection1.v line ~231.
-The reduction uses that any element of `A \ ⊥` generates a cyclic subgroup
-with the same coprime / centralizer properties. -/
-axiom wlog_cyclic
-    {G : Type*} [Group G] [Fintype G] (A : Subgroup G)
-    (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
-    (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G)
-    (hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥)
+Direct proof: if every cyclic `A' ≤ A` has `A' ⊓ centralizer F(G) = ⊥`,
+then for any `x ∈ A ⊓ centralizer F(G)`, the cyclic subgroup `⟨x⟩ ≤ A`
+also intersects `centralizer F(G)` trivially. Since `x ∈ ⟨x⟩`, this
+forces `x = 1`. -/
+theorem wlog_cyclic
+    [Fintype G] (A : Subgroup G)
+    (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
+    (_hCoprime : (Nat.card G).Coprime (Nat.card A))
+    (_hSol : IsSolvable G)
+    (_hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥)
     (hReduce : ∀ A' : Subgroup G, A' ≤ A → IsCyclic A' →
        A' ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥) :
-    A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥
+    A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥ := by
+  refine eq_bot_iff.mpr ?_
+  intro x hx
+  obtain ⟨hxA, hxC⟩ := Subgroup.mem_inf.mp hx
+  -- A' = ⟨x⟩ is cyclic, contained in A.
+  let A' : Subgroup G := Subgroup.zpowers x
+  have hA'le : A' ≤ A := Subgroup.zpowers_le.mpr hxA
+  have hRed := hReduce A' hA'le inferInstance
+  -- x ∈ A' ⊓ centralizer F(G), but that's ⊥, so x = 1.
+  have hxA' : x ∈ A' := Subgroup.mem_zpowers x
+  have hxBoth : x ∈ A' ⊓ Subgroup.centralizer
+      ((FittingSubgroup G : Subgroup G) : Set G) :=
+    Subgroup.mem_inf.mpr ⟨hxA', hxC⟩
+  rw [hRed] at hxBoth
+  exact hxBoth
 
 end BranchA
 

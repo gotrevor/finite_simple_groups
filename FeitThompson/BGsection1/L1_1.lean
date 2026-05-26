@@ -157,17 +157,59 @@ theorem pPowerImage_bot_or_top
   obtain ⟨K, hK, hKn, hKle⟩ := pPowerImage_isSubgroup_and_normal M hAbel hNorm p
   exact ⟨K, hK, hMinimal K hKn hKle⟩
 
-/-- **Twig B3 (AXIOM)**: if M is nontrivial finite abelian, there's *some*
-prime p for which the p-power map is not surjective on M. (Otherwise the
-exponent of M would be divisible by every prime, impossible for |M| > 1.)
+/-- **Twig B3**: if M is nontrivial finite abelian, there's *some* prime
+p for which the p-power map is not surjective on M.
 
-Source: elementary finite-group fact (Cauchy / Lagrange / pigeonhole on
-prime factors of |M|). Deferred. -/
-axiom exists_prime_pPowerImage_ne_top
-    {G : Type*} [Group G]
+Proof: |M| ≠ 1 ⇒ ∃ p prime dividing |M| (`Nat.exists_prime_and_dvd`).
+By Cauchy (`exists_prime_orderOf_dvd_card'`) there's `m : ↥M` with
+`orderOf m = p`, hence `m ≠ 1` and `m ^ p = 1`. If the p-power map were
+surjective on ↥M (i.e., `pPowerImage M p ⊇ M`), then by finite pigeonhole
+it would be injective — contradicted by `m ^ p = 1 = 1 ^ p, m ≠ 1`. -/
+theorem exists_prime_pPowerImage_ne_top
     (M : Subgroup G) [Finite M] (hNT : M ≠ ⊥) (hAbel : IsMulCommutative M) :
     ∃ p : ℕ, p.Prime ∧
-      ∀ K : Subgroup G, (K : Set G) = pPowerImage M p → K ≠ M
+      ∀ K : Subgroup G, (K : Set G) = pPowerImage M p → K ≠ M := by
+  haveI := hAbel
+  -- |M| > 1, so a prime divisor exists.
+  haveI hNontriv : Nontrivial ↥M := M.nontrivial_iff_ne_bot.mpr hNT
+  have hMpos : 0 < Nat.card ↥M := Nat.card_pos
+  have hMgt1 : 1 < Nat.card ↥M := Finite.one_lt_card_iff_nontrivial.mpr hNontriv
+  have hMne1 : Nat.card ↥M ≠ 1 := hMgt1.ne'
+  obtain ⟨p, hp, hpdvd⟩ := Nat.exists_prime_and_dvd hMne1
+  -- Cauchy.
+  haveI : Fact p.Prime := ⟨hp⟩
+  obtain ⟨m, hm_ord⟩ := exists_prime_orderOf_dvd_card' (G := ↥M) p hpdvd
+  -- m^p = 1, m ≠ 1.
+  have hm_pow_one : m ^ p = 1 := hm_ord ▸ pow_orderOf_eq_one m
+  have hm_ne_one : m ≠ 1 := by
+    intro h
+    have : orderOf m = 1 := by rw [h]; exact orderOf_one
+    rw [hm_ord] at this
+    exact hp.one_lt.ne' this
+  refine ⟨p, hp, ?_⟩
+  intro K hKeq hKeqM
+  -- M = K as sets in G, hence pPowerImage M p = M as Sets in G.
+  have hSetEq : (M : Set G) = pPowerImage M p := by rw [← hKeq, hKeqM]
+  -- For any x : ↥M, the underlying x.val ∈ M, hence in pPowerImage M p,
+  -- hence x.val = m'^p for some m' ∈ M.
+  -- Show that the p-power map ↥M → ↥M is surjective; hence injective.
+  have hSurj : Function.Surjective (fun x : ↥M => x ^ p) := by
+    intro x
+    have hxG : (x : G) ∈ M := x.2
+    have hxImg : (x : G) ∈ pPowerImage M p := by
+      have := hSetEq ▸ (show (x : G) ∈ (M : Set G) from hxG)
+      exact this
+    obtain ⟨y, hyM, hyp⟩ := hxImg
+    refine ⟨⟨y, hyM⟩, ?_⟩
+    apply Subtype.ext
+    rw [Subgroup.coe_pow]
+    exact hyp
+  -- Surjective + finite ⇒ injective.
+  have hInj : Function.Injective (fun x : ↥M => x ^ p) :=
+    Finite.injective_iff_surjective.mpr hSurj
+  -- But m^p = 1 = 1^p with m ≠ 1: contradiction.
+  have : m ^ p = (1 : ↥M) ^ p := by rw [hm_pow_one, one_pow]
+  exact hm_ne_one (hInj this)
 
 /-- **Twig B4**: combining B2 and B3 — there is a prime p with `M^p = ⊥`,
 equivalently every m ∈ M satisfies `m^p = 1`. -/

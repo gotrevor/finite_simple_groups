@@ -29,6 +29,7 @@ All under the hypotheses: `A ⊆ N(G)`, `coprime |G| |A|`, `solvable G`.
 -/
 
 import FeitThompson.MathlibStubs
+import FeitThompson.CommutatorExtras
 import Mathlib.GroupTheory.Commutator.Basic
 import Mathlib.GroupTheory.Solvable
 
@@ -77,17 +78,43 @@ theorem coprime_cent_prod
   · -- IsSolvable ⁅⊤,A⁆ from IsSolvable G (subgroups inherit solvability)
     infer_instance
 
-/-- **1.6(b) `coprime_commGid` (AXIOM)**: `⁅⁅G,A⁆, A⁆ = ⁅G,A⁆`.
+/-- **1.6(b) `coprime_commGid`**: `⁅⁅G,A⁆, A⁆ = ⁅G,A⁆`.
 
-Coq: BGsection1.v line ~322. Applies coprime_cent_prod to ⁅G,A⁆ and uses
-`commG1P` plus `commMG` (commutator-mul) to collapse. Deferred. -/
-axiom coprime_commGid
-    {G : Type*} [Group G] [Fintype G]
+Coq: BGsection1.v line ~322. Translation strategy (faithful to upstream):
+
+1. (⊆) `Subgroup.commutator_mono` since `⁅⊤,A⁆ ≤ ⊤`.
+2. (⊇) Rewrite `⊤ = ⁅⊤,A⁆ ⊔ C_G(A)` via `coprime_cent_prod`, then apply
+   `commutator_sup_le` (= MathComp `commMG`, axiomatized in
+   `CommutatorExtras`). The `⁅C_G(A), A⁆` term collapses to `⊥` by
+   `commutator_eq_bot_iff_le_centralizer` since `C_G(A) ≤ C_G(A)`. -/
+theorem coprime_commGid
     (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
     (hSol : IsSolvable G) :
-    ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⁅(⊤ : Subgroup G), A⁆
+    ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⁅(⊤ : Subgroup G), A⁆ := by
+  refine le_antisymm ?_ ?_
+  · -- (⊆) ⁅⁅⊤,A⁆, A⁆ ≤ ⁅⊤,A⁆ by monotonicity (⁅⊤,A⁆ ≤ ⊤).
+    exact Subgroup.commutator_mono le_top le_rfl
+  · -- (⊇) ⁅⊤,A⁆ ≤ ⁅⁅⊤,A⁆, A⁆.
+    -- Step 1: ⊤ = ⁅⊤,A⁆ ⊔ C_G(A) from coprime_cent_prod.
+    have hSup : (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ⊔
+        Subgroup.centralizer (A : Set G) = ⊤ :=
+      coprime_cent_prod A hNorm hCoprime hSol
+    -- Step 2: rewrite ⁅⊤, A⁆ as ⁅⁅⊤,A⁆ ⊔ C_G(A), A⁆.
+    calc (⁅(⊤ : Subgroup G), A⁆ : Subgroup G)
+        = ⁅((⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ⊔
+              Subgroup.centralizer (A : Set G)), A⁆ := by rw [hSup]
+      _ ≤ ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ ⊔
+            ⁅Subgroup.centralizer (A : Set G), A⁆ := by
+          -- Step 3: apply commutator_sup_le with the two normalization side conditions.
+          exact FeitThompson.CommutatorExtras.commutator_sup_le _ _ _
+            (FeitThompson.CommutatorExtras.commg_normr A)
+            (FeitThompson.CommutatorExtras.le_normalizer_centralizer A)
+      _ = ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ ⊔ ⊥ := by
+          -- Step 4: ⁅C_G(A), A⁆ = ⊥ since C_G(A) ≤ C_G(A).
+          rw [Subgroup.commutator_eq_bot_iff_le_centralizer.mpr le_rfl]
+      _ = ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ := sup_bot_eq _
 
 /-- **1.6(c) `coprime_commGG1P`**: vanishing of ⁅⁅G,A⁆, A⁆ forces A ≤ C(G). -/
 theorem coprime_commGG1P

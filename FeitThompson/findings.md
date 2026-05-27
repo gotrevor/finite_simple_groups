@@ -511,18 +511,24 @@ sweep finding something proveable — not the proving itself.
 
 ## Where the next leverage lives
 
-The two paths forward:
+> **Superseded by the seventh-hour update below (Inc 26-27).** The
+> "mathlib upstream PR" path is closed per standing decision: no
+> upstream from this worktree. Kept for historical context.
 
-1. **Build mathlib bricks upstream.** Fitting subgroup + pCore as the
-   first PR (per the Hour 2 / Hour 4 strategic note). Discharging
-   ~5 of the 16 remaining axioms cascades from these two definitions
-   alone.
+The two paths forward (as of Inc 21):
+
+1. ~~**Build mathlib bricks upstream.** Fitting subgroup + pCore as
+   the first PR. Discharging ~5 of the 16 remaining axioms cascades
+   from these two definitions alone.~~ **Closed:** standing decision
+   is no mathlib upstream from this worktree. Fitting/pCore bricks
+   would have to land via a different path (or be inlined locally,
+   which defeats the leverage premise).
 2. **Structural decomposition (handoff options 6, 7).** Adds new
    theorems but also new leaves/axioms. Net axiom count likely goes
    up not down, which trades raw count for proof tree completeness.
 
-Both are real work, ~hours each. The 12-15-min-per-axiom regime is
-genuinely over for what `CommutatorExtras` can offer.
+Both were real work, ~hours each. The 12-15-min-per-axiom regime
+was genuinely over for what `CommutatorExtras` could offer.
 
 # Update — seventh hour: structural relativization (Inc 26-)
 
@@ -575,3 +581,27 @@ underlying P1_10 statement is now soundly proved.
 
 Combined Inc 26 + Inc 27 result: 13 axioms (unchanged), but the
 `stable_factor_data` soundness issue (HANDOFF option 4) is closed.
+
+## Where leverage lives now (post-Inc 27, 2026-05-27)
+
+Per-axiom inline discharge is exhausted (the original "Where the next
+leverage lives" analysis above stands, minus the upstream-PR option).
+Real candidates for the FT-port direction:
+
+1. **`series_cent_of_stable` list induction (Inc 28 candidate).**
+   The relativized 1.9-base from Inc 26 was specifically designed to
+   unblock this. P1_9's list induction is now tractable — pick up
+   the recursion that previously required a hardcoded K = ⊤.
+2. **Structural decomposition (HANDOFF options 6, 7).** Still
+   available. Trades raw axiom count for proof-tree completeness.
+
+Off the table:
+- ~~Mathlib upstream PRs (Fitting + pCore).~~ Standing decision: no
+  upstream from this worktree.
+- Per-axiom 12-15-min sweeps. Genuinely over.
+
+Parallel track to consider:
+- **CFSG scaffolding** (`FiniteSimpleGroups/`) is now in motion as
+  of Inc 28. See the CFSG-track section of root `HANDOFF.md` for
+  state. Sometimes the right move is to push CFSG forward rather
+  than chip at FT-port axiom 14.

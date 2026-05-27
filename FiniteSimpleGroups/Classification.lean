@@ -1,5 +1,8 @@
 import Mathlib
 import FiniteSimpleGroups.Basic
+import FiniteSimpleGroups.LieType
+import FiniteSimpleGroups.Exceptional
+import FiniteSimpleGroups.Sporadics
 
 /-!
 # The Classification of Finite Simple Groups (CFSG)
@@ -19,28 +22,50 @@ This was completed between roughly 1955 and 2004, with the **second-generation
 proof** (Gorenstein-Lyons-Solomon program) still being written down — 10 of
 12 planned volumes published as of 2023.
 
-This file states the theorem as a single disjunction. The disjuncts are
-proven (or sorry'd) in the per-family modules.
+## What this file states
+
+`IsClassified G` is a five-way disjunction matching the families above. Each
+disjunct quantifies over the family parameters and asserts an isomorphism
+from `G` to a specific group in that family.
+
+**Inc 28 (2026-05-26):** Tightened the Lie-type and sporadic disjuncts. They
+used to route through `opaque ... : Prop` placeholders (effectively content-
+free). They now quantify over the parameterized carriers introduced in Inc 28:
+`classicalLieTypeCarrier fam n q`, `exceptionalLieTypeCarrier fam k`, and
+`Sporadics.Name.carrier name`. The carriers themselves remain opaque (no
+construction yet), but the *statement* of CFSG is now meaningful — it asserts
+existence of specific (family, parameter) data and a group isomorphism.
 -/
 
 namespace FiniteSimpleGroups
 
-/-- One of the four classical Lie-type families (placeholder; see `LieType`). -/
-opaque ClassicalLieType (G : Type*) [Group G] : Prop
+/-- The CFSG predicate: `G` is isomorphic to one of the canonical families.
 
-/-- One of the exceptional Lie-type groups (placeholder; see `Exceptional`). -/
-opaque ExceptionalLieType (G : Type*) [Group G] : Prop
-
-/-- One of the 26 sporadic simple groups (placeholder; see `Sporadics`). -/
-opaque Sporadic (G : Type*) [Group G] : Prop
-
-/-- The CFSG predicate: `G` is isomorphic to one of the canonical families. -/
+Each disjunct except `cyclic` requires the target carrier to carry a `Group`
+instance (the carriers are opaque pending construction; the instance is
+existentially asserted alongside the isomorphism). -/
 inductive IsClassified (G : Type*) [Group G] : Prop where
-  | cyclic : (∃ p : ℕ, p.Prime ∧ Nonempty (G ≃* Multiplicative (ZMod p))) → IsClassified G
-  | alternating : (∃ n : ℕ, 5 ≤ n ∧ Nonempty (G ≃* alternatingGroup (Fin n))) → IsClassified G
-  | classicalLieType : ClassicalLieType G → IsClassified G
-  | exceptionalLieType : ExceptionalLieType G → IsClassified G
-  | sporadic : Sporadic G → IsClassified G
+  | cyclic :
+      (∃ p : ℕ, p.Prime ∧ Nonempty (G ≃* Multiplicative (ZMod p))) →
+      IsClassified G
+  | alternating :
+      (∃ n : ℕ, 5 ≤ n ∧ Nonempty (G ≃* alternatingGroup (Fin n))) →
+      IsClassified G
+  | classicalLieType :
+      (∃ (fam : ClassicalFamily) (n q : ℕ)
+         (_ : Group (classicalLieTypeCarrier fam n q)),
+        Nonempty (G ≃* classicalLieTypeCarrier fam n q)) →
+      IsClassified G
+  | exceptionalLieType :
+      (∃ (fam : ExceptionalFamily) (k : ℕ)
+         (_ : Group (exceptionalLieTypeCarrier fam k)),
+        Nonempty (G ≃* exceptionalLieTypeCarrier fam k)) →
+      IsClassified G
+  | sporadic :
+      (∃ (name : Sporadics.Name)
+         (_ : Group name.carrier),
+        Nonempty (G ≃* name.carrier)) →
+      IsClassified G
 
 /-- **The Classification Theorem.** Every finite simple group is classified.
 

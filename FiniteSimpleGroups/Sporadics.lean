@@ -180,5 +180,43 @@ theorem card_happy_family :
     (Finset.univ.filter (fun n : Name => ¬ n.isPariah)).card = 20 := by
   decide
 
+/-- Lookup the underlying opaque carrier type for a sporadic group by name.
+
+Used by `Classification.IsClassified.sporadic` to quantify over sporadics
+without enumerating 26 disjuncts inline. Each carrier remains opaque pending
+a real construction (Mathieu groups via Steiner systems, Conway groups via the
+Leech lattice, Monster via the 196,883-dim representation, etc.).
+
+The explicit `_root_.FiniteSimpleGroups.Sporadics.X` qualification is needed
+because the constructor names (`Name.M11`, `Name.J1`, …) shadow the opaque
+type names at unqualified resolution inside this namespace. -/
+def Name.carrier : Name → Type
+  | .M11 => _root_.FiniteSimpleGroups.Sporadics.M11
+  | .M12 => _root_.FiniteSimpleGroups.Sporadics.M12
+  | .M22 => _root_.FiniteSimpleGroups.Sporadics.M22
+  | .M23 => _root_.FiniteSimpleGroups.Sporadics.M23
+  | .M24 => _root_.FiniteSimpleGroups.Sporadics.M24
+  | .J1  => _root_.FiniteSimpleGroups.Sporadics.J1
+  | .J2  => _root_.FiniteSimpleGroups.Sporadics.J2
+  | .J3  => _root_.FiniteSimpleGroups.Sporadics.J3
+  | .J4  => _root_.FiniteSimpleGroups.Sporadics.J4
+  | .Co1 => _root_.FiniteSimpleGroups.Sporadics.Co1
+  | .Co2 => _root_.FiniteSimpleGroups.Sporadics.Co2
+  | .Co3 => _root_.FiniteSimpleGroups.Sporadics.Co3
+  | .Fi22 => _root_.FiniteSimpleGroups.Sporadics.Fi22
+  | .Fi23 => _root_.FiniteSimpleGroups.Sporadics.Fi23
+  | .Fi24' => _root_.FiniteSimpleGroups.Sporadics.Fi24'
+  | .Monster => _root_.FiniteSimpleGroups.Sporadics.Monster
+  | .BabyMonster => _root_.FiniteSimpleGroups.Sporadics.BabyMonster
+  | .Thompson => _root_.FiniteSimpleGroups.Sporadics.Thompson
+  | .HaradaNorton => _root_.FiniteSimpleGroups.Sporadics.HaradaNorton
+  | .Held => _root_.FiniteSimpleGroups.Sporadics.Held
+  | .McLaughlin => _root_.FiniteSimpleGroups.Sporadics.McLaughlin
+  | .SuzukiSporadic => _root_.FiniteSimpleGroups.Sporadics.SuzukiSporadic
+  | .HigmanSims => _root_.FiniteSimpleGroups.Sporadics.HigmanSims
+  | .ONan => _root_.FiniteSimpleGroups.Sporadics.ONan
+  | .Rudvalis => _root_.FiniteSimpleGroups.Sporadics.Rudvalis
+  | .Lyons => _root_.FiniteSimpleGroups.Sporadics.Lyons
+
 end Sporadics
 end FiniteSimpleGroups

@@ -523,3 +523,37 @@ The two paths forward:
 
 Both are real work, ~hours each. The 12-15-min-per-axiom regime is
 genuinely over for what `CommutatorExtras` can offer.
+
+# Update — seventh hour: structural relativization (Inc 26-)
+
+Picked HANDOFF option 4 (P1_10 soundness refactor) as the next move
+after the sixth-hour sweep exhausted shape-discharge candidates. The
+refactor needs the 1.9-base axiom at level `K = N_G(C_G(A))`, which
+the original Inc 16 axiom hardcoded to `K = ⊤`. Splitting into two
+increments:
+
+**Inc 26** — Relativize the base axiom.
+- New `IsStableFactor' A K H` struct (was `IsStableFactor A H` with
+  K = ⊤ baked in). The `conjStable` clause expresses K-normality of H
+  pointwise rather than via `(H.subgroupOf K).Normal` — keeps
+  everything in `Subgroup G`, matches MathComp.
+- New axiom `stable_factor_cent_chain'` at arbitrary K.
+- Old `stable_factor_cent_chain` (K = ⊤) is now a **theorem** derived
+  from the relativized axiom via `Subgroup.card_top` + the
+  `Normal.conj_mem ↔ conjStable` translation.
+- Public API (`BGsection1.lean`) unchanged — same theorem signature.
+
+Net axiom count effect: ±0 (one axiom removed, one added). The win
+shows up in Inc 27, which uses the new K-parametric axiom to discharge
+the false-claim `stable_factor_data` in P1_10.
+
+Why this is "broaden-then-dig" not "dig narrow": the per-axiom sweep
+(Inc 20-21) was exhausted. The next leverage was a structural change
+that unblocks *two* things — P1_10 soundness fix AND P1_9 list
+induction (future Inc 28). The relativization is the shared dependency,
+not a piecemeal discharge.
+
+Pattern note: when a base axiom hardcodes a parameter that downstream
+work needs to vary, the right move is to relativize the base + derive
+the specialization, not to add a parallel axiom. The K = ⊤ theorem
+is a one-screen proof from the relativized axiom — cheap.

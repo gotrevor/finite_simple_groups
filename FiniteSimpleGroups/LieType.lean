@@ -92,10 +92,21 @@ opaque PSU (n q : ℕ) : Type
 
 /-- `PSp_{2n}(F_q)` — the projective symplectic group.
 
-Mathlib has `Matrix.symplecticGroup` (`Sp_{2n}`) but not its center quotient.
-Quotienting locally is mechanically straightforward (Sp / center is a real
-quotient group); left for Inc 30+. -/
-opaque PSp (n q : ℕ) : Type
+**Inc 30:** Connected to mathlib via
+`symplecticGroup (Fin n) (ZMod q) ⧸ Subgroup.center _`. The dimension
+parameter `n` is the half-dimension: matrices are `(Fin n ⊕ Fin n) × (Fin n ⊕ Fin n)`,
+so the underlying linear group is `Sp_{2n}(ZMod q)`. Group instance
+auto-derives via mathlib's quotient infrastructure (any subgroup's center
+is normal, so the quotient is a group).
+
+Modeling caveat (same as PSL): `(n q : ℕ)` is loose about prime-power
+structure; `ZMod q` is the field `F_q` only for `q` prime. -/
+def PSp (n q : ℕ) : Type :=
+  Matrix.symplecticGroup (Fin n) (ZMod q) ⧸
+    Subgroup.center (Matrix.symplecticGroup (Fin n) (ZMod q))
+
+instance (n q : ℕ) : Group (PSp n q) := by
+  unfold PSp; infer_instance
 
 /-- `PΩ^ε_n(F_q)` — the commutator subgroup of the projective orthogonal group.
 `ε ∈ {+, -, ∅}` distinguishes the three types of quadratic form. We elide the
@@ -144,7 +155,7 @@ axiom PSU_isSimpleGroup
     IsSimpleGroup (PSU n q)
 
 axiom PSp_isSimpleGroup
-    (n q : ℕ) [Group (PSp n q)]
+    (n q : ℕ)
     (h_n : 2 ≤ n) (h_skip : ¬ (n = 2 ∧ q = 2)) :
     IsSimpleGroup (PSp n q)
 
@@ -153,16 +164,18 @@ axiom POmega_isSimpleGroup
     (h_n : 7 ≤ n) :
     IsSimpleGroup (POmega n q)
 
-/-! ## Inc 29 sanity checks
+/-! ## Inc 29/30 sanity checks
 
-These confirm that the `PSL` connection works — Group instance
-auto-derives from mathlib for any `(n, q)`. Classification.lean's
-existential `(_ : Group ...)` is now trivially satisfiable for the
-`PSL` branch (after a `unfold classicalLieTypeCarrier` step), versus
-the pre-Inc-29 state where it required an explicit axiom dance. -/
+These confirm that the `PSL` (Inc 29) and `PSp` (Inc 30) connections work
+— Group instances auto-derive from mathlib for any `(n, q)`.
+Classification.lean's existential `(_ : Group ...)` is now trivially
+satisfiable for those two branches, versus the pre-Inc-29 state where it
+required an explicit axiom dance. -/
 
 example : Group (PSL 2 5) := inferInstance
 example : Group (PSL 7 11) := inferInstance
+example : Group (PSp 2 5) := inferInstance
+example : Group (PSp 4 7) := inferInstance
 
 /-- For any `(n, q)`, the `PSL` carrier reachable through
 `classicalLieTypeCarrier` has a Group instance. Witnesses Inc 29's claim
@@ -173,6 +186,14 @@ instance psl_carrier_group (n q : ℕ) :
   unfold classicalLieTypeCarrier
   infer_instance
 
+/-- Same for `PSp` (Inc 30): the `classicalLieTypeCarrier .PSp` lookup
+exposes a Group instance directly. -/
+instance psp_carrier_group (n q : ℕ) :
+    Group (classicalLieTypeCarrier .PSp n q) := by
+  unfold classicalLieTypeCarrier
+  infer_instance
+
 example : Group (classicalLieTypeCarrier .PSL 2 5) := inferInstance
+example : Group (classicalLieTypeCarrier .PSp 2 5) := inferInstance
 
 end FiniteSimpleGroups

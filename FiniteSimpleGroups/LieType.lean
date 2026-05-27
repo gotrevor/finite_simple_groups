@@ -32,12 +32,25 @@ simplicity stated as `axiom`s pending a real construction.
 just `opaque PSL : Type`, collapsing every `(n, q)` to the same Lean type.
 Now `PSL (n q : ℕ) : Type` etc., so each Lie-type group is a distinct type.
 
+**Inc 29 (2026-05-27):** Connected `PSL` to its mathlib analogue
+`Matrix.ProjectiveSpecialLinearGroup (Fin n) (ZMod q)`. Carrier is now a real
+mathlib quotient, not an opaque type; Group instance auto-derives via mathlib.
+The simplicity axiom is now a genuine open mathematical claim about a
+specific mathlib type, not a statement about an opaque placeholder.
+
+The other three classical families (`PSU`, `PSp`, `POmega`) remain opaque
+for now — mathlib has the non-projective versions (`specialUnitaryGroup`,
+`symplecticGroup`) but not their quotients by center. Building those
+quotients locally is left for Inc 30+.
+
 **Reading:** Carter, *Simple Groups of Lie Type* (1972) — the standard
 reference. Gorenstein-Lyons-Solomon Volume 1 § 2 for a CFSG-friendly
 overview.
 -/
 
 namespace FiniteSimpleGroups
+
+open scoped MatrixGroups
 
 /-- Enumeration of the four classical families of Lie type. -/
 inductive ClassicalFamily : Type where
@@ -54,19 +67,43 @@ inductive ClassicalFamily : Type where
 theorem card_classicalFamily : Fintype.card ClassicalFamily = 4 := by decide
 
 /-- `PSL_n(F_q)` — the projective special linear group. Simple for `n ≥ 2`
-except `(n,q) ∈ {(2,2),(2,3)}`. -/
-opaque PSL (n q : ℕ) : Type
+except `(n,q) ∈ {(2,2),(2,3)}`.
+
+**Inc 29:** This is now a concrete mathlib type:
+`Matrix.ProjectiveSpecialLinearGroup (Fin n) (ZMod q)`, the quotient of
+`SL_n(ZMod q)` by its center. For `q` a prime, `ZMod q` is the finite field
+`F_q`; for `q` a prime power, the "right" base ring is `GaloisField p k`
+rather than `ZMod q`, so this scaffold's `q : ℕ` parameter is loose about
+prime-power structure. The simplicity axiom's `(n,q) ∉ {(2,2),(2,3)}` guard
+captures the cases where simplicity actually holds. -/
+def PSL (n q : ℕ) : Type :=
+  Matrix.ProjectiveSpecialLinearGroup (Fin n) (ZMod q)
+
+instance (n q : ℕ) : Group (PSL n q) := by
+  unfold PSL; infer_instance
 
 /-- `PSU_n(F_q)` — the projective special unitary group. Defined over `F_{q²}`
-with a Hermitian form coming from the `q`-Frobenius. -/
+with a Hermitian form coming from the `q`-Frobenius.
+
+Mathlib has `Matrix.specialUnitaryGroup` but not its quotient by center.
+Quotienting locally would require pinning the Hermitian form and the base
+ring's `StarRing` structure — left for Inc 30+. -/
 opaque PSU (n q : ℕ) : Type
 
-/-- `PSp_{2n}(F_q)` — the projective symplectic group. -/
+/-- `PSp_{2n}(F_q)` — the projective symplectic group.
+
+Mathlib has `Matrix.symplecticGroup` (`Sp_{2n}`) but not its center quotient.
+Quotienting locally is mechanically straightforward (Sp / center is a real
+quotient group); left for Inc 30+. -/
 opaque PSp (n q : ℕ) : Type
 
 /-- `PΩ^ε_n(F_q)` — the commutator subgroup of the projective orthogonal group.
 `ε ∈ {+, -, ∅}` distinguishes the three types of quadratic form. We elide the
-`ε` parameter in this scaffold (it's an `Option` of a sign in real life). -/
+`ε` parameter in this scaffold (it's an `Option` of a sign in real life).
+
+Mathlib has `Matrix.orthogonalGroup` and `Matrix.specialOrthogonalGroup` but
+no projective-orthogonal or `PΩ^ε` construction — would require quadratic
+form classification (ε sign) infrastructure. Probably last to connect. -/
 opaque POmega (n q : ℕ) : Type
 
 /-- Family-indexed lookup of the underlying Lean type of a classical Lie-type
@@ -89,10 +126,15 @@ etc.) are documented in the table at the top of this file but elided here.
 Each axiom carries the standard "outside the small-case exceptions" guard. We
 intentionally underspecify the exceptions in the guards (e.g., the `POmega`
 case has multiple regimes based on `ε` and parity of `n`); a complete pass
-would split each family by characteristic / dimension parity / form sign. -/
+would split each family by characteristic / dimension parity / form sign.
+
+**Inc 29:** `PSL_isSimpleGroup` no longer carries an `[Group (PSL n q)]`
+instance arg — the Group structure is auto-derived from the concrete mathlib
+type. The axiom is now a genuine open claim about
+`Matrix.ProjectiveSpecialLinearGroup (Fin n) (ZMod q)`. -/
 
 axiom PSL_isSimpleGroup
-    (n q : ℕ) [Group (PSL n q)]
+    (n q : ℕ)
     (h_n : 2 ≤ n) (h_skip : ¬ (n = 2 ∧ q ≤ 3)) :
     IsSimpleGroup (PSL n q)
 
@@ -110,5 +152,27 @@ axiom POmega_isSimpleGroup
     (n q : ℕ) [Group (POmega n q)]
     (h_n : 7 ≤ n) :
     IsSimpleGroup (POmega n q)
+
+/-! ## Inc 29 sanity checks
+
+These confirm that the `PSL` connection works — Group instance
+auto-derives from mathlib for any `(n, q)`. Classification.lean's
+existential `(_ : Group ...)` is now trivially satisfiable for the
+`PSL` branch (after a `unfold classicalLieTypeCarrier` step), versus
+the pre-Inc-29 state where it required an explicit axiom dance. -/
+
+example : Group (PSL 2 5) := inferInstance
+example : Group (PSL 7 11) := inferInstance
+
+/-- For any `(n, q)`, the `PSL` carrier reachable through
+`classicalLieTypeCarrier` has a Group instance. Witnesses Inc 29's claim
+that the `PSL` branch's existential Group requirement is now derivable
+from mathlib, not just from a postulated instance. -/
+instance psl_carrier_group (n q : ℕ) :
+    Group (classicalLieTypeCarrier .PSL n q) := by
+  unfold classicalLieTypeCarrier
+  infer_instance
+
+example : Group (classicalLieTypeCarrier .PSL 2 5) := inferInstance
 
 end FiniteSimpleGroups

@@ -557,3 +557,21 @@ Pattern note: when a base axiom hardcodes a parameter that downstream
 work needs to vary, the right move is to relativize the base + derive
 the specialization, not to add a parallel axiom. The K = ⊤ theorem
 is a one-screen proof from the relativized axiom — cheap.
+
+**Inc 27** — P1_10 soundness fix.
+- Removed false-claim `stable_factor_data` axiom (asserted
+  `(centralizer A).Normal` in G without `A.Normal` — not true in general).
+- Replaced with `comm_norm_cent_subset_cent` axiom citing
+  `BGsection1.v:422-425` (the MathComp `comm_norm_cent_cent` +
+  intersect-normalize chain at the specific (N_G(C), A, C) instantiation).
+- The `hSelfCent` hypothesis is now load-bearing — it's what makes the
+  axiom statement mathematically true.
+- Rerouted the proof via `N := N_G(C)`: apply the relativized 1.9-base
+  (Inc 26) at K = N, then collapse `N = C` and `C = ⊤` using mathlib's
+  `normalizerCondition_of_isNilpotent`.
+
+Net axiom count: ±0 again (false axiom out, cited axiom in). But the
+underlying P1_10 statement is now soundly proved.
+
+Combined Inc 26 + Inc 27 result: 13 axioms (unchanged), but the
+`stable_factor_data` soundness issue (HANDOFF option 4) is closed.

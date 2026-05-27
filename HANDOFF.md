@@ -1,6 +1,48 @@
-# HANDOFF: A_n simple — upstream landed before us 🪜
+# HANDOFF — finite_simple_groups-ft repo 🪜
 
-> **Read this first.** This document was rewritten 2026-05-25 after a session discovered that everything below was working toward a target that no longer exists. Previous versions recommended translating from mathcomp; that recommendation was empirically wrong and is retracted.
+> **Read this first.** This repo now hosts **two parallel tracks** in one worktree:
+>
+> 1. **FT-port** (`FeitThompson/`) — Coq/MathComp port of the Feit-Thompson §1 chapter into Lean. See [`FeitThompson/HANDOFF.md`](FeitThompson/HANDOFF.md) for FT-track state. Per-axiom discharge is exhausted as of Inc 27; per [`FeitThompson/findings.md`](FeitThompson/findings.md) "Where leverage lives now", the next FT-track move is either Inc 28 (`series_cent_of_stable` list induction) or structural decomposition.
+> 2. **CFSG-track** (`FiniteSimpleGroups/`) — Classification of Finite Simple Groups scaffold. Started life as an A_n scratch-build (see "Historical: A_n simple" section below); pivoted at Inc 28 to parameterized Lie-type / Sporadic carriers + tightened `IsClassified` disjuncts. See the **CFSG-track** section directly below.
+>
+> Standing decisions:
+> - **No mathlib upstream PRs from this worktree.**
+> - **Admin-merge cadence** on green CI (same convention for both tracks, established by FT-port PRs #35-#40 and inherited by CFSG PR #41).
+
+---
+
+## CFSG-track state (as of Inc 28, 2026-05-27)
+
+**Files** in `FiniteSimpleGroups/`:
+
+| File | Lines | Role |
+|------|-------|------|
+| `LieType.lean` | 114 | Parameterized `PSL n q`, `PSU`, `PSp`, `POmega` + `classicalLieTypeCarrier` lookup |
+| `Exceptional.lean` | 168 | 10 exceptional Lie-type families (`G2 q`, `F4 q`, `E6_q q`, ..., `²B2 q`, etc.), each parameterized + simplicity axioms + `exceptionalLieTypeCarrier` lookup |
+| `Sporadics.lean` | 222 | 26 sporadic groups as opaque types + `Name.carrier : Name → Type` lookup (uses `_root_.` qualification to dodge constructor-name collisions) |
+| `Classification.lean` | 80 | `IsClassified G` disjunction over (cyclic prime / A_n / classical Lie-type / exceptional / sporadic), each quantifying over carrier types via `Nonempty (G ≃* …)` |
+| `Alternating.lean` | 527 | Historical scratch-build (see below) — 3 leaf sorries, retired as a contribution path |
+| `Cyclic.lean`, `Basic.lean`, `SmallOrders.lean`, `ProofStrategy.lean` | — | Older scaffold pieces from the A_n era; partly still wired |
+
+**Inc 28 PR** ([#41](https://github.com/gotrevor/finite_simple_groups/pull/41)) — merged 2026-05-27 admin. What it changed:
+
+- `PSL`, `PSU`, etc. went from `opaque PSL : Type` (one Lean type, simplicity axioms vacuously universal) to `opaque PSL (n q : ℕ) : Type` with real per-parameter quantification. The Inc 27 vacuity bug is fixed.
+- Exceptional families gained simplicity axioms (none before).
+- `IsClassified` disjuncts dropped the `opaque … : Prop` empty-proposition routing; they now express the real classification via `Nonempty (G ≃* carrier …)`.
+
+**What's NOT done** (open Inc 29+ candidates):
+
+- Carrier types are still opaque. No connection to mathlib analogues yet (e.g., `PSL 2 q` ↔ `SL(2, F_q)` quotient). Each `classicalLieTypeCarrier` and `exceptionalLieTypeCarrier` returns an opaque type with axiom-only `IsSimpleGroup` witness.
+- No equivalences between sporadic Name enum and concrete sporadic constructions (most don't exist in mathlib anyway).
+- `Alternating.lean` scratch-build still wired but contributes only 3 unproved sorries; not part of `IsClassified` per the upstream-shipped pivot.
+
+**Original HANDOFF (A_n scratch-build) is preserved as historical context below.** It's still accurate for the A_n side but is no longer the primary direction of this repo.
+
+---
+
+## Historical: A_n simple — upstream landed before us
+
+> The section below was rewritten 2026-05-25 after a session discovered that everything below was working toward a target that no longer exists. Previous versions recommended translating from mathcomp; that recommendation was empirically wrong and is retracted.
 
 ## TL;DR
 

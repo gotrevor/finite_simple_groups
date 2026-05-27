@@ -1,6 +1,6 @@
 # HANDOFF — FT-port experiment (`FeitThompson/`)
 
-**As-of**: 2026-05-26, end of Inc 19
+**As-of**: 2026-05-26, end of Inc 27
 **Branch**: `ft-port-experiment`
 **Repo**: `~/src/finite_simple_groups-ft/` → `gotrevor/finite_simple_groups`
 
@@ -29,7 +29,8 @@ Side-quest doc in Trevor's KB: `claude/knowledge/core/projects/lean-journey/side
 | `sorry` warnings      | **0** |
 | Orphan axioms         | **0** (CI-strict) |
 | Dead-True placeholders | **0** (CI-strict) |
-| FT-port PRs merged    | 25 (Inc 1-25) |
+| FT-port PRs merged    | 27 (Inc 1-27) |
+| Soundness audit       | **clean** (Inc 27 closed the last false-claim axiom) |
 
 All 17 top-level theorems re-exported from `FeitThompson/BGsection1.lean`.
 Build green: `lake build FeitThompson`.
@@ -69,6 +70,27 @@ Build green: `lake build FeitThompson`.
 - Inc 17: discharged `Phi_nongen` (mathlib has it as `frattini_nongenerating`)
 - Inc 18: discharged `wlog_cyclic` (zpowers argument, 7 lines)
 - Inc 19: updated `findings.md` with fifth-hour summary
+
+## What got done in Inc 26-27 (seventh hour, P1_10 soundness fix)
+
+- **Inc 26** — Relativize the 1.9-base axiom.
+  - New `IsStableFactor' A K H` struct + `stable_factor_cent_chain'`
+    axiom at arbitrary ambient `K` (was K = ⊤ hardcoded).
+  - Old `stable_factor_cent_chain` (K = ⊤) is now a derived theorem.
+  - Public API in `BGsection1.lean` unchanged.
+- **Inc 27** — P1_10 soundness fix (HANDOFF option 4, **CLOSED**).
+  - Removed false-claim `stable_factor_data` axiom.
+  - Replaced with single cited `comm_norm_cent_subset_cent` axiom
+    (MathComp `comm_norm_cent_cent` + intersect-normalize at the
+    (N_G(C), A, C) instantiation; `BGsection1.v:422-425`).
+  - Reroutes via K = N_G(C); collapses N = ⊤ using mathlib's
+    `normalizerCondition_of_isNilpotent`.
+  - `hSelfCent` hypothesis is now load-bearing (was unused).
+
+Net axiom count over Inc 26-27: ±0 (one false axiom out, one cited
+axiom in for Inc 27; one axiom out, one in for Inc 26). But the
+soundness invariant is restored — every axiom in the FT port now
+states something mathematically true.
 
 ## What got done in Inc 20-25 (sixth hour, sweep + cleanup)
 
@@ -129,17 +151,20 @@ table in `findings.md` sixth-hour update.
 
 ### Deep (refactor) — only if you have ~hours
 
-**4. `stable_factor_data` (P1_10) latent soundness issue** — claims
-`(centralizer A).Normal` without `A.Normal`. False in general. Fix
-requires P1_10 structural refactor to track `N_G(C_G(A))` rather than
-collapsing to `⊤`. This also resurrects `norm_C_eq_top` as a load-
-bearing intermediate. Bigger work, ~2-3 hr.
+**4. ~~`stable_factor_data` (P1_10) latent soundness issue~~** —
+**CLOSED in Inc 27.** The P1_10 proof now routes through `N := N_G(C)`
+using the relativized 1.9-base (Inc 26) + mathlib's
+`normalizerCondition_of_isNilpotent`. The replacement axiom
+`comm_norm_cent_subset_cent` (MathComp `comm_norm_cent_cent` chain)
+is the new leaf. A future increment could inline-prove it by adding
+`comm_norm_cent_cent` to `CommutatorExtras` (~50 LOC mirror of
+`solvable/commutator.v:293`).
 
 **5. `series_cent_of_stable` (P1_9)** — list induction discharge.
-~30-60 min as the handoff originally estimated, but the underlying
-`stable_factor_cent_chain` is itself an axiom (it depends on
-quotient-action lemmas mathlib lacks). Discharging only flattens
-the dependency; net axiom count drops by 1.
+The Inc 26 relativized 1.9-base now makes this tractable: the list
+induction can step through intermediate subgroups (not just ⊤). Still
+~hours of bookkeeping for the `last_ind`-style structural induction.
+Net axiom count drops by 1.
 
 ### Wide (structural decomposition) — adds new axioms
 

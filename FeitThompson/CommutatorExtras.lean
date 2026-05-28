@@ -11,9 +11,12 @@ as real theorems instead of axioms.
 -/
 
 import Mathlib.GroupTheory.Commutator.Basic
+import Mathlib.Algebra.Group.Subgroup.Pointwise
 import Mathlib.Tactic.Group
 
 namespace FeitThompson.CommutatorExtras
+
+open scoped commutatorElement
 
 variable {G : Type*} [Group G]
 
@@ -60,12 +63,43 @@ extra hypothesis.
 2. **Prove a weaker variant** specialized to the P1_6 call site, where
    the missing normalization is automatic.
 
+## Provable form: `commutator_sup_le_of_normalizers`
+
+The honest, **proven** version is `commutator_sup_le_of_normalizers`
+below: it takes all FOUR normalization clauses (`H` and `K` each
+normalize both `⁅H, L⁆` and `⁅K, L⁆`) and concludes the same `≤`. Those
+four are what the closure-induction proof actually needs — conjugating
+`⁅y, l⁆` by an arbitrary `x ∈ H ⊔ K` forces `H ⊔ K ≤ N(⁅H,L⁆ ⊔ ⁅K,L⁆)`.
+
+The two "self" clauses `H ≤ N(⁅H, L⁆)`, `K ≤ N(⁅K, L⁆)` do NOT follow
+from `L ≤ N(H)`/`L ≤ N(K)`: `H ≤ N(⁅H, L⁆)` reduces (via the generator
+conjugation) to `H ≤ N(L)`, which the stated hypotheses don't give.
+
+## Why this axiom is still here (not discharged)
+
+`commutator_sup_le_of_normalizers` cannot replace this axiom at its sole
+call site (`BGsection1/P1_6.lean:111`, `H = ⁅⊤,A⁆`, `K = C_G(A)`,
+`L = A`). The needed `H ≤ N(⁅H, L⁆)` clause is
+`⁅⊤,A⁆ ≤ N(⁅⁅⊤,A⁆, A⁆)`, which reduces to `⁅⊤,A⁆ ≤ N(A)` — equivalent
+to `A ⊴ G` (since `⁅G,A⁆ ≤ N(A) ↔ A ⊴ A^G ↔ A ⊴ G`). In P1_6 `A` is a
+**non-normal** coprime-acting subgroup, so that clause is false there.
+
+⚠️ **Open soundness question.** The P1_6 call site applies the original
+two-hypothesis form in a regime where the four-hypothesis form does not
+apply. The conclusion it derives (`⁅⊤,A⁆ ≤ ⁅⁅⊤,A⁆,A⁆`) is true there for
+a *different* reason — coprime commutator stabilization — not because of
+sup-distribution. So either the two-hypothesis statement is true via a
+proof not going through conjugation (unresolved; no counterexample found
+as of 2026-05-28), or P1_6 should be rerouted through a coprime-action
+lemma instead of `commutator_sup_le`. Worth a focused review.
+
 ## History
 
 This was Inc 11's chained-axiom step (one of three `CommutatorExtras`
 bricks). The other two (`commg_normr`, `le_normalizer_centralizer`) were
 discharged inline at Inc 20-21. This one resisted discharge attempts on
-2026-05-27 — the proof sketch above turned out to be misleading.
+2026-05-27/28 — the original proof sketch was misleading, and the honest
+proof needs hypotheses the call site can't supply (see above).
 
 MathComp source: `math-comp/solvable/commutator.v:236` (`commMG`). -/
 axiom commutator_sup_le
@@ -240,5 +274,72 @@ theorem centralizer_le_normalizer_commutator_top
       ((⁅(⊤ : Subgroup G), A⁆ : Subgroup G) : Set G) := by
   have h := centralizer_inf_normalizer_le_normalizer_commutator A (⊤ : Subgroup G)
   rwa [Subgroup.normalizer_eq_top, inf_top_eq] at h
+
+/-- **Sup-distribution of the commutator (four-normalizer version).**
+
+`⁅H ⊔ K, L⁆ ≤ ⁅H, L⁆ ⊔ ⁅K, L⁆`, provided all four of `H`, `K`
+normalize both `⁅H, L⁆` and `⁅K, L⁆`.
+
+This is the **provable form** of `commutator_sup_le` (cf. the axiom of
+that name). The axiom's two stated hypotheses (`L ≤ N(H)`, `L ≤ N(K)`)
+are NOT enough: the closure-induction multiplication case conjugates
+`⁅y, l⁆` by an arbitrary element `x ∈ H ⊔ K`, which forces
+`H ⊔ K ≤ N(⁅H, L⁆ ⊔ ⁅K, L⁆)` — i.e. all four normalization clauses.
+The two "self" clauses `H ≤ N(⁅H, L⁆)` and `K ≤ N(⁅K, L⁆)` do not
+follow from `L ≤ N(H)`/`L ≤ N(K)` alone (they need e.g. `H ≤ N(L)`),
+so they are taken as hypotheses here.
+
+Proof: `H ⊔ K ≤ N(T)` (T := the RHS) from the four clauses via
+`normalizer_inf_normalizer_le_normalizer_sup`; then `commutator_le` +
+`closure_induction` on `H ⊔ K = closure (↑H ∪ ↑K)`. The `mul`/`inv`
+cases use that the inductee lies in `H ⊔ K ≤ N(T)`, so conjugating an
+element of `T` stays in `T`. -/
+theorem commutator_sup_le_of_normalizers
+    {G : Type*} [Group G]
+    (H K L : Subgroup G)
+    (hHH : H ≤ Subgroup.normalizer ((⁅H, L⁆ : Subgroup G) : Set G))
+    (hHK : H ≤ Subgroup.normalizer ((⁅K, L⁆ : Subgroup G) : Set G))
+    (hKH : K ≤ Subgroup.normalizer ((⁅H, L⁆ : Subgroup G) : Set G))
+    (hKK : K ≤ Subgroup.normalizer ((⁅K, L⁆ : Subgroup G) : Set G)) :
+    ⁅H ⊔ K, L⁆ ≤ ⁅H, L⁆ ⊔ ⁅K, L⁆ := by
+  set T : Subgroup G := ⁅H, L⁆ ⊔ ⁅K, L⁆ with hT
+  -- Step A: H ⊔ K normalizes T.
+  have hsupN : Subgroup.normalizer ((⁅H, L⁆ : Subgroup G) : Set G) ⊓
+      Subgroup.normalizer ((⁅K, L⁆ : Subgroup G) : Set G) ≤
+        Subgroup.normalizer (T : Set G) :=
+    Subgroup.normalizer_inf_normalizer_le_normalizer_sup _ _
+  have hHN : H ≤ Subgroup.normalizer (T : Set G) :=
+    fun x hx => hsupN ⟨hHH hx, hHK hx⟩
+  have hKN : K ≤ Subgroup.normalizer (T : Set G) :=
+    fun x hx => hsupN ⟨hKH hx, hKK hx⟩
+  have hMN : H ⊔ K ≤ Subgroup.normalizer (T : Set G) := sup_le hHN hKN
+  -- conjugation by a normalizer element keeps T-membership.
+  have conj_mem : ∀ x ∈ H ⊔ K, ∀ t ∈ T, x * t * x⁻¹ ∈ T := fun x hx t ht =>
+    (Subgroup.mem_normalizer_iff.mp (hMN hx) t).mp ht
+  -- Step B: reduce to generators, then closure-induct on H ⊔ K.
+  rw [Subgroup.commutator_le]
+  intro x hx l hl
+  rw [Subgroup.sup_eq_closure] at hx
+  induction hx using Subgroup.closure_induction with
+  | mem y hy =>
+    rcases hy with hyH | hyK
+    · exact Subgroup.mem_sup_left (Subgroup.commutator_mem_commutator hyH hl)
+    · exact Subgroup.mem_sup_right (Subgroup.commutator_mem_commutator hyK hl)
+  | one => rw [commutatorElement_one_left]; exact T.one_mem
+  | mul a b ha hb iha ihb =>
+    -- ⁅a*b, l⁆ = (a * ⁅b,l⁆ * a⁻¹) * ⁅a,l⁆
+    have haHK : a ∈ H ⊔ K := by rwa [Subgroup.sup_eq_closure]
+    have hsplit : ⁅a * b, l⁆ = (a * ⁅b, l⁆ * a⁻¹) * ⁅a, l⁆ := by
+      simp only [commutatorElement_def]; group
+    rw [hsplit]
+    exact Subgroup.mul_mem _ (conj_mem a haHK _ ihb) iha
+  | inv a ha iha =>
+    -- ⁅a⁻¹, l⁆ = a⁻¹ * ⁅a,l⁆⁻¹ * a
+    have haHK : a ∈ H ⊔ K := by rwa [Subgroup.sup_eq_closure]
+    have hainv : a⁻¹ ∈ H ⊔ K := Subgroup.inv_mem _ haHK
+    have hsplit : ⁅a⁻¹, l⁆ = a⁻¹ * ⁅a, l⁆⁻¹ * (a⁻¹)⁻¹ := by
+      simp only [commutatorElement_def]; group
+    rw [hsplit]
+    exact conj_mem a⁻¹ hainv _ (Subgroup.inv_mem _ iha)
 
 end FeitThompson.CommutatorExtras

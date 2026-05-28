@@ -53,6 +53,10 @@ extra hypothesis.
    add `H ≤ N(⁅K, L⁆)` (or the symmetric `K ≤ N(⁅H, L⁆)`). Verify the
    single call site in `BGsection1/P1_6.lean:111` still satisfies this —
    it does, because `⁅C_G(A), A⁆ = ⊥` there, so `H ≤ N(⊥) = ⊤` trivially.
+   **The K-side brick is now available**:
+   `centralizer_inf_normalizer_le_normalizer_commutator` (and its `⊤`
+   specialization `centralizer_le_normalizer_commutator_top`) prove the
+   `K ≤ N(⁅H, L⁆)` clause at the P1_6 call site, where `K = C_G(A)`.
 2. **Prove a weaker variant** specialized to the P1_6 call site, where
    the missing normalization is automatic.
 
@@ -163,5 +167,78 @@ theorem le_normalizer_centralizer
     have lhs : a⁻¹ * ((a*b*a⁻¹) * (a*x*a⁻¹)) * a = b * x := by group
     have rhs : a⁻¹ * ((a*x*a⁻¹) * (a*b*a⁻¹)) * a = x * b := by group
     exact lhs.symm.trans (key.trans rhs)
+
+/-- An element that **centralizes `A`** and **normalizes `B`** also
+normalizes `⁅B, A⁆`.
+
+For `c ∈ C_G(A) ∩ N(B)`, conjugation sends a generator `⁅b, a⁆` to
+`⁅cbc⁻¹, cac⁻¹⁆ = ⁅cbc⁻¹, a⁆` (since `c` centralizes `A`, `cac⁻¹ = a`),
+and `cbc⁻¹ ∈ B` because `c` normalizes `B` — so the image is again a
+generator of `⁅B, A⁆`. Closure induction extends this from generators to
+all of `⁅B, A⁆`.
+
+This is the general brick behind the asymmetric MathComp `commMG`
+normalization side condition (`K ≤ N(⁅H, L⁆)`). The proof structure
+mirrors `commg_normr`; only the `mem` case differs — `c` centralizing
+`A` collapses `cac⁻¹` to `a`, and `c` normalizing `B` keeps `cbc⁻¹`
+inside `B`. -/
+theorem centralizer_inf_normalizer_le_normalizer_commutator
+    {G : Type*} [Group G]
+    (A B : Subgroup G) :
+    Subgroup.centralizer (A : Set G) ⊓ Subgroup.normalizer (B : Set G) ≤
+      Subgroup.normalizer ((⁅B, A⁆ : Subgroup G) : Set G) := by
+  have conj_into : ∀ (c : G), c ∈ Subgroup.centralizer (A : Set G) →
+      c ∈ Subgroup.normalizer (B : Set G) →
+      ∀ g ∈ (⁅B, A⁆ : Subgroup G),
+      c * g * c⁻¹ ∈ (⁅B, A⁆ : Subgroup G) := by
+    intro c hcA hcB g hg
+    rw [Subgroup.commutator_def] at hg
+    induction hg using Subgroup.closure_induction with
+    | mem y hy =>
+      obtain ⟨b, hb, a, ha, rfl⟩ := hy
+      rw [conjugate_commutatorElement]
+      -- c * a * c⁻¹ = a since c centralizes A and a ∈ A.
+      have hcomm : a * c = c * a := (Subgroup.mem_centralizer_iff.mp hcA) a ha
+      have hfixA : c * a * c⁻¹ = a := by rw [← hcomm]; group
+      -- c * b * c⁻¹ ∈ B since c normalizes B and b ∈ B.
+      have hfixB : c * b * c⁻¹ ∈ B := (Subgroup.mem_normalizer_iff.mp hcB b).mp hb
+      rw [hfixA]
+      exact Subgroup.commutator_mem_commutator hfixB ha
+    | one => simp
+    | mul x y _hx _hy ihx ihy =>
+      have heq : c * (x * y) * c⁻¹ = (c * x * c⁻¹) * (c * y * c⁻¹) := by group
+      rw [heq]
+      exact Subgroup.mul_mem _ ihx ihy
+    | inv x _hx ihx =>
+      have heq : c * x⁻¹ * c⁻¹ = (c * x * c⁻¹)⁻¹ := by group
+      rw [heq]
+      exact Subgroup.inv_mem _ ihx
+  intro c hc
+  obtain ⟨hcA, hcB⟩ := hc
+  rw [Subgroup.mem_normalizer_iff]
+  intro h
+  refine ⟨fun hh => conj_into c hcA hcB h hh, fun hh => ?_⟩
+  have hcB' : c⁻¹ ∈ Subgroup.normalizer (B : Set G) := Subgroup.inv_mem _ hcB
+  have key : c⁻¹ * (c * h * c⁻¹) * (c⁻¹)⁻¹ ∈ (⁅B, A⁆ : Subgroup G) :=
+    conj_into c⁻¹ (Subgroup.inv_mem _ hcA) hcB' _ hh
+  have eq : c⁻¹ * (c * h * c⁻¹) * (c⁻¹)⁻¹ = h := by group
+  rw [eq] at key
+  exact key
+
+/-- An element centralizing `A` normalizes `⁅⊤, A⁆` (the `B = ⊤`
+specialization of `centralizer_inf_normalizer_le_normalizer_commutator`;
+`N(⊤) = ⊤`, so the normalize-`B` condition is free).
+
+Strengthens `commg_normr` from `A` to `C_G(A)`. This is exactly the
+`K ≤ N(⁅H, L⁆)` side condition the asymmetric MathComp `commMG` needs at
+the `commutator_sup_le` call site in `BGsection1/P1_6.lean` (with
+`H = ⊤`, `L = A`). -/
+theorem centralizer_le_normalizer_commutator_top
+    {G : Type*} [Group G]
+    (A : Subgroup G) :
+    Subgroup.centralizer (A : Set G) ≤ Subgroup.normalizer
+      ((⁅(⊤ : Subgroup G), A⁆ : Subgroup G) : Set G) := by
+  have h := centralizer_inf_normalizer_le_normalizer_commutator A (⊤ : Subgroup G)
+  rwa [Subgroup.normalizer_eq_top, inf_top_eq] at h
 
 end FeitThompson.CommutatorExtras

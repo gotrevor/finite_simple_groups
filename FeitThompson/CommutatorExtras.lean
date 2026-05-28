@@ -17,19 +17,53 @@ namespace FeitThompson.CommutatorExtras
 
 variable {G : Type*} [Group G]
 
-/-- **AXIOM** — sup-distribution of commutator (MathComp `commMG`).
+/-- **AXIOM** — sup-distribution of commutator (analog of MathComp `commMG`).
 
 For arbitrary subgroups `H`, `K`, `L` with `L` normalizing both `H` and `K`:
   `⁅H ⊔ K, L⁆ ≤ ⁅H, L⁆ ⊔ ⁅K, L⁆`.
 
-Proof (sketch): induction on `H ⊔ K` via `Subgroup.closure_induction`, using
-the identity `⁅xy, l⁆ = (y⁻¹ · ⁅x, l⁆ · y) · ⁅y, l⁆`. The normalization
-hypotheses are what make the conjugated term `y⁻¹ ⁅x, l⁆ y` stay in
-`⁅H, L⁆ ⊔ ⁅K, L⁆`.
+## Why this is harder than the docstring's earlier proof sketch claimed
 
-MathComp source: `math-comp/algebra/commutator.v`, lemma `commMG` (with the
-side condition discharged by `normsR`). The MathComp version proves equality
-under stronger hypotheses; we only need `≤`. -/
+The earlier docstring said: "induction on `H ⊔ K` via
+`Subgroup.closure_induction`, using `⁅xy, l⁆ = (y⁻¹ · ⁅x, l⁆ · y) · ⁅y, l⁆`."
+This sketch does **NOT** go through under the stated hypotheses
+(verified 2026-05-27):
+
+- The closure-induction multiplication case asks: given `⁅a, l⁆ ∈ T` and
+  `⁅b, l⁆ ∈ T` where `T := ⁅H, L⁆ ⊔ ⁅K, L⁆`, show `⁅ab, l⁆ ∈ T`.
+- The commutator identity gives `⁅ab, l⁆ = a · ⁅b, l⁆ · a⁻¹ · ⁅a, l⁆`.
+  The conjugated term `a · ⁅b, l⁆ · a⁻¹` must land in `T`, which requires
+  `a ∈ H ⊔ K` to normalize `T`.
+- We have `H ≤ N(⁅H, L⁆)` (commutator subgroup is normal in its enclosing
+  join `⟨H, L⟩`), but **NOT** generally `H ≤ N(⁅K, L⁆)`. So `H ⊔ K` does
+  not obviously normalize the sup `T`.
+
+## MathComp's actual hypothesis (commMG)
+
+MathComp's `commMG` carries an additional hypothesis `H ⊆ N([G, K])`
+(`math-comp/solvable/commutator.v:236`) — exactly the normalization clause
+we're missing. The MathComp version uses set product `H * K` (not subgroup
+join `H ⊔ K`), and `H * H'` is a subgroup iff one normalizes the other.
+For the LE direction (`commMGr`, line 233), the easy half holds with no
+extra hypothesis.
+
+## Two paths forward when this becomes blocking
+
+1. **Strengthen the axiom hypothesis** to match MathComp:
+   add `H ≤ N(⁅K, L⁆)` (or the symmetric `K ≤ N(⁅H, L⁆)`). Verify the
+   single call site in `BGsection1/P1_6.lean:111` still satisfies this —
+   it does, because `⁅C_G(A), A⁆ = ⊥` there, so `H ≤ N(⊥) = ⊤` trivially.
+2. **Prove a weaker variant** specialized to the P1_6 call site, where
+   the missing normalization is automatic.
+
+## History
+
+This was Inc 11's chained-axiom step (one of three `CommutatorExtras`
+bricks). The other two (`commg_normr`, `le_normalizer_centralizer`) were
+discharged inline at Inc 20-21. This one resisted discharge attempts on
+2026-05-27 — the proof sketch above turned out to be misleading.
+
+MathComp source: `math-comp/solvable/commutator.v:236` (`commMG`). -/
 axiom commutator_sup_le
     {G : Type*} [Group G]
     (H K L : Subgroup G)

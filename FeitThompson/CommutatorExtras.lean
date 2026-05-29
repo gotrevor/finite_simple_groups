@@ -20,94 +20,35 @@ open scoped commutatorElement
 
 variable {G : Type*} [Group G]
 
-/-- **AXIOM** — sup-distribution of commutator (analog of MathComp `commMG`).
+/-
+## DELETED AXIOM — `commutator_sup_le` (was the analog of MathComp `commMG`)
 
-For arbitrary subgroups `H`, `K`, `L` with `L` normalizing both `H` and `K`:
+This file previously axiomatized, for subgroups `H`, `K`, `L` with `L`
+normalizing both `H` and `K`:
   `⁅H ⊔ K, L⁆ ≤ ⁅H, L⁆ ⊔ ⁅K, L⁆`.
 
-## Why this is harder than the docstring's earlier proof sketch claimed
+**That two-hypothesis statement is FALSE** (settled 2026-05-28 by exhaustive
+small-group search). Counterexample in `S₄`:
+  `H = ⟨(0 3 2 1)⟩ ≅ C₄`,  `K = ⟨(0 3)⟩`,  `L = ⟨(0 3)(1 2)⟩`.
+Here `L ≤ N(H)` and `L ≤ N(K)` both hold, yet
+  `⁅H ⊔ K, L⁆ = V₄` (order 4)  ⊄  `⁅H, L⁆ ⊔ ⁅K, L⁆` (order 2).
+The hypotheses `L ≤ N(H)`, `L ≤ N(K)` do not control the cross-normalization
+`K ≤ N(⁅H, L⁆)`, which fails in the counterexample.
 
-The earlier docstring said: "induction on `H ⊔ K` via
-`Subgroup.closure_induction`, using `⁅xy, l⁆ = (y⁻¹ · ⁅x, l⁆ · y) · ⁅y, l⁆`."
-This sketch does **NOT** go through under the stated hypotheses
-(verified 2026-05-27):
+The axiom's only consumer, `BGsection1/P1_6.lean` (`coprime_commGid`), is now
+discharged honestly via the **proven** `commutator_sup_le_of_normalizers`
+below. At that call site all four normalization clauses genuinely hold:
+the two "self" clauses are `commutator_le_normalizer_left` (unconditional —
+see above; the earlier "reduces to `A ⊴ G`" claim was a mistaken proof
+attempt, not a real obstruction), the `K`-side cross clause is
+`centralizer_le_normalizer_commutator_top` composed with
+`centralizer_inf_normalizer_le_normalizer_commutator`, and the
+`⁅K, L⁆ = ⁅C_G(A), A⁆ = ⊥` clause is `N(⊥) = ⊤`.
 
-- The closure-induction multiplication case asks: given `⁅a, l⁆ ∈ T` and
-  `⁅b, l⁆ ∈ T` where `T := ⁅H, L⁆ ⊔ ⁅K, L⁆`, show `⁅ab, l⁆ ∈ T`.
-- The commutator identity gives `⁅ab, l⁆ = a · ⁅b, l⁆ · a⁻¹ · ⁅a, l⁆`.
-  The conjugated term `a · ⁅b, l⁆ · a⁻¹` must land in `T`, which requires
-  `a ∈ H ⊔ K` to normalize `T`.
-- We have `H ≤ N(⁅H, L⁆)` (commutator subgroup is normal in its enclosing
-  join `⟨H, L⟩`), but **NOT** generally `H ≤ N(⁅K, L⁆)`. So `H ⊔ K` does
-  not obviously normalize the sup `T`.
-
-## MathComp's actual hypothesis (commMG)
-
-MathComp's `commMG` carries an additional hypothesis `H ⊆ N([G, K])`
-(`math-comp/solvable/commutator.v:236`) — exactly the normalization clause
-we're missing. The MathComp version uses set product `H * K` (not subgroup
-join `H ⊔ K`), and `H * H'` is a subgroup iff one normalizes the other.
-For the LE direction (`commMGr`, line 233), the easy half holds with no
-extra hypothesis.
-
-## Two paths forward when this becomes blocking
-
-1. **Strengthen the axiom hypothesis** to match MathComp:
-   add `H ≤ N(⁅K, L⁆)` (or the symmetric `K ≤ N(⁅H, L⁆)`). Verify the
-   single call site in `BGsection1/P1_6.lean:111` still satisfies this —
-   it does, because `⁅C_G(A), A⁆ = ⊥` there, so `H ≤ N(⊥) = ⊤` trivially.
-   **The K-side brick is now available**:
-   `centralizer_inf_normalizer_le_normalizer_commutator` (and its `⊤`
-   specialization `centralizer_le_normalizer_commutator_top`) prove the
-   `K ≤ N(⁅H, L⁆)` clause at the P1_6 call site, where `K = C_G(A)`.
-2. **Prove a weaker variant** specialized to the P1_6 call site, where
-   the missing normalization is automatic.
-
-## Provable form: `commutator_sup_le_of_normalizers`
-
-The honest, **proven** version is `commutator_sup_le_of_normalizers`
-below: it takes all FOUR normalization clauses (`H` and `K` each
-normalize both `⁅H, L⁆` and `⁅K, L⁆`) and concludes the same `≤`. Those
-four are what the closure-induction proof actually needs — conjugating
-`⁅y, l⁆` by an arbitrary `x ∈ H ⊔ K` forces `H ⊔ K ≤ N(⁅H,L⁆ ⊔ ⁅K,L⁆)`.
-
-The two "self" clauses `H ≤ N(⁅H, L⁆)`, `K ≤ N(⁅K, L⁆)` do NOT follow
-from `L ≤ N(H)`/`L ≤ N(K)`: `H ≤ N(⁅H, L⁆)` reduces (via the generator
-conjugation) to `H ≤ N(L)`, which the stated hypotheses don't give.
-
-## Why this axiom is still here (not discharged)
-
-`commutator_sup_le_of_normalizers` cannot replace this axiom at its sole
-call site (`BGsection1/P1_6.lean:111`, `H = ⁅⊤,A⁆`, `K = C_G(A)`,
-`L = A`). The needed `H ≤ N(⁅H, L⁆)` clause is
-`⁅⊤,A⁆ ≤ N(⁅⁅⊤,A⁆, A⁆)`, which reduces to `⁅⊤,A⁆ ≤ N(A)` — equivalent
-to `A ⊴ G` (since `⁅G,A⁆ ≤ N(A) ↔ A ⊴ A^G ↔ A ⊴ G`). In P1_6 `A` is a
-**non-normal** coprime-acting subgroup, so that clause is false there.
-
-⚠️ **Open soundness question.** The P1_6 call site applies the original
-two-hypothesis form in a regime where the four-hypothesis form does not
-apply. The conclusion it derives (`⁅⊤,A⁆ ≤ ⁅⁅⊤,A⁆,A⁆`) is true there for
-a *different* reason — coprime commutator stabilization — not because of
-sup-distribution. So either the two-hypothesis statement is true via a
-proof not going through conjugation (unresolved; no counterexample found
-as of 2026-05-28), or P1_6 should be rerouted through a coprime-action
-lemma instead of `commutator_sup_le`. Worth a focused review.
-
-## History
-
-This was Inc 11's chained-axiom step (one of three `CommutatorExtras`
-bricks). The other two (`commg_normr`, `le_normalizer_centralizer`) were
-discharged inline at Inc 20-21. This one resisted discharge attempts on
-2026-05-27/28 — the original proof sketch was misleading, and the honest
-proof needs hypotheses the call site can't supply (see above).
-
-MathComp source: `math-comp/solvable/commutator.v:236` (`commMG`). -/
-axiom commutator_sup_le
-    {G : Type*} [Group G]
-    (H K L : Subgroup G)
-    (_hLH : L ≤ Subgroup.normalizer ((H : Subgroup G) : Set G))
-    (_hLK : L ≤ Subgroup.normalizer ((K : Subgroup G) : Set G)) :
-    ⁅H ⊔ K, L⁆ ≤ ⁅H, L⁆ ⊔ ⁅K, L⁆
+MathComp source for the (correctly-hypothesized) original:
+`math-comp/solvable/commutator.v:236` (`commMG`), which carries the extra
+`H ⊆ N([G, K])` hypothesis this axiom dropped.
+-/
 
 /-- The second argument of a commutator normalizes the commutator subgroup
 (MathComp `commg_normr`).
@@ -275,19 +216,77 @@ theorem centralizer_le_normalizer_commutator_top
   have h := centralizer_inf_normalizer_le_normalizer_commutator A (⊤ : Subgroup G)
   rwa [Subgroup.normalizer_eq_top, inf_top_eq] at h
 
+/-- **The first argument normalizes the commutator subgroup.**
+
+`H ≤ N(⁅H, L⁆)` for arbitrary subgroups `H, L` — equivalently, `⁅H, L⁆` is
+normalized by `H` (and, symmetrically, by `L`), so `⁅H, L⁆ ⊴ ⟨H, L⟩`.
+
+This is the **unconditional** "self-normalization" fact. An earlier analysis
+(in the now-deleted `commutator_sup_le` axiom's docstring) mistakenly concluded
+it "reduces to `H ≤ N(L)`" and is therefore false in general. That was an
+artifact of attempting the proof by naive single-generator conjugation
+`ʰ'⁅h,l⁆ = ⁅ʰ'h, ʰ'l⁆`, where `ʰ'l ∉ L`. The honest proof uses the Hall
+identity (mathlib convention `⁅a,b⁆ = a·b·a⁻¹·b⁻¹`), which gives
+
+  `h' · ⁅h, l⁆ · h'⁻¹ = ⁅h'·h, l⁆ · ⁅h', l⁆⁻¹`,
+
+expressing the conjugate as a product of commutators whose *first* arguments
+(`h'·h` and `h'`) stay in `H` — so it lands in `⁅H, L⁆` with no side
+condition. (Verified empirically across S₃…A₅: `H ≤ N(⁅H,L⁆)` and
+`L ≤ N(⁅H,L⁆)` hold for every subgroup pair, 0 counterexamples.) -/
+theorem commutator_le_normalizer_left
+    {G : Type*} [Group G]
+    (H L : Subgroup G) :
+    H ≤ Subgroup.normalizer ((⁅H, L⁆ : Subgroup G) : Set G) := by
+  have conj_into : ∀ (h' : G), h' ∈ H → ∀ g ∈ (⁅H, L⁆ : Subgroup G),
+      h' * g * h'⁻¹ ∈ (⁅H, L⁆ : Subgroup G) := by
+    intro h' hh' g hg
+    rw [Subgroup.commutator_def] at hg
+    induction hg using Subgroup.closure_induction with
+    | mem y hy =>
+      obtain ⟨a, ha, l, hl, rfl⟩ := hy
+      -- Hall identity (mathlib convention ⁅a,b⁆ = a·b·a⁻¹·b⁻¹):
+      --   h' ⁅a,l⁆ h'⁻¹ = ⁅h'·a, l⁆ · ⁅h', l⁆⁻¹.
+      have hid : h' * ⁅a, l⁆ * h'⁻¹ = ⁅h' * a, l⁆ * ⁅h', l⁆⁻¹ := by
+        simp only [commutatorElement_def]; group
+      rw [hid]
+      exact Subgroup.mul_mem _
+        (Subgroup.commutator_mem_commutator (H.mul_mem hh' ha) hl)
+        (Subgroup.inv_mem _
+          (Subgroup.commutator_mem_commutator hh' hl))
+    | one => simp
+    | mul x y _hx _hy ihx ihy =>
+      have heq : h' * (x * y) * h'⁻¹ = (h' * x * h'⁻¹) * (h' * y * h'⁻¹) := by group
+      rw [heq]
+      exact Subgroup.mul_mem _ ihx ihy
+    | inv x _hx ihx =>
+      have heq : h' * x⁻¹ * h'⁻¹ = (h' * x * h'⁻¹)⁻¹ := by group
+      rw [heq]
+      exact Subgroup.inv_mem _ ihx
+  intro h' hh'
+  rw [Subgroup.mem_normalizer_iff]
+  intro z
+  refine ⟨fun hz => conj_into h' hh' z hz, fun hz => ?_⟩
+  have key : h'⁻¹ * (h' * z * h'⁻¹) * (h'⁻¹)⁻¹ ∈ (⁅H, L⁆ : Subgroup G) :=
+    conj_into h'⁻¹ (H.inv_mem hh') _ hz
+  have eq : h'⁻¹ * (h' * z * h'⁻¹) * (h'⁻¹)⁻¹ = z := by group
+  rwa [eq] at key
+
 /-- **Sup-distribution of the commutator (four-normalizer version).**
 
 `⁅H ⊔ K, L⁆ ≤ ⁅H, L⁆ ⊔ ⁅K, L⁆`, provided all four of `H`, `K`
 normalize both `⁅H, L⁆` and `⁅K, L⁆`.
 
-This is the **provable form** of `commutator_sup_le` (cf. the axiom of
-that name). The axiom's two stated hypotheses (`L ≤ N(H)`, `L ≤ N(K)`)
-are NOT enough: the closure-induction multiplication case conjugates
-`⁅y, l⁆` by an arbitrary element `x ∈ H ⊔ K`, which forces
+This is the **provable form** of the (now-deleted, FALSE) `commutator_sup_le`
+axiom. That axiom's two hypotheses (`L ≤ N(H)`, `L ≤ N(K)`) are NOT enough:
+the closure-induction multiplication case conjugates `⁅y, l⁆` by an arbitrary
+element `x ∈ H ⊔ K`, which forces
 `H ⊔ K ≤ N(⁅H, L⁆ ⊔ ⁅K, L⁆)` — i.e. all four normalization clauses.
-The two "self" clauses `H ≤ N(⁅H, L⁆)` and `K ≤ N(⁅K, L⁆)` do not
-follow from `L ≤ N(H)`/`L ≤ N(K)` alone (they need e.g. `H ≤ N(L)`),
-so they are taken as hypotheses here.
+The two "self" clauses `H ≤ N(⁅H, L⁆)` and `K ≤ N(⁅K, L⁆)` are in fact
+unconditionally true (`commutator_le_normalizer_left`); the two **cross**
+clauses `H ≤ N(⁅K, L⁆)`, `K ≤ N(⁅H, L⁆)` are the genuine content and do
+not follow from `L ≤ N(H)`/`L ≤ N(K)` alone. All four are taken as
+hypotheses here to keep the lemma maximally reusable.
 
 Proof: `H ⊔ K ≤ N(T)` (T := the RHS) from the four clauses via
 `normalizer_inf_normalizer_le_normalizer_sup`; then `commutator_le` +

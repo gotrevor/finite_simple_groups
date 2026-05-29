@@ -84,8 +84,9 @@ Coq: BGsection1.v line ~322. Translation strategy (faithful to upstream):
 
 1. (⊆) `Subgroup.commutator_mono` since `⁅⊤,A⁆ ≤ ⊤`.
 2. (⊇) Rewrite `⊤ = ⁅⊤,A⁆ ⊔ C_G(A)` via `coprime_cent_prod`, then apply
-   `commutator_sup_le` (= MathComp `commMG`, axiomatized in
-   `CommutatorExtras`). The `⁅C_G(A), A⁆` term collapses to `⊥` by
+   the proven `commutator_sup_le_of_normalizers` (the two-hypothesis
+   `commutator_sup_le` axiom it replaced was FALSE; see `CommutatorExtras`).
+   The `⁅C_G(A), A⁆` term collapses to `⊥` by
    `commutator_eq_bot_iff_le_centralizer` since `C_G(A) ≤ C_G(A)`. -/
 theorem coprime_commGid
     (A : Subgroup G)
@@ -107,10 +108,25 @@ theorem coprime_commGid
               Subgroup.centralizer (A : Set G)), A⁆ := by rw [hSup]
       _ ≤ ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ ⊔
             ⁅Subgroup.centralizer (A : Set G), A⁆ := by
-          -- Step 3: apply commutator_sup_le with the two normalization side conditions.
-          exact FeitThompson.CommutatorExtras.commutator_sup_le _ _ _
-            (FeitThompson.CommutatorExtras.commg_normr A)
-            (FeitThompson.CommutatorExtras.le_normalizer_centralizer A)
+          -- Step 3: discharge via the PROVEN four-normalizer sup-distribution
+          -- `commutator_sup_le_of_normalizers`. (The old two-hypothesis
+          -- `commutator_sup_le` axiom was FALSE — see CommutatorExtras.)
+          -- Here H = ⁅⊤,A⁆, K = C_G(A), L = A; we supply all four clauses.
+          have hbot : (⁅Subgroup.centralizer (A : Set G), A⁆ : Subgroup G) = ⊥ :=
+            Subgroup.commutator_eq_bot_iff_le_centralizer.mpr le_rfl
+          refine FeitThompson.CommutatorExtras.commutator_sup_le_of_normalizers
+            _ _ _ ?_ ?_ ?_ ?_
+          · -- hHH (self): ⁅⊤,A⁆ ≤ N(⁅⁅⊤,A⁆,A⁆) — unconditional.
+            exact FeitThompson.CommutatorExtras.commutator_le_normalizer_left _ _
+          · -- hHK (cross): ⁅⊤,A⁆ ≤ N(⁅C_G(A),A⁆) = N(⊥) = ⊤.
+            rw [hbot, Subgroup.normalizer_eq_top]; exact le_top
+          · -- hKH (cross): C_G(A) ≤ N(⁅⁅⊤,A⁆,A⁆).
+            refine le_trans (le_inf le_rfl
+              (FeitThompson.CommutatorExtras.centralizer_le_normalizer_commutator_top A)) ?_
+            exact FeitThompson.CommutatorExtras.centralizer_inf_normalizer_le_normalizer_commutator
+              A (⁅(⊤ : Subgroup G), A⁆)
+          · -- hKK (self): C_G(A) ≤ N(⁅C_G(A),A⁆) — unconditional.
+            exact FeitThompson.CommutatorExtras.commutator_le_normalizer_left _ _
       _ = ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ ⊔ ⊥ := by
           -- Step 4: ⁅C_G(A), A⁆ = ⊥ since C_G(A) ≤ C_G(A).
           rw [Subgroup.commutator_eq_bot_iff_le_centralizer.mpr le_rfl]

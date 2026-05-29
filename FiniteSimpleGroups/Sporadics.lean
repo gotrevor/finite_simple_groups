@@ -119,6 +119,41 @@ opaque Co1 : Type
 opaque Co2 : Type
 opaque Co3 : Type
 
+/-! #### Conway-group simplicity (axiom, cited)
+
+The Conway groups are the first sporadics in this scaffold to carry an explicit
+simplicity claim, seeded by an existing (partial) Lean formalization.
+
+**External evidence.** Erik van der Plas, *Formalisation of the Finite Simple
+Conway Groups in Lean*, MSc thesis, Utrecht University, 2024 (advisor
+J. M. Commelin).
+- Handle: <https://studenttheses.uu.nl/handle/20.500.12932/46756>
+- Local PDF: `~/src/lean-refs/papers/conway-groups-lean-thesis.pdf`
+- Lean source (mathlib fork): `erikvdplas/mathlib4`,
+  `Mathlib/GroupTheory/SpecificGroups/Conway.lean` +
+  `Mathlib/GroupTheory/IntegralLattice/Leech/{Basic,Cross}.lean`.
+  Local clone: `~/src/lean-refs/conway-vdplas/`.
+
+That work defines `Conway₀ := IntegralLatticeAut Λ` (automorphisms of the Leech
+lattice `Λ`) and `Conway₁ := Conway₀ ⧸ center`, and proves simplicity via the
+**Iwasawa criterion** — the same engine mathlib uses for `Aₙ`.
+
+**Why axiom, not dependency (decided 2026-05-28).** The formalization is
+in-progress: ~18 `sorry`s, including `exists_leech` (the Leech lattice's very
+existence) and the `perfect` / `quasipreprimitive` lemmas the `simple` instance
+rests on; only `Co0`/`Co1` are touched, `Co2`/`Co3` are untouched. Taking it as
+a Lake dependency would launder those `sorry`s into our trusted base — strictly
+*less* honest than an explicit, attributed axiom. So we assert simplicity here
+and cite the work. Classical source: J. H. Conway, *A perfect group of order
+8,315,553,613,086,720,000 and the sporadic simple groups* (1968); Conway &
+Sloane, *SPLAG*.
+
+These take `[Group …]` as a hypothesis (the opaque carriers have no derivable
+group structure yet), matching the `PSU`/`POmega` pattern in `LieType.lean`. -/
+axiom Co1_isSimpleGroup [Group Co1] : IsSimpleGroup Co1
+axiom Co2_isSimpleGroup [Group Co2] : IsSimpleGroup Co2
+axiom Co3_isSimpleGroup [Group Co3] : IsSimpleGroup Co3
+
 /-! ### Fischer groups -/
 opaque Fi22 : Type
 opaque Fi23 : Type

@@ -88,6 +88,15 @@ theorem sylow_normal_of_normal_nilpotent {G : Type*} [Group G] [Finite G]
   haveI := sylow_characteristic_of_isNilpotent P
   infer_instance
 
+/-- A **normal `p`-subgroup lies inside `F(G)`.** A finite `p`-group is nilpotent
+(`IsPGroup.isNilpotent`), so a normal `p`-subgroup is normal nilpotent and the
+universal property places it in `F(G)`. Third brick — this is what makes the
+(hand-rolled) `p`-core a subgroup of `F(G)`. -/
+theorem normal_pgroup_le_fittingSubgroup {G : Type*} [Group G] [Finite G]
+    {p : ℕ} {Q : Subgroup G} (hQ : Q.Normal) (hp : IsPGroup p Q) :
+    Q ≤ fittingSubgroup G :=
+  normal_nilpotent_le_fittingSubgroup Q hQ hp.isNilpotent
+
 /-- **Fitting's Theorem (normality half).** `F(G)` is a normal subgroup.
 Cited; mathlib lacks the join-of-normals-is-normal lemma in usable form here. -/
 axiom fittingSubgroup_normal (G : Type*) [Group G] : (fittingSubgroup G).Normal

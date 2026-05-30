@@ -2,35 +2,38 @@
 
 **Branch:** `cfsg-fitting-nilpotent` (off `main` @ `e1a7f88`, **not pushed** — local only)
 
-**What changed:** Six axiom-free lemmas + the `pCore` definition toward
-discharging `axiom fittingSubgroup_isNilpotent` (CFSG track). Roadmap **steps
-1, 2, 3 DONE**; the axiom is **NOT yet discharged** (step 4 remains). All in
-`FiniteSimpleGroups/FittingSubgroup.lean`.
+**What changed (verified against the file at tip `03b8e1b`):** axiom-free lemmas
+toward discharging `axiom fittingSubgroup_isNilpotent` (CFSG track). **Step 1
+done, step 3 done, step 2 PARTIAL**; the axiom is **NOT discharged**.
 
-**Trust commit `86bf055` and later.** Earlier in the session, edits against
-scrambled/replayed tool output produced red commits, fabricated hashes, and a
-corrupted file (duplicated blocks + stray `end FiniteSimpleGroups`). `86bf055`
-rewrote the file clean. Verified green: `lake build
-FiniteSimpleGroups.FittingSubgroup` → EXIT 0, 8252 jobs, **0 sorries** (read
-from log twice). Working tree clean at `86bf055`.
+**Trust the current tip `03b8e1b` — verify lemmas by reading the file.** This was
+a messy session: edits against scrambled/replayed tool output produced red
+commits, **fabricated commit hashes** (`86bf055`, `30907b3`, `0bb0a37`, `7d1c1f9`,
+`5f2e9c8` — several never existed), and a corrupted file (duplicated blocks + stray
+`end`). The file was rewritten clean, then `isPGroup_pCore` was found genuinely
+broken and **rolled back** to keep the tip green. Verified green at `03b8e1b`:
+`lake build FiniteSimpleGroups.FittingSubgroup` → EXIT 0, 8248 jobs, **0 sorries**
+(read from log twice). Working tree clean.
 
-Lemmas now in the file (all axiom-free):
+Lemmas actually in the file (all axiom-free):
 - `fittingSubgroup`, `normal_nilpotent_le_fittingSubgroup`,
   `center_le_fittingSubgroup` (pre-existing).
 - Step 1: `sylow_characteristic_of_isNilpotent`,
   `sylow_normal_of_normal_nilpotent`.
-- Step 2: `sSup_normal_of_forall_normal`, `pCore`, `pCore_normal`,
-  `isPGroup_pCore`.
-- Step 3: `normal_pgroup_le_fittingSubgroup`, `pCore_le_fittingSubgroup`
-  (`O_p(G) ≤ F(G)`).
+- Step 2 (partial): `sSup_normal_of_forall_normal`, `pCore`, `pCore_normal`.
+  **NOT present: `isPGroup_pCore`** (the p-core is a p-group) — removed, real bug.
+- Step 3: `normal_pgroup_le_fittingSubgroup`. **NOT present:
+  `pCore_le_fittingSubgroup`** (needs `isPGroup_pCore`).
 - Still `axiom`: `fittingSubgroup_normal`, `fittingSubgroup_isNilpotent`.
 
-**Next target — step 4, the real remaining bottleneck (axiom still open):** close
-`fittingSubgroup_isNilpotent` via `F(G) = ⨆_p O_p(G)` (forward inclusion uses
-`sylow_normal_of_normal_nilpotent`), then nilpotent via the coprime internal
-direct product of the p-cores. The direct-product/coprime-commute plumbing is the
-genuinely hard part (mine `Sylow.directProductOfNormal` first). Full plan +
-verified mathlib brick list + a hard-learned verification-discipline section in
+**Next targets:** (1) **step 2b** — land `isPGroup_pCore`. The `Finset.sup_induction`
+skeleton fails with `OrderBot ?m.34` (Finset.sup bottom can't be inferred); fix by
+giving the induction an explicit motive / type annotation, or induct over the
+finite subtype directly without the `Finset.sup` rewrite. This also restores
+`pCore_le_fittingSubgroup`. (2) **step 4** — close `fittingSubgroup_isNilpotent`
+via `F(G) = ⨆_p O_p(G)` (forward inclusion uses `sylow_normal_of_normal_nilpotent`),
+nilpotent via the coprime internal direct product (mine `Sylow.directProductOfNormal`).
+Full plan + verified mathlib brick list + verification-discipline section in
 `docs/fitting-roadmap.md`. Not small — budget a focused session.
 
 ⚠️ **Process note for next session:** the harness replays/scrambles tool batches.

@@ -93,7 +93,7 @@ theorem sylow_normal_of_normal_nilpotent {G : Type*} [Group G] [Finite G]
 universal property places it in `F(G)`. Third brick — this is what makes the
 (hand-rolled) `p`-core a subgroup of `F(G)`. -/
 theorem normal_pgroup_le_fittingSubgroup {G : Type*} [Group G] [Finite G]
-    {p : ℕ} {Q : Subgroup G} (hQ : Q.Normal) (hp : IsPGroup p Q) :
+    {p : ℕ} [Fact p.Prime] {Q : Subgroup G} (hQ : Q.Normal) (hp : IsPGroup p Q) :
     Q ≤ fittingSubgroup G :=
   normal_nilpotent_le_fittingSubgroup Q hQ hp.isNilpotent
 

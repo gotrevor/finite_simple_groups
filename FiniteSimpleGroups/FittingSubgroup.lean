@@ -23,9 +23,9 @@ This file defines the ordinary Fitting subgroup and proves what's reachable.
   `sylow_normal_of_normal_nilpotent`) — **proved**.
 * `sSup_normal_of_forall_normal`, `pCore`, `pCore_normal` — **proved**.
 * `normal_pgroup_le_fittingSubgroup` — **proved**.
-* `isPGroup_pCore` (that `O_p(G)` is a `p`-group) — **NOT done**; the
-  `Finset.sup_induction` route hit an `OrderBot` metavariable snag, removed
-  rather than left broken. See `docs/fitting-roadmap.md` step 2b.
+* `isPGroup_pCore` (that `O_p(G)` is a `p`-group) — **proved** via
+  `Finset.sup_induction` over the (finite) set of normal `p`-subgroups.
+* `pCore_le_fittingSubgroup` (`O_p(G) ≤ F(G)`) — **proved**.
 * `fittingSubgroup_normal`, `fittingSubgroup_isNilpotent` (**Fitting's Theorem**)
   — still cited `axiom`s (step 4). (Ref: Isaacs, *Finite Group Theory*, Thm 9.8.)
 -/
@@ -101,6 +101,31 @@ def pCore (G : Type*) [Group G] (p : ℕ) : Subgroup G :=
 theorem pCore_normal {G : Type*} [Group G] {p : ℕ} : (pCore G p).Normal :=
   sSup_normal_of_forall_normal (fun _ hK => hK.1)
 
+/-- **`O_p(G)` is a `p`-group.** `pCore` is the join of all normal `p`-subgroups;
+since `G` is finite that indexing set is a finite `Finset`, so `Finset.sup_induction`
+(based at `⊥` via `IsPGroup.of_bot`, stepped by `IsPGroup.to_sup_of_normal_right`)
+carries the joint motive "is a `p`-group and is normal" up the join. Routing the
+induction through an explicit `T : Finset (Subgroup G)` is what lets `OrderBot
+(Subgroup G)` resolve (the bare `Finset.sup` form left it a stuck metavariable). -/
+theorem isPGroup_pCore {G : Type*} [Group G] [Finite G] {p : ℕ} :
+    IsPGroup p (pCore G p) := by
+  classical
+  haveI : Finite (Subgroup G) := Finite.of_injective _ SetLike.coe_injective
+  have hSfin : {Q : Subgroup G | Q.Normal ∧ IsPGroup p Q}.Finite := Set.toFinite _
+  have hkey : ∀ T : Finset (Subgroup G), (∀ K ∈ T, K.Normal ∧ IsPGroup p K) →
+      IsPGroup p (T.sup id : Subgroup G) ∧ (T.sup id : Subgroup G).Normal := by
+    intro T hT
+    refine Finset.sup_induction (p := fun J : Subgroup G => IsPGroup p J ∧ J.Normal)
+      ⟨IsPGroup.of_bot, inferInstance⟩ ?_ (fun K hK => ⟨(hT K hK).2, (hT K hK).1⟩)
+    rintro a ⟨hap, han⟩ b ⟨hbp, hbn⟩
+    haveI := han; haveI := hbn
+    exact ⟨IsPGroup.to_sup_of_normal_right hap hbp, inferInstance⟩
+  have hpc : pCore G p = hSfin.toFinset.sup id := by
+    unfold pCore
+    rw [Finset.sup_id_eq_sSup, hSfin.coe_toFinset]
+  rw [hpc]
+  exact (hkey hSfin.toFinset (fun K hK => hSfin.mem_toFinset.mp hK)).1
+
 /-! ### Step 3: normal `p`-subgroups live in `F(G)` -/
 
 /-- A **normal `p`-subgroup lies inside `F(G)`.** A finite `p`-group is nilpotent
@@ -110,6 +135,12 @@ theorem normal_pgroup_le_fittingSubgroup {G : Type*} [Group G] [Finite G]
     {p : ℕ} [Fact p.Prime] {Q : Subgroup G} (hQ : Q.Normal) (hp : IsPGroup p Q) :
     Q ≤ fittingSubgroup G :=
   normal_nilpotent_le_fittingSubgroup Q hQ hp.isNilpotent
+
+/-- **`O_p(G) ≤ F(G)`.** The `p`-core is a normal `p`-subgroup, so it lands in
+the Fitting subgroup by `normal_pgroup_le_fittingSubgroup`. -/
+theorem pCore_le_fittingSubgroup {G : Type*} [Group G] [Finite G] {p : ℕ}
+    [Fact p.Prime] : pCore G p ≤ fittingSubgroup G :=
+  normal_pgroup_le_fittingSubgroup pCore_normal isPGroup_pCore
 
 /-- **Fitting's Theorem (normality half).** `F(G)` is a normal subgroup.
 Cited; see step 4 in `docs/fitting-roadmap.md`. -/

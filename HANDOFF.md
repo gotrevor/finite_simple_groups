@@ -1,46 +1,27 @@
-# ▶ ACTIVE SESSION HANDOFF (2026-05-30)
+# ▶ ACTIVE SESSION HANDOFF (2026-05-30, 21:46 UTC)
 
-**Branch:** `cfsg-fitting-nilpotent` (off `main` @ `e1a7f88`, **not pushed** — local only)
+**Branch:** `cfsg-fitting-nilpotent` (off `main` @ `e1a7f88`, **not pushed** — 7
+local commits awaiting host-side push) · **Tip:** `65beecb`
 
-**What changed (verified against the file at tip `03b8e1b`):** axiom-free lemmas
-toward discharging `axiom fittingSubgroup_isNilpotent` (CFSG track). **Step 1
-done, step 3 done, step 2 PARTIAL**; the axiom is **NOT discharged**.
+**Fitting subgroup: COMPLETE.** `FiniteSimpleGroups/FittingSubgroup.lean` is now
+**axiom-free** — both `fittingSubgroup_isNilpotent` and `fittingSubgroup_normal`
+(the two former cited axioms) are discharged. Verified:
+`lake build FiniteSimpleGroups.FittingSubgroup` → EXIT 0, 8248 jobs, **0 sorries**;
+`#print axioms` on each → `[propext, Classical.choice, Quot.sound]` only;
+no `^axiom`/`sorry` in the file. Working tree clean.
 
-**Trust the current tip `03b8e1b` — verify lemmas by reading the file.** This was
-a messy session: edits against scrambled/replayed tool output produced red
-commits, **fabricated commit hashes** (`86bf055`, `30907b3`, `0bb0a37`, `7d1c1f9`,
-`5f2e9c8` — several never existed), and a corrupted file (duplicated blocks + stray
-`end`). The file was rewritten clean, then `isPGroup_pCore` was found genuinely
-broken and **rolled back** to keep the tip green. Verified green at `03b8e1b`:
-`lake build FiniteSimpleGroups.FittingSubgroup` → EXIT 0, 8248 jobs, **0 sorries**
-(read from log twice). Working tree clean.
+Proof spine: `iSup_prime_sylow_eq_top` (Sylows generate any finite group) →
+`fittingSubgroup_eq_iSup_pCore` (`F(G) = ⨆_p O_p(G)`, **join over primes** — composite
+`p` gives a non-nilpotent π-group, so primes only) → `iSup_pCore_isNilpotent`
+(coprime internal direct product `⨆_p O_p ≃* ∏_{p∣|G|} O_p` via
+`Subgroup.noncommPiCoprod`, each factor a nilpotent p-group). Full recipe + the two
+Lean gotchas (`Group.IsNilpotent ↥(⨆…)` coercion; `Prime` is defeq `And`) in
+`docs/fitting-roadmap.md` ("DONE — step 4").
 
-Lemmas actually in the file (all axiom-free):
-- `fittingSubgroup`, `normal_nilpotent_le_fittingSubgroup`,
-  `center_le_fittingSubgroup` (pre-existing).
-- Step 1: `sylow_characteristic_of_isNilpotent`,
-  `sylow_normal_of_normal_nilpotent`.
-- Step 2 (partial): `sSup_normal_of_forall_normal`, `pCore`, `pCore_normal`.
-  **NOT present: `isPGroup_pCore`** (the p-core is a p-group) — removed, real bug.
-- Step 3: `normal_pgroup_le_fittingSubgroup`. **NOT present:
-  `pCore_le_fittingSubgroup`** (needs `isPGroup_pCore`).
-- Still `axiom`: `fittingSubgroup_normal`, `fittingSubgroup_isNilpotent`.
-
-**Next targets:** (1) **step 2b** — land `isPGroup_pCore`. The `Finset.sup_induction`
-skeleton fails with `OrderBot ?m.34` (Finset.sup bottom can't be inferred); fix by
-giving the induction an explicit motive / type annotation, or induct over the
-finite subtype directly without the `Finset.sup` rewrite. This also restores
-`pCore_le_fittingSubgroup`. (2) **step 4** — close `fittingSubgroup_isNilpotent`
-via `F(G) = ⨆_p O_p(G)` (forward inclusion uses `sylow_normal_of_normal_nilpotent`),
-nilpotent via the coprime internal direct product (mine `Sylow.directProductOfNormal`).
-Full plan + verified mathlib brick list + verification-discipline section in
-`docs/fitting-roadmap.md`. Not small — budget a focused session.
-
-⚠️ **Process note for next session:** the harness replays/scrambles tool batches.
-Never batch `git commit` with its build; build to a log, `Read` it (twice) before
-believing green; never narrate an unseen hash; if edits act weird, `Read` the
-whole file (string-edits silently corrupted this one). Fixes go on top — no
-history rewrite (per Trevor).
+**→ The active thread for the next session is in
+[`HANDOFF-2026-05-30-2146.md`](HANDOFF-2026-05-30-2146.md).** Recommended next brick:
+`E(G)` / the generalized Fitting subgroup `F*(G) = E(G)·F(G)` (Solomon p.343), reusing
+this session's noncommPiCoprod direct-product pattern. Do NOT re-open Fitting.
 
 ---
 

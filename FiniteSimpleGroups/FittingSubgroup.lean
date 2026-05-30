@@ -26,8 +26,12 @@ This file defines the ordinary Fitting subgroup and proves what's reachable.
 * `isPGroup_pCore` (that `O_p(G)` is a `p`-group) — **proved** via
   `Finset.sup_induction` over the (finite) set of normal `p`-subgroups.
 * `pCore_le_fittingSubgroup` (`O_p(G) ≤ F(G)`) — **proved**.
+* `fittingSubgroup_eq_iSup_pCore` (`F(G) = ⨆_p O_p(G)`, join over primes) —
+  **proved** (`iSup_prime_sylow_eq_top` + `sylow_normal_of_normal_nilpotent`).
 * `fittingSubgroup_normal`, `fittingSubgroup_isNilpotent` (**Fitting's Theorem**)
-  — still cited `axiom`s (step 4). (Ref: Isaacs, *Finite Group Theory*, Thm 9.8.)
+  — both now **proved**, no remaining axioms. Nilpotency goes through the internal
+  direct product `⨆_p O_p(G) ≃* ∏_{p ∣ |G|} O_p(G)` (`Subgroup.noncommPiCoprod`) of
+  nilpotent `p`-groups. (Ref: Isaacs, *Finite Group Theory*, Thm 9.8.)
 -/
 
 namespace FiniteSimpleGroups

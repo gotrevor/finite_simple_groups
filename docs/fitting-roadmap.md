@@ -74,25 +74,38 @@ to a `Type` — annotate `(T.sup id : Subgroup G)` so the `↥` coercion fires;
 > the actual file; treat all per-lemma hashes in older commit messages as
 > unreliable.**
 
-## REMAINING — step 4 (axiom NOT discharged)
+## DONE — step 4 (both axioms discharged). Tip: `65beecb`
 
-With step 2 done (`isPGroup_pCore` proved, `pCore_le_fittingSubgroup` now a theorem),
-close `fittingSubgroup_isNilpotent` via `F(G) = ⨆_p O_p(G)`, nilpotent as a
-coprime internal direct product. Two sub-goals, neither done:
+`FittingSubgroup.lean` is now **axiom-free**; `#print axioms` on both
+`fittingSubgroup_isNilpotent` and `fittingSubgroup_normal` →
+`[propext, Classical.choice, Quot.sound]` only.
 
-- **`F(G) ≤ ⨆_p O_p(G)`** (reverse `≥` will be `pCore_le_fittingSubgroup`). For a
-  normal nilpotent `N ⊴ G`: `N` is the direct product of its Sylows
-  (`isNilpotent_of_finite_tfae` clause 5), and each Sylow of `N` is a *normal*
-  p-subgroup of `G` — `sylow_normal_of_normal_nilpotent` — hence `≤ O_p(G)`. Then
-  `sSup` over all such `N`.
-- **`⨆_p O_p(G)` is nilpotent.** The `O_p(G)` are normal with pairwise coprime
-  orders ⇒ internal direct product ⇒ `≃* ∏_p O_p(G)`, a finite product of
-  nilpotent p-groups ⇒ nilpotent. ⚠️ The internal-direct-product / coprime-commute
-  plumbing is the genuinely hard, likely multi-session part; mine
-  `Sylow.directProductOfNormal` first.
+**Index decision (important):** the join must range over **primes**, not all
+`p : ℕ`. For *composite* `p`, `IsPGroup p` describes a `π`-group and `O_p(G)` need
+not be nilpotent (e.g. `O_6(S₃) = S₃`). Everything uses
+`⨆ (p : ℕ) (_ : p.Prime), pCore G p`.
 
-Once `F(G)` is nilpotent, `fittingSubgroup_normal` should fall out of the same
-`⨆_p O_p` description.
+- **`F(G) = ⨆_p O_p(G)`** (`fittingSubgroup_eq_iSup_pCore`, over primes):
+  - `≤`: helper `iSup_prime_sylow_eq_top` (Sylows generate any finite group, via a
+    `factorization_le_iff_dvd` / Lagrange cardinality argument) decomposes each
+    normal nilpotent `N`; each Sylow pushes to a normal p-subgroup of `G`
+    (`sylow_normal_of_normal_nilpotent`) hence `≤ O_p(G)`.
+  - `≥`: `iSup_pCore_le_fittingSubgroup` from `pCore_le_fittingSubgroup`.
+- **`⨆_p O_p(G)` is nilpotent** (`iSup_pCore_isNilpotent`): the `O_p(G)` are normal
+  with pairwise coprime orders ⇒ pairwise commute (`commute_of_normal_of_disjoint`
+  + `IsPGroup.disjoint_of_ne`) and independent (`independent_of_coprime_order`); so
+  `Subgroup.noncommPiCoprod` over `(Nat.card G).primeFactors` is injective with
+  range `⨆_p O_p`, giving `⨆_p O_p ≃* ∏_{p∣|G|} O_p` via `MonoidHom.ofInjective`.
+  Each factor is a nilpotent p-group, `isNilpotent_pi` makes the finite product
+  nilpotent, `nilpotent_of_mulEquiv` transports it back. Bridge lemma
+  `pCore_eq_bot_of_not_dvd` (`O_p = 1` for `p ∤ |G|`) connects the prime-indexed
+  join to the `primeFactors` Finset.
+- **`fittingSubgroup_normal`**: direct — `F(G)` is an `sSup` of normal subgroups, so
+  `sSup_normal_of_forall_normal` applies. (No nilpotency needed.)
+
+Gotcha that bit: `Group.IsNilpotent (⨆ …)` needs an explicit `↥` coercion
+(`Group.IsNilpotent ↥(⨆ …)`), else the `Type` expectation pushes into the `⨆`
+body and you get `failed to synthesize SupSet (Type)`.
 
 ## Dev loop note
 

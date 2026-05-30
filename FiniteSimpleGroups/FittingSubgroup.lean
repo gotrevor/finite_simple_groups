@@ -210,6 +210,20 @@ theorem fittingSubgroup_eq_iSup_pCore (G : Type*) [Group G] [Finite G] :
     fittingSubgroup G = ⨆ (p : ℕ) (_ : p.Prime), pCore G p :=
   le_antisymm (fittingSubgroup_le_iSup_pCore G) (iSup_pCore_le_fittingSubgroup G)
 
+/-! ### Step 4, sub-goal 2: `⨆_p O_p(G)` is nilpotent -/
+
+/-- **`O_p(G) = 1` when `p ∤ |G|`.** The `p`-core is a `p`-group, so its order is a
+power of `p` dividing `|G|`; if `p ∤ |G|` that power is `p⁰ = 1`. -/
+theorem pCore_eq_bot_of_not_dvd (G : Type*) [Group G] [Finite G] {p : ℕ} [Fact p.Prime]
+    (hp : ¬ p ∣ Nat.card G) : pCore G p = ⊥ := by
+  obtain ⟨k, hk⟩ := IsPGroup.iff_card.mp (isPGroup_pCore (G := G) (p := p))
+  have hdvd : Nat.card (pCore G p) ∣ Nat.card G := by
+    have h := Subgroup.card_dvd_of_le (le_top : pCore G p ≤ ⊤)
+    rwa [Subgroup.card_top] at h
+  rcases Nat.eq_zero_or_pos k with hk0 | hkpos
+  · rw [Subgroup.eq_bot_iff_card, hk, hk0, pow_zero]
+  · exact absurd (dvd_trans (dvd_pow_self p hkpos.ne') (hk ▸ hdvd)) hp
+
 /-- **Fitting's Theorem (normality half).** `F(G)` is a normal subgroup.
 Cited; see step 4 in `docs/fitting-roadmap.md`. -/
 axiom fittingSubgroup_normal (G : Type*) [Group G] : (fittingSubgroup G).Normal

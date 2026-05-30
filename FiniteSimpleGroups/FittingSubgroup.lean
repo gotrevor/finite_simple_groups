@@ -111,11 +111,12 @@ normal member is fixed by conjugation (`Normal.conj_smul_eq_self`), so the image
 join collapses back to `sSup S`. Closes via `Normal.of_conjugate_fixed`. -/
 theorem sSup_normal_of_forall_normal {G : Type*} [Group G] {S : Set (Subgroup G)}
     (hS : ∀ K ∈ S, K.Normal) : (sSup S).Normal := by
-  refine Normal.of_conjugate_fixed (fun g => ?_)
-  rw [pointwise_smul_def, (Subgroup.gc_map_comap _).l_sSup, sSup_eq_iSup]
+  refine Subgroup.Normal.of_conjugate_fixed (fun g => ?_)
+  rw [Subgroup.pointwise_smul_def, (Subgroup.gc_map_comap _).l_sSup, sSup_eq_iSup]
   refine iSup_congr (fun K => iSup_congr (fun hK => ?_))
-  rw [← pointwise_smul_def]
-  exact (hS K hK).conj_smul_eq_self g K
+  rw [← Subgroup.pointwise_smul_def]
+  haveI := hS K hK
+  exact Subgroup.Normal.conj_smul_eq_self g K
 
 /-- **Fitting's Theorem (normality half).** `F(G)` is a normal subgroup.
 Cited; mathlib lacks the join-of-normals-is-normal lemma in usable form here. -/

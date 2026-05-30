@@ -2,15 +2,24 @@
 
 **Branch:** `cfsg-fitting-nilpotent` (off `main` @ `e1a7f88`, **not pushed** — local only)
 
-**What changed:** Two axiom-free bricks toward discharging `axiom
+**What changed:** Three axiom-free bricks toward discharging `axiom
 fittingSubgroup_isNilpotent` (CFSG track), via mathlib's finite-nilpotency TFAE
-route (no `pCore` in mathlib, so built by hand):
+route (no `pCore` in mathlib, so built by hand). All in
+`FiniteSimpleGroups/FittingSubgroup.lean`; build green throughout
+(`lake build FiniteSimpleGroups.FittingSubgroup` → EXIT 0, 8249 jobs, no sorry):
 - `1a4a31e` — `sylow_characteristic_of_isNilpotent` + `sylow_normal_of_normal_nilpotent`
-  in `FiniteSimpleGroups/FittingSubgroup.lean`. Build green:
-  `lake build FiniteSimpleGroups.FittingSubgroup` → EXIT 0, no sorry.
-- `ec9a125` — `docs/fitting-roadmap.md` (4-step route + remaining p-core skeleton).
+  (roadmap step 1).
+- `5f2e9c8` — `normal_pgroup_le_fittingSubgroup`: a normal p-subgroup is ≤ `F(G)`
+  (roadmap step 3).
+- `ec9a125` / `5f9c2a1` — `docs/fitting-roadmap.md` (route + refined step-2 plan).
 
-Completes step 1 of 4. Next target: hand-rolled p-core `Op G p` (step 2).
+**Roadmap steps 1 and 3 done. Step 2 (the hand-rolled p-core) is the bottleneck
+and next target:** define `Op G p := sSup {Q | Q.Normal ∧ IsPGroup p Q}` and
+prove it normal + a p-group. The p-group half is a `Finset.sup` induction over
+the (finite) index set, stepped with `IsPGroup.to_sup_of_normal_right`, carrying
+normal+p-group jointly as the motive. ⚠️ No direct `sSup`-of-normals lemma exists
+in mathlib v4.29.1 — see roadmap for the plan. Budget a focused session; needs
+several reliable edit-build cycles.
 
 **PR-body draft:**
 > **CFSG: first verified bricks toward Fitting's Theorem**

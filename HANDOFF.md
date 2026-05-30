@@ -2,24 +2,29 @@
 
 **Branch:** `cfsg-fitting-nilpotent` (off `main` @ `e1a7f88`, **not pushed** — local only)
 
-**What changed:** Three axiom-free bricks toward discharging `axiom
-fittingSubgroup_isNilpotent` (CFSG track), via mathlib's finite-nilpotency TFAE
-route (no `pCore` in mathlib, so built by hand). All in
-`FiniteSimpleGroups/FittingSubgroup.lean`; build green throughout
-(`lake build FiniteSimpleGroups.FittingSubgroup` → EXIT 0, 8249 jobs, no sorry):
-- `1a4a31e` — `sylow_characteristic_of_isNilpotent` + `sylow_normal_of_normal_nilpotent`
-  (roadmap step 1).
-- `5f2e9c8` — `normal_pgroup_le_fittingSubgroup`: a normal p-subgroup is ≤ `F(G)`
-  (roadmap step 3).
-- `ec9a125` / `5f9c2a1` — `docs/fitting-roadmap.md` (route + refined step-2 plan).
+**What changed:** Six axiom-free lemmas + the `pCore` definition toward
+discharging `axiom fittingSubgroup_isNilpotent` (CFSG track). Roadmap **steps
+1, 2, 3 DONE**; the axiom is **NOT yet discharged** (step 4 remains). All in
+`FiniteSimpleGroups/FittingSubgroup.lean`; tip builds green
+(`lake build FiniteSimpleGroups.FittingSubgroup` → EXIT 0, 8251 jobs, no sorry):
+- Step 1 (`1a4a31e`) — `sylow_characteristic_of_isNilpotent`,
+  `sylow_normal_of_normal_nilpotent`.
+- Step 3 (`fbb265b` + fix `23f1011`) — `normal_pgroup_le_fittingSubgroup`
+  (normal p-subgroup ≤ `F(G)`).
+- Step 2 (`68c36d3` + fix `7d1c1f9`, then `30907b3`, `0bb0a37`) —
+  `sSup_normal_of_forall_normal`, `pCore` def, `pCore_normal`, `isPGroup_pCore`.
+  The p-core is now a verified normal p-subgroup ≤ `F(G)`.
 
-**Roadmap steps 1 and 3 done. Step 2 (the hand-rolled p-core) is the bottleneck
-and next target:** define `Op G p := sSup {Q | Q.Normal ∧ IsPGroup p Q}` and
-prove it normal + a p-group. The p-group half is a `Finset.sup` induction over
-the (finite) index set, stepped with `IsPGroup.to_sup_of_normal_right`, carrying
-normal+p-group jointly as the motive. ⚠️ No direct `sSup`-of-normals lemma exists
-in mathlib v4.29.1 — see roadmap for the plan. Budget a focused session; needs
-several reliable edit-build cycles.
+⚠️ **History note (honest):** two tip commits were committed RED and repaired on
+top (no rewrite, per Trevor): `fbb265b`→`23f1011` and `68c36d3`→`7d1c1f9`. Build
+green only became true at each fix commit.
+
+**Next target — step 4, the real remaining bottleneck (axiom still open):** close
+`fittingSubgroup_isNilpotent` via `F(G) = ⨆_p O_p(G)` (reverse inclusion uses
+brick 2 — that's what it was built for), then nilpotent via the coprime internal
+direct product of the p-cores. The direct-product/coprime-commute plumbing is the
+genuinely hard part (mine `Sylow.directProductOfNormal` first). Full plan in
+`docs/fitting-roadmap.md` §4. Not small — budget a focused session.
 
 **PR-body draft:**
 > **CFSG: first verified bricks toward Fitting's Theorem**

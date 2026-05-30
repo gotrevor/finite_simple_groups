@@ -57,6 +57,37 @@ theorem center_le_fittingSubgroup {G : Type*} [Group G] :
   normal_nilpotent_le_fittingSubgroup (Subgroup.center G) inferInstance
     CommGroup.isNilpotent
 
+/-! ## Toward discharging Fitting's Theorem
+
+The path to `fittingSubgroup_isNilpotent` runs through the finite-group
+nilpotency TFAE (`isNilpotent_of_finite_tfae`): a finite group is nilpotent iff
+all its Sylow subgroups are normal. The bricks below are the first verified
+steps. mathlib has **no `pCore`/`O_p`**, so the `O_p`-decomposition route is
+built by hand from these. -/
+
+/-- In a finite **nilpotent** group every Sylow subgroup is characteristic.
+Chain: nilpotent ⇒ normalizer condition ⇒ Sylow normal ⇒ Sylow characteristic.
+First verified brick toward Fitting's Theorem. -/
+theorem sylow_characteristic_of_isNilpotent {N : Type*} [Group N] [Finite N]
+    [Group.IsNilpotent N] {p : ℕ} [Fact p.Prime] (P : Sylow p N) :
+    (↑P : Subgroup N).Characteristic :=
+  P.characteristic_of_normal
+    (P.normal_of_normalizerCondition normalizerCondition_of_isNilpotent)
+
+/-- **Sylow subgroups of a normal nilpotent subgroup are normal in the whole
+group.** If `N ⊴ G` is nilpotent, its (unique) Sylow `p`-subgroup is
+characteristic in `N` (`sylow_characteristic_of_isNilpotent`), and a
+characteristic subgroup of a normal subgroup is normal in `G`
+(`IsConjugate.normal_of_characteristic_of_normal`). Second brick. -/
+theorem sylow_normal_of_normal_nilpotent {G : Type*} [Group G] [Finite G]
+    {N : Subgroup G} (hN : N.Normal) (hnil : Group.IsNilpotent N)
+    {p : ℕ} [Fact p.Prime] (P : Sylow p N) :
+    ((↑P : Subgroup N).map N.subtype).Normal := by
+  haveI := hN
+  haveI := hnil
+  haveI := sylow_characteristic_of_isNilpotent P
+  infer_instance
+
 /-- **Fitting's Theorem (normality half).** `F(G)` is a normal subgroup.
 Cited; mathlib lacks the join-of-normals-is-normal lemma in usable form here. -/
 axiom fittingSubgroup_normal (G : Type*) [Group G] : (fittingSubgroup G).Normal

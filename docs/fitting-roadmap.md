@@ -52,30 +52,45 @@ jobs, no sorry/warning.
 
 ## Remaining skeleton
 
-2. **Hand-rolled p-core (the substantial middle, NEXT TARGET).** Define
-   `Op G p := sSup {Q : Subgroup G | Q.Normal ∧ IsPGroup p Q}` and prove it is a
-   normal p-subgroup. Two obligations:
-   - **`(Op G p).Normal`** — sSup of normal subgroups. ⚠️ No direct
-     `sSup`/`iSup`-of-normals lemma surfaced in mathlib v4.29.1 (only the binary
-     `sup_normal` instance). Plan: in a finite group the index set is finite, so
-     `sSup = Finset.sup`; induct with the binary `sup_normal`. (Alt: investigate
-     `Subgroup.normalClosure` to get normality for free, then show it coincides.)
-   - **`IsPGroup p ↥(Op G p)`** — sSup of normal p-groups is a p-group. Same
-     finite-`Finset.sup` induction, stepped with `to_sup_of_normal_right` (each
-     intermediate sup must be carried as *both* normal and a p-group, so the
-     induction motive is the conjunction). This is the real work — a multi-lemma
-     `Finset.induction` proof, budget a focused session.
+2. ✅ **Hand-rolled p-core — DONE.** `pCore G p := sSup {Q | Q.Normal ∧
+   IsPGroup p Q}`, with:
+   - `pCore_normal` (30907b3) — via `sSup_normal_of_forall_normal` (2a, which
+     proves sSup-of-normals is normal; mathlib only had the `iInf` version).
+   - `isPGroup_pCore` (0bb0a37) — the defining set is finite (`Finite G ⇒
+     Finite (Subgroup G)`, `Set.toFinite`), so `pCore = Finset.sup id`;
+     `Finset.sup_induction` with motive `(·.Normal ∧ IsPGroup p ·)` carried
+     jointly, stepped by `IsPGroup.to_sup_of_normal_right` + `Subgroup.sup_normal`,
+     based at `IsPGroup.of_bot`.
 
-3. ✅ **`Op G p ≤ F(G)`** — already covered by `normal_pgroup_le_fittingSubgroup`
-   above (apply it to `Op G p` once step 2 gives normal + p-group).
+3. ✅ **`Op G p ≤ F(G)`** — `normal_pgroup_le_fittingSubgroup` applied to
+   `pCore_normal` + `isPGroup_pCore`.
 
-4. **Every Sylow of `F(G)` is one of these normal pieces** ⇒ normal in `F(G)`.
-   Then apply `isNilpotent_of_finite_tfae` clause 4 → 1. This closes
-   `fittingSubgroup_isNilpotent`; `fittingSubgroup_normal` likely falls out of
-   the same `Op` decomposition.
+4. **Close `fittingSubgroup_isNilpotent` (THE REMAINING BOTTLENECK).** The
+   classical decomposition `F(G) = ⨆_p O_p(G)`, then nilpotent because it's an
+   internal direct product of the (coprime-order, normal) p-cores. Two real
+   sub-goals, neither yet done:
+   - **`F(G) ≤ ⨆_p O_p(G)`** (the reverse `≥` is immediate from step 3). For a
+     normal nilpotent `N ⊴ G`: `N` is the join of its Sylows (nilpotent ⇒ direct
+     product of Sylows, from `isNilpotent_of_finite_tfae` clause 5), and each
+     Sylow of `N` is a *normal* p-subgroup of `G` — exactly brick 2
+     (`sylow_normal_of_normal_nilpotent`) — hence `≤ O_p(G)`. So `N ≤ ⨆_p O_p(G)`;
+     take `sSup` over all such `N`. **Brick 2 is the load-bearing piece here** —
+     this is what it was built for.
+   - **`⨆_p O_p(G)` is nilpotent.** The `O_p(G)` are normal with pairwise coprime
+     orders ⇒ they pairwise commute and form an internal direct product ⇒ the join
+     is `≃* ∏_p O_p(G)`, a finite product of (nilpotent) p-groups, hence nilpotent
+     (`nilpotent_of_mulEquiv` + product-of-nilpotents). ⚠️ The internal-direct-
+     product / coprime-commute plumbing is the genuinely hard, possibly multi-
+     session part; mathlib's `Sylow.directProductOfNormal` is the closest analog
+     and worth mining first.
 
-Steps 1 and 3 are done. Step 2 (the p-core normality + p-group induction) is the
-next real target and the bottleneck.
+   Once `F(G)` is shown nilpotent, `fittingSubgroup_normal` should fall out of the
+   same `⨆_p O_p` description (join of normals).
+
+**Steps 1, 2, 3 are DONE and verified (6 axiom-free lemmas + the `pCore` def).**
+Step 4 is the remaining work to actually discharge the axiom — and it is NOT
+small: the coprime internal-direct-product argument is the real mathematical
+content. The axiom `fittingSubgroup_isNilpotent` is still in place.
 
 ## Dev loop note
 

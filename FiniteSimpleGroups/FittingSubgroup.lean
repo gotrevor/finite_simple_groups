@@ -142,6 +142,58 @@ theorem pCore_le_fittingSubgroup {G : Type*} [Group G] [Finite G] {p : ℕ}
     [Fact p.Prime] : pCore G p ≤ fittingSubgroup G :=
   normal_pgroup_le_fittingSubgroup pCore_normal isPGroup_pCore
 
+/-! ### Step 4, sub-goal 1: `F(G) ≤ ⨆_p O_p(G)` -/
+
+/-- **The Sylow subgroups generate any finite group.** The join, over all primes
+`p` and all Sylow `p`-subgroups `P`, of the `P` is `⊤`. Proof by cardinality: the
+join `S` contains, for each prime `p`, a Sylow `p`-subgroup of order
+`p ^ (card K).factorization p`, so that prime power divides `Nat.card S`
+(Lagrange); hence `Nat.card K ∣ Nat.card S` (`factorization_le_iff_dvd`), forcing
+`S = ⊤`. -/
+theorem iSup_prime_sylow_eq_top (K : Type*) [Group K] [Finite K] :
+    ⨆ (p : ℕ) (_ : p.Prime) (P : Sylow p K), (↑P : Subgroup K) = ⊤ := by
+  classical
+  set S : Subgroup K := ⨆ (p : ℕ) (_ : p.Prime) (P : Sylow p K), (↑P : Subgroup K) with hS
+  have hSne : Nat.card S ≠ 0 := Nat.card_pos.ne'
+  apply Subgroup.eq_top_of_card_eq
+  refine Nat.dvd_antisymm ?_ ?_
+  · rw [← Subgroup.card_top (G := K)]
+    exact Subgroup.card_dvd_of_le le_top
+  · rw [← Nat.factorization_le_iff_dvd Nat.card_pos.ne' hSne, Finsupp.le_iff]
+    intro p hp_mem
+    rw [Nat.support_factorization] at hp_mem
+    have hpp : p.Prime := Nat.prime_of_mem_primeFactors hp_mem
+    haveI : Fact p.Prime := ⟨hpp⟩
+    obtain ⟨P⟩ : Nonempty (Sylow p K) := Sylow.nonempty
+    have hPS : (↑P : Subgroup K) ≤ S := by
+      rw [hS]
+      exact le_iSup_of_le p
+        (le_iSup_of_le hpp (le_iSup (fun Q : Sylow p K => (↑Q : Subgroup K)) P))
+    have hdvd : Nat.card (P : Subgroup K) ∣ Nat.card S := Subgroup.card_dvd_of_le hPS
+    rw [Sylow.card_eq_multiplicity] at hdvd
+    exact (Nat.Prime.pow_dvd_iff_le_factorization hpp hSne).mp hdvd
+
+/-- **`F(G) ≤ ⨆_p O_p(G)`.** Each normal nilpotent `N ⊴ G` is the join of its
+Sylow subgroups (`iSup_prime_sylow_eq_top` on `↥N`); each such Sylow, pushed into
+`G`, is a *normal* `p`-subgroup (`sylow_normal_of_normal_nilpotent`) hence lands in
+`O_p(G)`. Summing over `N` gives the bound. -/
+theorem fittingSubgroup_le_iSup_pCore (G : Type*) [Group G] [Finite G] :
+    fittingSubgroup G ≤ ⨆ p, pCore G p := by
+  apply sSup_le
+  rintro N ⟨hN, hnil⟩
+  have key : N = ⨆ (p : ℕ) (_ : p.Prime) (P : Sylow p ↥N),
+      ((↑P : Subgroup ↥N).map N.subtype) := by
+    simp only [← Subgroup.map_iSup]
+    rw [iSup_prime_sylow_eq_top ↥N, ← MonoidHom.range_eq_map, N.range_subtype]
+  rw [key]
+  refine iSup_le fun p => iSup_le fun hp => iSup_le fun P => ?_
+  haveI : Fact p.Prime := ⟨hp⟩
+  have hnorm := sylow_normal_of_normal_nilpotent hN hnil P
+  have hpg : IsPGroup p ((↑P : Subgroup ↥N).map N.subtype) :=
+    P.isPGroup'.of_equiv ((↑P : Subgroup ↥N).equivMapOfInjective N.subtype N.subtype_injective)
+  exact (le_sSup (show ((↑P : Subgroup ↥N).map N.subtype) ∈
+    {Q : Subgroup G | Q.Normal ∧ IsPGroup p Q} from ⟨hnorm, hpg⟩)).trans (le_iSup (pCore G) p)
+
 /-- **Fitting's Theorem (normality half).** `F(G)` is a normal subgroup.
 Cited; see step 4 in `docs/fitting-roadmap.md`. -/
 axiom fittingSubgroup_normal (G : Type*) [Group G] : (fittingSubgroup G).Normal

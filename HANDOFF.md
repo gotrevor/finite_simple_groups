@@ -1,3 +1,29 @@
+# ▶ ACTIVE SESSION HANDOFF (2026-05-30)
+
+**Branch:** `cfsg-fitting-nilpotent` (off `main` @ `e1a7f88`, **not pushed** — local only)
+
+**What changed:** Two axiom-free bricks toward discharging `axiom
+fittingSubgroup_isNilpotent` (CFSG track), via mathlib's finite-nilpotency TFAE
+route (no `pCore` in mathlib, so built by hand):
+- `1a4a31e` — `sylow_characteristic_of_isNilpotent` + `sylow_normal_of_normal_nilpotent`
+  in `FiniteSimpleGroups/FittingSubgroup.lean`. Build green:
+  `lake build FiniteSimpleGroups.FittingSubgroup` → EXIT 0, no sorry.
+- `ec9a125` — `docs/fitting-roadmap.md` (4-step route + remaining p-core skeleton).
+
+Completes step 1 of 4. Next target: hand-rolled p-core `Op G p` (step 2).
+
+**PR-body draft:**
+> **CFSG: first verified bricks toward Fitting's Theorem**
+> Begins discharging `fittingSubgroup_isNilpotent` (a cited axiom) via
+> `isNilpotent_of_finite_tfae`. mathlib lacks a group-theoretic `pCore`, so the
+> decomposition is hand-built. Adds `sylow_characteristic_of_isNilpotent` (Sylows
+> are characteristic in a finite nilpotent group) and `sylow_normal_of_normal_nilpotent`
+> (Sylow of a normal nilpotent `N ⊴ G` is normal in `G`, via
+> `ConjAct.normal_of_characteristic_of_normal`). Both axiom-free; single-target
+> build green. Remaining 3 steps in `docs/fitting-roadmap.md`.
+
+---
+
 # HANDOFF — finite_simple_groups-ft repo 🪜
 
 > **Read this first.** This repo now hosts **two parallel tracks** in one worktree:

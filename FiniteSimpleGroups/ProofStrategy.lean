@@ -1,163 +1,173 @@
 import Mathlib
 import FiniteSimpleGroups.Basic
+import FiniteSimpleGroups.Classification
 
 /-!
-# The CFSG proof strategy
+# The CFSG proof strategy — as a *deductive skeleton*
 
-This file states the **architectural milestones** of the CFSG proof. None are
-proven (everything is `sorry`); the value is exposing the structure.
+This file states the **architectural milestones** of the CFSG proof and then
+*assembles them into a proof of the classification* (`classification_via_program`).
 
-The proof of CFSG is not a single argument. It's a *program*, decomposed into
-roughly three pillars:
+The leaf milestones are `axiom`s (each a decades-long effort by many authors —
+not realistically formalizable for years). But the **assembly is a real Lean
+proof**: given the milestone axioms, `IsClassified G` follows by case analysis.
+This turns the file from documentation into a checkable skeleton — the shape of
+the argument is machine-verified even though the leaves are postulated.
 
 ```
                     Feit–Thompson (1962)
-                  "every finite simple group
-                   has even order, or is Z/pZ"
+            "odd order ⇒ solvable", so a nonabelian
+             finite simple group has an involution"
                             │
-                            ▼
-                  Aschbacher's dichotomy
-                  "groups with involutions are
-                  of odd type OR of even type"
-                          ╱     ╲
-                         ╱       ╲
-                        ▼         ▼
-                  Odd type      Even type
-                  (GLS program)    │
-                                   ├── Component type
-                                   └── Characteristic 2 type
-                                       └── Quasithin
-                                           (Aschbacher–Smith 2004)
+              prime-cyclic  │  has involution
+              ┌─────────────┴─────────────┐
+              ▼                            ▼
+        IsClassified                Aschbacher's dichotomy
+        (.cyclic)                   odd type  /  even type
+                                   ╱                  ╲
+                                  ▼                    ▼
+                            odd-type             even-type dichotomy
+                            classification    component / characteristic-2
+                            (GLS program)      ╱                ╲
+                                  │           ▼                  ▼
+                                  ▼     component-type      characteristic-2
+                            IsClassified  classification    ╱          ╲
+                                                      quasithin    non-quasithin
+                                                  (Aschbacher–Smith)      │
+                                                          ▼               ▼
+                                                     IsClassified   IsClassified
 ```
 
-Each milestone is a separate decades-long effort by multiple authors.
+Each milestone is a separate decades-long effort. The historical narrative is
+in `docs/architecture.md`; this file is the logical spine.
 -/
 
 namespace FiniteSimpleGroups
 
-/-! ### Milestone 0: Burnside's `p^a q^b` theorem (1904) -/
+/-! ### Milestone 0: Burnside's `p^a q^b` theorem (1904)
 
-/-- **Burnside's theorem (1904).** Every finite group whose order has at most
-two distinct prime divisors is solvable.
+Predates CFSG by half a century; not on the deductive spine below, but the
+historical seed of the local/character-theoretic method. **Not in mathlib** as
+of v4.29.1 (mathlib has Burnside's *transfer* theorem and Burnside's orbit
+*lemma*, but not `p^a q^b` solvability — that needs character theory mathlib
+doesn't yet carry). So this stays a genuine axiom, not a quick discharge. -/
 
-Predates CFSG by half a century but established the technique of using
-character theory to constrain group structure. Crucial *psychological* input:
-showed that order alone could determine solvability.
-
-Declared as `axiom`. (mathlib may already have a form of this; search
-`IsSolvable.of_card_eq_paqb` and similar before relying on this axiom.) -/
+/-- **Burnside's theorem (1904).** A finite group whose order has at most two
+distinct prime divisors is solvable. -/
 axiom Burnside_paqb (G : Type*) [Group G] [Finite G]
     (p q : ℕ) (hp : p.Prime) (hq : q.Prime) (a b : ℕ)
-    (h_card : Nat.card G = p^a * q^b) : IsSolvable G
+    (h_card : Nat.card G = p ^ a * q ^ b) : IsSolvable G
 
-/-! ### Milestone 1: The Feit-Thompson Odd Order Theorem (1962) -/
+/-! ### Milestone 1: The Feit–Thompson Odd Order Theorem (1962) -/
 
-/-- **Feit-Thompson Odd Order Theorem.** Every finite group of odd order is
-solvable.
-
-* 255-page paper in the *Pacific Journal of Mathematics*, 1963.
-* Six-year proof effort by Walter Feit and John Thompson.
-* The first major result that made CFSG seem reachable — it lets you focus on
-  groups containing involutions (elements of order 2), which is where the
-  structure theory bites.
-* **Formalized in Coq** by Gonthier et al. in 2013 (six-year effort, ~150,000
-  lines). Not yet ported to Lean.
-
-The CFSG-relevant corollary: every nontrivial finite simple group either has
-prime order (and is therefore cyclic) or has an involution.
-
-Declared as `axiom` — established in Feit-Thompson 1962 + Gonthier et al.
-Coq formalization 2013 (not yet ported to Lean). -/
+/-- **Feit–Thompson Odd Order Theorem.** Every finite group of odd order is
+solvable. (255 pages, 1963; Coq-formalized by Gonthier et al. 2013, ~150k
+lines; not yet ported to Lean.) -/
 axiom Feit_Thompson_odd_order (G : Type*) [Group G] [Finite G]
     (h_odd : Odd (Nat.card G)) : IsSolvable G
 
-/-- CFSG-relevant corollary of Feit-Thompson: a nontrivial finite simple group
-of odd order is cyclic of prime order.
+/-- **The Feit–Thompson dichotomy (CFSG entry point).** A finite simple group
+is either cyclic of prime order, or contains an involution.
 
-Declared as `axiom` — derivable from `Feit_Thompson_odd_order` plus the
-standard "solvable + simple + nontrivial ⇒ cyclic of prime order" argument. -/
-axiom isSimpleGroup_odd_order_iff_prime_cyclic
-    (G : Type*) [Group G] [Finite G] [IsSimpleGroup G] [Nontrivial G]
-    (h_odd : Odd (Nat.card G)) :
-    ∃ p : ℕ, p.Prime ∧ Nonempty (G ≃* Multiplicative (ZMod p))
+Follows from `Feit_Thompson_odd_order` (odd order ⇒ solvable ⇒, being simple,
+cyclic of prime order) together with Cauchy's theorem (even order ⇒ an element
+of order 2). Stated as an axiom here; the derivation is standard. -/
+axiom feitThompson_dichotomy (G : Type*) [Group G] [IsFSG G] :
+    (∃ p : ℕ, p.Prime ∧ Nonempty (G ≃* Multiplicative (ZMod p)))
+      ∨ (∃ x : G, x ≠ 1 ∧ x ^ 2 = 1)
 
-/-! ### Milestone 2: Aschbacher's dichotomy -/
+/-! ### Milestone 2: Aschbacher's dichotomy (odd type vs even type) -/
 
-/-- A finite simple group is **of odd type** if its standard component (the
-quotient of a centralizer-of-involution by its solvable radical) has odd
-characteristic, or if it's one of a small list of sporadics.
-
-Cited in this scaffold as an `opaque` predicate; the full definition is highly
-technical (component analysis, B-conjecture, signalizer functor method). -/
+/-- A finite simple group is **of odd type** if the involution-centralizer
+analysis looks like a Lie group over a field of *odd* characteristic
+(involutions are semisimple, sitting in a torus). Highly technical; `opaque`. -/
 opaque IsOddType (G : Type*) [Group G] : Prop
 
-/-- A finite simple group is **of even type** if its standard component has
-characteristic 2. The "hard" case for the classification — this is where the
-quasithin sub-case lives.
-
-Includes: most Lie-type groups over `F_{2^k}`, the Mathieu groups, a few
-other sporadics. -/
+/-- A finite simple group is **of even type** (≈ characteristic-2 type) — the
+hard branch, where the quasithin sub-case lives. `opaque`. -/
 opaque IsEvenType (G : Type*) [Group G] : Prop
 
-/-- **Aschbacher's dichotomy (~1980).** Every finite simple group containing
-an involution is either of odd type or of even type (the two cases are not
-mutually exclusive for small groups, but the cases give complete coverage).
-
-Declared as `axiom` — Aschbacher's program of the 1970s-80s. -/
-axiom Aschbacher_dichotomy (G : Type*) [Group G] [Finite G] [IsSimpleGroup G]
-    [Nontrivial G] (h_invol : ∃ x : G, x ≠ 1 ∧ x^2 = 1) :
+/-- **Aschbacher's dichotomy (~1980).** A finite simple group with an
+involution is of odd type or of even type (the cases overlap for small groups,
+but together they cover everything). -/
+axiom aschbacher_dichotomy (G : Type*) [Group G] [IsFSG G]
+    (h_invol : ∃ x : G, x ≠ 1 ∧ x ^ 2 = 1) :
     IsOddType G ∨ IsEvenType G
 
-/-! ### Milestone 3: The odd-type case (GLS program) -/
+/-! ### Milestone 3: the odd-type case (Gorenstein–Lyons–Solomon program) -/
 
-/-- **Classification of odd-type simple groups (Gorenstein-Lyons-Solomon program).**
-A finite simple group of odd type is isomorphic to a Lie-type group over a
-field of odd characteristic, or to one of a small list of sporadics (including
-several Janko, Conway, Fischer groups).
+/-- **Classification of odd-type simple groups (GLS program).** An odd-type
+finite simple group is classified. This is the **second-generation** proof —
+12 planned AMS volumes, 10 published by 2023. Internally: B-Theorem ⇒
+Component Theorem ⇒ standard-form problems, powered by the Signalizer Functor
+method and the generalized Fitting subgroup `F*(G)`. -/
+axiom oddType_isClassified (G : Type*) [Group G] [IsFSG G]
+    (h_odd : IsOddType G) : IsClassified G
 
-The GLS program is the **second-generation** proof — 12 planned volumes
-(*The Classification of the Finite Simple Groups*, AMS), of which 10 are
-published as of 2023. Rewrites the original proof to fit in a self-contained
-sequence. -/
-axiom odd_type_classification (G : Type*) [Group G] [Finite G] [IsSimpleGroup G]
-    [Nontrivial G] (h_odd : IsOddType G) :
-    True  -- placeholder — would be a structured disjunction over odd-type families
+/-! ### Milestone 4: the even-type case -/
 
-/-! ### Milestone 4: The even-type case -/
-
-/-- A simple group of even type is either of **component type** (its centralizer-
-of-involution has a "standard component" generating a Lie-type subgroup over
-`F_{2^k}`) or of **characteristic 2 type** (no such component; the whole
-analysis happens inside the centralizer's `O_2`). -/
+/-- A simple group of even type is of **component type** (a Lie-type component
+over `F_{2^k}` in the centralizer of an involution). `opaque`. -/
 opaque IsComponentType (G : Type*) [Group G] : Prop
 
-/-- The hardest sub-case: **characteristic-2 type without a component** that
-fits neatly into one of the standard subcases. -/
+/-- A simple group of even type is of **characteristic-2 type** (the whole
+analysis happens inside `O_2` of the involution centralizer). `opaque`. -/
 opaque IsCharacteristic2Type (G : Type*) [Group G] : Prop
 
 /-- Even-type groups split into component type and characteristic-2 type. -/
-axiom even_type_dichotomy (G : Type*) [Group G] [Finite G] [IsSimpleGroup G]
-    [Nontrivial G] (h_even : IsEvenType G) :
+axiom evenType_dichotomy (G : Type*) [Group G] [IsFSG G]
+    (h_even : IsEvenType G) :
     IsComponentType G ∨ IsCharacteristic2Type G
 
-/-! ### Milestone 5: The quasithin case (Aschbacher-Smith, 1990s-2004) -/
+/-- **Component-type classification.** A component-type simple group is
+classified (Aschbacher's Component Theorem [A4], Cole Prize work; Gilman–Griess
+for the standard-component endgame, Gorenstein's Step XVI). -/
+axiom componentType_isClassified (G : Type*) [Group G] [IsFSG G]
+    (h_comp : IsComponentType G) : IsClassified G
 
-/-- A characteristic-2-type simple group is **quasithin** if its "e-value"
-(the maximum 2-local 2-rank) is at most 2. This is the case that almost
-unraveled CFSG: Mason announced a proof in the early 1980s, but the proof
-was found incomplete in the 90s. Aschbacher and Smith re-did it from scratch
-in two volumes (~1200 pages, *The Classification of Quasithin Groups* I & II,
-AMS 2004) — the last piece of the original CFSG proof to land. -/
+/-! ### Milestone 5: the characteristic-2 case (incl. quasithin) -/
+
+/-- A characteristic-2-type simple group is **quasithin** if its `e(G)`
+(maximum 2-local 2-rank) is `≤ 2`. The case that almost unraveled CFSG:
+Mason's 1980s manuscript was found incomplete; Aschbacher–Smith redid it from
+scratch (~1200 pages, AMS 2004) — the last brick, fixing CFSG's completion
+date at 2004. `opaque`. -/
 opaque IsQuasithin (G : Type*) [Group G] : Prop
 
-/-- **Quasithin classification (Aschbacher-Smith, 2004).** A simple quasithin
-group of characteristic-2 type is isomorphic to one of an explicit list of
-Lie-type groups over small fields or sporadics.
+/-- **Quasithin classification (Aschbacher–Smith, 2004).** -/
+axiom quasithin_isClassified (G : Type*) [Group G] [IsFSG G]
+    (h : IsCharacteristic2Type G) (hq : IsQuasithin G) : IsClassified G
 
-This theorem's *announcement* is when CFSG was first considered complete
-(2004). -/
-axiom quasithin_classification (G : Type*) [Group G] [Finite G] [IsSimpleGroup G]
-    [Nontrivial G] (h : IsCharacteristic2Type G) (h_qt : IsQuasithin G) :
-    True  -- placeholder for the explicit family enumeration
+/-- **Non-quasithin characteristic-2 classification** (`e(G) ≥ 3`): the
+Gorenstein–Lyons Trichotomy Theorem (structural capstone, Steps XI/XV) feeding
+the uniqueness case (Aschbacher, Step X) and the `GF(2)`-type case
+(Timmesfeld/Smith). -/
+axiom nonQuasithin_char2_isClassified (G : Type*) [Group G] [IsFSG G]
+    (h : IsCharacteristic2Type G) (hq : ¬ IsQuasithin G) : IsClassified G
+
+/-! ### The assembly: CFSG from the milestones
+
+This is a **real proof** (case analysis), not an axiom. It checks that the
+milestone *interfaces* compose into `IsClassified G`. The raw `axiom CFSG` in
+`Classification.lean` is the headline statement; this is the same conclusion
+derived from the named program steps. -/
+
+/-- **The Classification, assembled from the program milestones.** Every
+finite simple group is classified — proved here by threading Feit–Thompson,
+Aschbacher's dichotomy, and the odd/even/component/char-2/quasithin
+classifications together. The leaves are axioms; the *logic* is verified. -/
+theorem classification_via_program (G : Type*) [Group G] [IsFSG G] :
+    IsClassified G := by
+  rcases feitThompson_dichotomy G with hcyc | hinv
+  · -- Feit–Thompson: prime-cyclic case
+    exact .cyclic hcyc
+  · -- has an involution: enter the dichotomy machine
+    rcases aschbacher_dichotomy G hinv with hodd | heven
+    · exact oddType_isClassified G hodd
+    · rcases evenType_dichotomy G heven with hcomp | hchar2
+      · exact componentType_isClassified G hcomp
+      · by_cases hqt : IsQuasithin G
+        · exact quasithin_isClassified G hchar2 hqt
+        · exact nonQuasithin_char2_isClassified G hchar2 hqt
 
 end FiniteSimpleGroups

@@ -8,6 +8,8 @@ import FiniteSimpleGroups.Sporadics
 import FiniteSimpleGroups.ProofStrategy
 import FiniteSimpleGroups.SmallOrders
 import FiniteSimpleGroups.Adjacent.PrimeMul
+import FiniteSimpleGroups.FittingSubgroup
+import FiniteSimpleGroups.PSLIwasawa
 
 /-!
 # Finite Simple Groups — scaffold

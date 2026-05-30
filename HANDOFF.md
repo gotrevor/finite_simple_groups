@@ -1,7 +1,10 @@
-# ▶ ACTIVE SESSION HANDOFF (2026-05-30, 21:46 UTC)
+# ▶ ACTIVE SESSION HANDOFF (2026-05-30, 22:24 UTC)
 
-**Branch:** `cfsg-fitting-nilpotent` (off `main` @ `e1a7f88`, **not pushed** — 7
-local commits awaiting host-side push) · **Tip:** `65beecb`
+**Branch:** `main` (only branch — `cfsg-fitting-nilpotent` ff-merged in, then
+deleted) · **Tip:** `16aafe3` · **PUSHED** to `origin/main` (`e1a7f88..16aafe3`).
+No host-side push debt remains. Worktree `finite_simple_groups-ft` removed; 16 stale
+merged branches pruned. Latest dated handoff:
+[`HANDOFF-2026-05-30-2224.md`](HANDOFF-2026-05-30-2224.md).
 
 **Fitting subgroup: COMPLETE.** `FiniteSimpleGroups/FittingSubgroup.lean` is now
 **axiom-free** — both `fittingSubgroup_isNilpotent` and `fittingSubgroup_normal`

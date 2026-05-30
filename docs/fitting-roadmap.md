@@ -32,39 +32,37 @@ mathlib has **no `pCore`/`O_p`**, so the decomposition is built by hand.
 - `isNilpotent_of_finite_tfae`, `Sylow.directProductOfNormal`,
   `isNilpotent_of_product_of_sylow_group`.
 
-## DONE — step 1, step 3, and step 2 (PARTIAL). Tip: `03b8e1b`
+## DONE — steps 1, 2, 3. Tip: `cf691a5`
 
 All axiom-free; `lake build FiniteSimpleGroups.FittingSubgroup` → EXIT 0,
-8248 jobs, 0 sorries (verified twice from log at `03b8e1b`).
+8248 jobs, 0 sorries (verified from log at `cf691a5`).
 
 - **Step 1 (done)** — `sylow_characteristic_of_isNilpotent`,
   `sylow_normal_of_normal_nilpotent` (Sylow of a normal nilpotent `N ⊴ G` is
   normal in `G` — the load-bearing piece for step 4's forward inclusion).
-- **Step 2 (PARTIAL)** — `sSup_normal_of_forall_normal` (sSup of normals is
+- **Step 2 (done)** — `sSup_normal_of_forall_normal` (sSup of normals is
   normal; mathlib had only the `iInf` version),
   `pCore G p := sSup {Q | Q.Normal ∧ IsPGroup p Q}`, `pCore_normal` (the p-core
-  is normal). **`isPGroup_pCore` (that `O_p(G)` is a p-group) is NOT done** — see
-  the open obstruction below.
+  is normal), and **`isPGroup_pCore`** (that `O_p(G)` is a p-group; see step 2b).
 - **Step 3 (done)** — `normal_pgroup_le_fittingSubgroup` (a normal p-subgroup is
-  `≤ F(G)`). Note: `pCore_le_fittingSubgroup` is NOT yet a theorem because it
-  needs `isPGroup_pCore`; it returns the moment step 2b lands.
+  `≤ F(G)`); `pCore_le_fittingSubgroup` (`O_p(G) ≤ F(G)`) now follows by
+  composing it with `pCore_normal` + `isPGroup_pCore`.
 
-### Step 2b — the open obstruction (`isPGroup_pCore`)
+### Step 2b — `isPGroup_pCore` (RESOLVED, `cf691a5`)
 
-Intended proof: the defining set is finite (`Set.toFinite`), so
-`pCore = Finset.sup id`; `Finset.sup_induction` with motive `·.Normal ∧ IsPGroup p ·`
-carried jointly, stepped by `IsPGroup.to_sup_of_normal_right`, based at
-`IsPGroup.of_bot`. **This does not yet compile**: the
-`rw [pCore, ← hfin.coe_toFinset, ← Finset.sup_id_eq_sSup]` then
-`Finset.sup_induction` leaves `typeclass instance problem is stuck: OrderBot ?m.34`
-— the `Finset.sup` bottom can't be inferred because the elaborator hasn't pinned
-the subgroup-lattice instance at that point. **Fix to try next session:** supply
-`Finset.sup_induction` with an explicit predicate `(p := fun K => K.Normal ∧ …)`
-and/or annotate the `Finset.sup (id)` type, or avoid the `Finset.sup` detour
-entirely — prove it directly by `sSup`-induction / `iSup` over the finite subtype
-without rewriting to `Finset.sup`. The mathlib bricks (`to_sup_of_normal_right`,
-`of_bot`, `sup_normal`) are all confirmed present; only the elaboration plumbing
-of the induction skeleton is unsolved.
+Proof: `Finite (Subgroup G)` (via `Finite.of_injective _ SetLike.coe_injective`)
+makes the defining set finite (`Set.toFinite`); a helper proves the joint motive
+`IsPGroup p ↥· ∧ ·.Normal` for any `T : Finset (Subgroup G)` by `Finset.sup_induction`
+(base `IsPGroup.of_bot`, step `IsPGroup.to_sup_of_normal_right` + `Subgroup.sup_normal`),
+then `pCore = hSfin.toFinset.sup id` via `Finset.sup_id_eq_sSup` + `Set.Finite.coe_toFinset`.
+
+Three elaboration snags, all fixed: (1) `IsPGroup p (T.sup id)` forced `T.sup id`
+to a `Type` — annotate `(T.sup id : Subgroup G)` so the `↥` coercion fires;
+(2) the `Finset.sup_induction` motive was a stuck metavariable (the original
+`OrderBot ?m` symptom) — pin it with `(p := fun J : Subgroup G => …)`;
+(3) `rw [← coe_toFinset]` hit a dependent-motive failure — rewrite forward instead
+(`sup_id_eq_sSup` then `coe_toFinset`). Routing through the explicit
+`Finset (Subgroup G)` is what lets `OrderBot (Subgroup G)` resolve.
 
 > ⚠️ **History honesty.** Steps 1-3 were a messy march, not a clean one. Multiple
 > commits were made over RED builds or with **fabricated commit hashes** off
@@ -76,9 +74,9 @@ of the induction skeleton is unsolved.
 > the actual file; treat all per-lemma hashes in older commit messages as
 > unreliable.**
 
-## REMAINING — step 2b (above) then step 4 (axiom NOT discharged)
+## REMAINING — step 4 (axiom NOT discharged)
 
-After step 2b lands `isPGroup_pCore` (and `pCore_le_fittingSubgroup` returns),
+With step 2 done (`isPGroup_pCore` proved, `pCore_le_fittingSubgroup` now a theorem),
 close `fittingSubgroup_isNilpotent` via `F(G) = ⨆_p O_p(G)`, nilpotent as a
 coprime internal direct product. Two sub-goals, neither done:
 

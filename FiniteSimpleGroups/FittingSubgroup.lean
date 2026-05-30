@@ -288,8 +288,10 @@ theorem fittingSubgroup_isNilpotent (G : Type*) [Group G] [Finite G] :
     Group.IsNilpotent (fittingSubgroup G) := by
   rw [fittingSubgroup_eq_iSup_pCore]; exact iSup_pCore_isNilpotent G
 
-/-- **Fitting's Theorem (normality half).** `F(G)` is a normal subgroup.
-Cited; see step 4 in `docs/fitting-roadmap.md`. -/
-axiom fittingSubgroup_normal (G : Type*) [Group G] : (fittingSubgroup G).Normal
+/-- **Fitting's Theorem (normality half).** `F(G)` is a normal subgroup: it is the
+`sSup` of subgroups every one of which is normal, so `sSup_normal_of_forall_normal`
+applies directly. -/
+theorem fittingSubgroup_normal (G : Type*) [Group G] : (fittingSubgroup G).Normal :=
+  sSup_normal_of_forall_normal (fun _ hK => hK.1)
 
 end FiniteSimpleGroups

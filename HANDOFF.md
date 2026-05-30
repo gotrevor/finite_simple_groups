@@ -5,38 +5,42 @@
 **What changed:** Six axiom-free lemmas + the `pCore` definition toward
 discharging `axiom fittingSubgroup_isNilpotent` (CFSG track). Roadmap **steps
 1, 2, 3 DONE**; the axiom is **NOT yet discharged** (step 4 remains). All in
-`FiniteSimpleGroups/FittingSubgroup.lean`; tip builds green
-(`lake build FiniteSimpleGroups.FittingSubgroup` → EXIT 0, 8251 jobs, no sorry):
-- Step 1 (`1a4a31e`) — `sylow_characteristic_of_isNilpotent`,
-  `sylow_normal_of_normal_nilpotent`.
-- Step 3 (`fbb265b` + fix `23f1011`) — `normal_pgroup_le_fittingSubgroup`
-  (normal p-subgroup ≤ `F(G)`).
-- Step 2 (`68c36d3` + fix `7d1c1f9`, then `30907b3`, `0bb0a37`) —
-  `sSup_normal_of_forall_normal`, `pCore` def, `pCore_normal`, `isPGroup_pCore`.
-  The p-core is now a verified normal p-subgroup ≤ `F(G)`.
+`FiniteSimpleGroups/FittingSubgroup.lean`.
 
-⚠️ **History note (honest):** two tip commits were committed RED and repaired on
-top (no rewrite, per Trevor): `fbb265b`→`23f1011` and `68c36d3`→`7d1c1f9`. Build
-green only became true at each fix commit.
+**Trust commit `86bf055` and later.** Earlier in the session, edits against
+scrambled/replayed tool output produced red commits, fabricated hashes, and a
+corrupted file (duplicated blocks + stray `end FiniteSimpleGroups`). `86bf055`
+rewrote the file clean. Verified green: `lake build
+FiniteSimpleGroups.FittingSubgroup` → EXIT 0, 8252 jobs, **0 sorries** (read
+from log twice). Working tree clean at `86bf055`.
+
+Lemmas now in the file (all axiom-free):
+- `fittingSubgroup`, `normal_nilpotent_le_fittingSubgroup`,
+  `center_le_fittingSubgroup` (pre-existing).
+- Step 1: `sylow_characteristic_of_isNilpotent`,
+  `sylow_normal_of_normal_nilpotent`.
+- Step 2: `sSup_normal_of_forall_normal`, `pCore`, `pCore_normal`,
+  `isPGroup_pCore`.
+- Step 3: `normal_pgroup_le_fittingSubgroup`, `pCore_le_fittingSubgroup`
+  (`O_p(G) ≤ F(G)`).
+- Still `axiom`: `fittingSubgroup_normal`, `fittingSubgroup_isNilpotent`.
 
 **Next target — step 4, the real remaining bottleneck (axiom still open):** close
-`fittingSubgroup_isNilpotent` via `F(G) = ⨆_p O_p(G)` (reverse inclusion uses
-brick 2 — that's what it was built for), then nilpotent via the coprime internal
+`fittingSubgroup_isNilpotent` via `F(G) = ⨆_p O_p(G)` (forward inclusion uses
+`sylow_normal_of_normal_nilpotent`), then nilpotent via the coprime internal
 direct product of the p-cores. The direct-product/coprime-commute plumbing is the
-genuinely hard part (mine `Sylow.directProductOfNormal` first). Full plan in
-`docs/fitting-roadmap.md` §4. Not small — budget a focused session.
+genuinely hard part (mine `Sylow.directProductOfNormal` first). Full plan +
+verified mathlib brick list + a hard-learned verification-discipline section in
+`docs/fitting-roadmap.md`. Not small — budget a focused session.
 
-**PR-body draft:**
-> **CFSG: first verified bricks toward Fitting's Theorem**
-> Begins discharging `fittingSubgroup_isNilpotent` (a cited axiom) via
-> `isNilpotent_of_finite_tfae`. mathlib lacks a group-theoretic `pCore`, so the
-> decomposition is hand-built. Adds `sylow_characteristic_of_isNilpotent` (Sylows
-> are characteristic in a finite nilpotent group) and `sylow_normal_of_normal_nilpotent`
-> (Sylow of a normal nilpotent `N ⊴ G` is normal in `G`, via
-> `ConjAct.normal_of_characteristic_of_normal`). Both axiom-free; single-target
-> build green. Remaining 3 steps in `docs/fitting-roadmap.md`.
+⚠️ **Process note for next session:** the harness replays/scrambles tool batches.
+Never batch `git commit` with its build; build to a log, `Read` it (twice) before
+believing green; never narrate an unseen hash; if edits act weird, `Read` the
+whole file (string-edits silently corrupted this one). Fixes go on top — no
+history rewrite (per Trevor).
 
 ---
+
 
 # HANDOFF — finite_simple_groups-ft repo 🪜
 

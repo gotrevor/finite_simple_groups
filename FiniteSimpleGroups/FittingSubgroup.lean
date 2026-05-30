@@ -173,12 +173,14 @@ theorem iSup_prime_sylow_eq_top (K : Type*) [Group K] [Finite K] :
     rw [Sylow.card_eq_multiplicity] at hdvd
     exact (Nat.Prime.pow_dvd_iff_le_factorization hpp hSne).mp hdvd
 
-/-- **`F(G) ≤ ⨆_p O_p(G)`.** Each normal nilpotent `N ⊴ G` is the join of its
-Sylow subgroups (`iSup_prime_sylow_eq_top` on `↥N`); each such Sylow, pushed into
-`G`, is a *normal* `p`-subgroup (`sylow_normal_of_normal_nilpotent`) hence lands in
-`O_p(G)`. Summing over `N` gives the bound. -/
+/-- **`F(G) ≤ ⨆_p O_p(G)`** (join over *primes* `p`). Each normal nilpotent
+`N ⊴ G` is the join of its Sylow subgroups (`iSup_prime_sylow_eq_top` on `↥N`);
+each such Sylow, pushed into `G`, is a *normal* `p`-subgroup
+(`sylow_normal_of_normal_nilpotent`) hence lands in `O_p(G)`. Summing over `N`
+gives the bound. (The join must range over primes: for *composite* `p`,
+`IsPGroup p` describes a `π`-group and `O_p(G)` need not be nilpotent.) -/
 theorem fittingSubgroup_le_iSup_pCore (G : Type*) [Group G] [Finite G] :
-    fittingSubgroup G ≤ ⨆ p, pCore G p := by
+    fittingSubgroup G ≤ ⨆ (p : ℕ) (_ : p.Prime), pCore G p := by
   apply sSup_le
   rintro N ⟨hN, hnil⟩
   have key : N = ⨆ (p : ℕ) (_ : p.Prime) (P : Sylow p ↥N),
@@ -192,7 +194,21 @@ theorem fittingSubgroup_le_iSup_pCore (G : Type*) [Group G] [Finite G] :
   have hpg : IsPGroup p ((↑P : Subgroup ↥N).map N.subtype) :=
     P.isPGroup'.of_equiv ((↑P : Subgroup ↥N).equivMapOfInjective N.subtype N.subtype_injective)
   exact (le_sSup (show ((↑P : Subgroup ↥N).map N.subtype) ∈
-    {Q : Subgroup G | Q.Normal ∧ IsPGroup p Q} from ⟨hnorm, hpg⟩)).trans (le_iSup (pCore G) p)
+    {Q : Subgroup G | Q.Normal ∧ IsPGroup p Q} from ⟨hnorm, hpg⟩)).trans
+    (le_iSup_of_le p (le_iSup (fun _ : p.Prime => pCore G p) hp))
+
+/-- **`⨆_p O_p(G) ≤ F(G)`** (join over primes). Each `O_p(G)` is a normal
+`p`-subgroup, so it lies in `F(G)` by `pCore_le_fittingSubgroup`. -/
+theorem iSup_pCore_le_fittingSubgroup (G : Type*) [Group G] [Finite G] :
+    ⨆ (p : ℕ) (_ : p.Prime), pCore G p ≤ fittingSubgroup G :=
+  iSup_le fun p => iSup_le fun hp => by
+    haveI : Fact p.Prime := ⟨hp⟩; exact pCore_le_fittingSubgroup
+
+/-- **`F(G) = ⨆_p O_p(G)`** (join over primes). The Fitting subgroup is exactly the
+join of the `p`-cores. -/
+theorem fittingSubgroup_eq_iSup_pCore (G : Type*) [Group G] [Finite G] :
+    fittingSubgroup G = ⨆ (p : ℕ) (_ : p.Prime), pCore G p :=
+  le_antisymm (fittingSubgroup_le_iSup_pCore G) (iSup_pCore_le_fittingSubgroup G)
 
 /-- **Fitting's Theorem (normality half).** `F(G)` is a normal subgroup.
 Cited; see step 4 in `docs/fitting-roadmap.md`. -/

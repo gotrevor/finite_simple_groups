@@ -224,13 +224,72 @@ theorem pCore_eq_bot_of_not_dvd (G : Type*) [Group G] [Finite G] {p : ℕ} [Fact
   · rw [Subgroup.eq_bot_iff_card, hk, hk0, pow_zero]
   · exact absurd (dvd_trans (dvd_pow_self p hkpos.ne') (hk ▸ hdvd)) hp
 
+/-- **`⨆_p O_p(G)` is nilpotent** (join over primes). The `p`-cores are normal
+with pairwise coprime orders, so they pairwise commute and are independent: the
+canonical map `∏_{p ∣ |G|} O_p(G) → G` (`Subgroup.noncommPiCoprod`) is injective
+with range `⨆_p O_p(G)`, giving `⨆_p O_p(G) ≃* ∏_{p ∣ |G|} O_p(G)`. Each factor is
+a nilpotent `p`-group, a finite product of nilpotent groups is nilpotent
+(`isNilpotent_pi`), and nilpotency transports across the equiv. -/
+theorem iSup_pCore_isNilpotent (G : Type*) [Group G] [Finite G] :
+    Group.IsNilpotent ↥(⨆ (p : ℕ) (_ : p.Prime), pCore G p) := by
+  classical
+  haveI : ∀ i : (Nat.card G).primeFactors, Fintype (pCore G (i : ℕ)) :=
+    fun _ => Fintype.ofFinite _
+  -- p-cores at distinct prime factors commute (normal + disjoint by coprimality)
+  have hcomm : Pairwise (fun i j : (Nat.card G).primeFactors =>
+      ∀ x y : G, x ∈ pCore G (i : ℕ) → y ∈ pCore G (j : ℕ) → Commute x y) := by
+    intro i j hij
+    haveI : Fact (i : ℕ).Prime := ⟨Nat.prime_of_mem_primeFactors i.2⟩
+    haveI : Fact (j : ℕ).Prime := ⟨Nat.prime_of_mem_primeFactors j.2⟩
+    have hne : (i : ℕ) ≠ (j : ℕ) := fun h => hij (Subtype.ext h)
+    exact fun x y hx hy => Subgroup.commute_of_normal_of_disjoint _ _ pCore_normal pCore_normal
+      (IsPGroup.disjoint_of_ne (i : ℕ) (j : ℕ) hne _ _ isPGroup_pCore isPGroup_pCore) x y hx hy
+  -- and are independent (pairwise coprime orders)
+  have hind : iSupIndep (fun i : (Nat.card G).primeFactors => pCore G (i : ℕ)) := by
+    apply Subgroup.independent_of_coprime_order hcomm
+    intro i j hij
+    haveI : Fact (i : ℕ).Prime := ⟨Nat.prime_of_mem_primeFactors i.2⟩
+    haveI : Fact (j : ℕ).Prime := ⟨Nat.prime_of_mem_primeFactors j.2⟩
+    have hne : (i : ℕ) ≠ (j : ℕ) := fun h => hij (Subtype.ext h)
+    simp only [← Nat.card_eq_fintype_card]
+    exact IsPGroup.coprime_card_of_ne (i : ℕ) (j : ℕ) hne _ _ isPGroup_pCore isPGroup_pCore
+  -- internal direct product: ∏_p O_p ≃* ⨆_p O_p
+  have hinj := Subgroup.injective_noncommPiCoprod_of_iSupIndep (hcomm := hcomm) hind
+  have hrange : (Subgroup.noncommPiCoprod hcomm).range
+      = ⨆ i : (Nat.card G).primeFactors, pCore G (i : ℕ) := Subgroup.noncommPiCoprod_range
+  have e : (∀ i : (Nat.card G).primeFactors, pCore G (i : ℕ))
+      ≃* ↥(⨆ i : (Nat.card G).primeFactors, pCore G (i : ℕ)) :=
+    (MonoidHom.ofInjective hinj).trans (MulEquiv.subgroupCongr hrange)
+  -- each factor is a nilpotent p-group ⟹ finite product nilpotent ⟹ join nilpotent
+  haveI : ∀ i : (Nat.card G).primeFactors, Group.IsNilpotent (pCore G (i : ℕ)) := fun i => by
+    haveI : Fact (i : ℕ).Prime := ⟨Nat.prime_of_mem_primeFactors i.2⟩
+    exact isPGroup_pCore.isNilpotent
+  have hnil : Group.IsNilpotent ↥(⨆ i : (Nat.card G).primeFactors, pCore G (i : ℕ)) :=
+    nilpotent_of_mulEquiv e
+  -- bridge the prime-indexed join to the primeFactors-indexed join
+  have heq : (⨆ (p : ℕ) (_ : p.Prime), pCore G p)
+      = ⨆ i : (Nat.card G).primeFactors, pCore G (i : ℕ) := by
+    apply le_antisymm
+    · refine iSup_le fun p => iSup_le fun hp => ?_
+      haveI : Fact p.Prime := ⟨hp⟩
+      by_cases hd : p ∣ Nat.card G
+      · exact le_iSup (fun i : (Nat.card G).primeFactors => pCore G (i : ℕ))
+          ⟨p, Nat.mem_primeFactors.mpr ⟨hp, hd, Nat.card_pos.ne'⟩⟩
+      · rw [pCore_eq_bot_of_not_dvd G hd]; exact bot_le
+    · refine iSup_le fun i => le_iSup_of_le (i : ℕ)
+        (le_iSup (fun _ : (i : ℕ).Prime => pCore G (i : ℕ))
+          (Nat.prime_of_mem_primeFactors i.2))
+  rw [heq]; exact hnil
+
+/-- **Fitting's Theorem (nilpotency half).** For a finite group, `F(G)` is
+nilpotent. `F(G) = ⨆_p O_p(G)` (`fittingSubgroup_eq_iSup_pCore`) and that join is
+nilpotent (`iSup_pCore_isNilpotent`). (Ref: Isaacs, *Finite Group Theory*, 9.8.) -/
+theorem fittingSubgroup_isNilpotent (G : Type*) [Group G] [Finite G] :
+    Group.IsNilpotent (fittingSubgroup G) := by
+  rw [fittingSubgroup_eq_iSup_pCore]; exact iSup_pCore_isNilpotent G
+
 /-- **Fitting's Theorem (normality half).** `F(G)` is a normal subgroup.
 Cited; see step 4 in `docs/fitting-roadmap.md`. -/
 axiom fittingSubgroup_normal (G : Type*) [Group G] : (fittingSubgroup G).Normal
-
-/-- **Fitting's Theorem (nilpotency half).** For a finite group, `F(G)` is
-nilpotent. Cited (Isaacs Thm 9.8); discharge route in `docs/fitting-roadmap.md`. -/
-axiom fittingSubgroup_isNilpotent (G : Type*) [Group G] [Finite G] :
-    Group.IsNilpotent (fittingSubgroup G)
 
 end FiniteSimpleGroups

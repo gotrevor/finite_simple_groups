@@ -97,6 +97,26 @@ theorem normal_pgroup_le_fittingSubgroup {G : Type*} [Group G] [Finite G]
     Q ≤ fittingSubgroup G :=
   normal_nilpotent_le_fittingSubgroup Q hQ hp.isNilpotent
 
+/-! ### Step 2: the hand-rolled `p`-core `O_p(G)`
+
+`sSup` of a set of normal subgroups is normal (mathlib has the `iInf` version
+but not this one). Then `Op G p`, the join of all normal `p`-subgroups, is itself
+a normal `p`-subgroup — the (hand-rolled) `p`-core. -/
+
+/-- **The `sSup` of a set of normal subgroups is normal.** Proof: conjugation
+`MulAut.conj g` acts as a pointwise smul, which is the `map` of a monoid
+endomorphism (`pointwise_smul_def`); `map` is a left adjoint
+(`gc_map_comap`) so it preserves `sSup` (`GaloisConnection.l_sSup`); and each
+normal member is fixed by conjugation (`Normal.conj_smul_eq_self`), so the image
+join collapses back to `sSup S`. Closes via `Normal.of_conjugate_fixed`. -/
+theorem sSup_normal_of_forall_normal {G : Type*} [Group G] {S : Set (Subgroup G)}
+    (hS : ∀ K ∈ S, K.Normal) : (sSup S).Normal := by
+  refine Normal.of_conjugate_fixed (fun g => ?_)
+  rw [pointwise_smul_def, (Subgroup.gc_map_comap _).l_sSup, sSup_eq_iSup]
+  refine iSup_congr (fun K => iSup_congr (fun hK => ?_))
+  rw [← pointwise_smul_def]
+  exact (hS K hK).conj_smul_eq_self g K
+
 /-- **Fitting's Theorem (normality half).** `F(G)` is a normal subgroup.
 Cited; mathlib lacks the join-of-normals-is-normal lemma in usable form here. -/
 axiom fittingSubgroup_normal (G : Type*) [Group G] : (fittingSubgroup G).Normal

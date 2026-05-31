@@ -180,4 +180,19 @@ theorem IsComponent.eq_of_le {L M : Subgroup G} (hL : IsComponent L) (hM : IsCom
   · -- top case: `M ≤ L`
     exact le_antisymm hLM (Subgroup.subgroupOf_eq_top.mp htop)
 
+/-- **Distinct components meet centrally.** For components `L ≠ M`, the intersection
+`M ⊓ L` is central in `↥L`: it is subnormal in the quasisimple `↥L`, so central or
+all of `L`; the latter would give `L ≤ M`, forcing `L = M` by `eq_of_le`. This is the
+key step toward `[L, M] = 1` (distinct components commute), whose remaining step needs
+the subnormal-join / three-subgroups machinery. -/
+theorem IsComponent.inf_le_center_of_ne {L M : Subgroup G} (hL : IsComponent L)
+    (hM : IsComponent M) (hne : L ≠ M) :
+    (M ⊓ L).subgroupOf L ≤ Subgroup.center L := by
+  haveI := hL.isQuasisimple
+  have hsub : IsSubnormal (M ⊓ L) L := IsSubnormal.inf_top_right hM.isSubnormal L
+  rcases IsQuasisimple.subnormal_le_center_or_eq_top (IsSubnormal.subgroupOf_top hsub)
+    with hc | htop
+  · exact hc
+  · exact absurd (hL.eq_of_le hM ((Subgroup.subgroupOf_eq_top.mp htop).trans inf_le_left)) hne
+
 end FiniteSimpleGroups

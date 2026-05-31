@@ -4,10 +4,30 @@ import FiniteSimpleGroups.Subnormal
 # Wielandt's join theorem — warm-up: `IsSubnormal.sup_normal`
 
 The **join theorem of Wielandt** states that the join of two subnormal subgroups
-of a finite group is again subnormal. The full theorem needs the three-subgroups
-lemma; this file establishes the **warm-up** that already powers the layer `E(G)`:
+of a *finite* group is again subnormal. This file establishes:
 
-> If `H` is subnormal in `G` and `N ⊴ G`, then `H ⊔ N` is subnormal in `G`.
+* the **warm-up** `IsSubnormal.sup_normal` (proved), which already powers the
+  layer `E(G)`:
+
+  > If `H` is subnormal in `G` and `N ⊴ G`, then `H ⊔ N` is subnormal in `G`.
+
+* the **full join** `IsSubnormal.sup` (declared as an `axiom` over `[Finite G]`).
+
+## Why the full join is an axiom — and why it needs `[Finite G]`
+
+Unlike the warm-up, the full join is **false for arbitrary groups**: there exist
+(necessarily infinite) groups with two subnormal subgroups whose join is *not*
+subnormal. Wielandt's theorem holds under the maximal condition on subgroups, in
+particular for finite groups, and its proof is a genuine chunk of local group
+theory (a three-subgroups / repeated-commutator argument; mathlib has no `sup`
+lemma for its own `Subgroup.IsSubnormal`, only `inf`). Following the repository
+convention for deep results beyond the current scaffold (cf. Bender's
+`genFittingSubgroup_self_centralizing`, and the `Classification.CFSG` /
+`ProofStrategy` milestones), it is recorded as an honest `axiom` under `[Finite G]`
+rather than a `sorry`. Reference: H. Wielandt, *Eine Verallgemeinerung der
+invarianten Untergruppen*, Math. Z. **45** (1939); textbook treatment in Isaacs,
+*Finite Group Theory*, Thm 2.13, or Robinson, *A Course in the Theory of Groups*,
+13.1.4.
 
 The proof lifts a subnormal chain `H = H₀ ⊴ H₁ ⊴ ⋯ ⊴ Hₙ = G` to the chain
 `H ⊔ N ⊴ H₁ ⊔ N ⊴ ⋯ ⊴ G ⊔ N = G`. The single-step fact
@@ -30,6 +50,8 @@ so it is written applicatively (`normalizer (↑H)`), not via dot notation.
 * `isNormalStep_sup_right` — the single-step lift `A ⊴ B ⟹ A ⊔ N ⊴ B ⊔ N`.
 * `IsSubnormal.sup_normal` — Wielandt warm-up:
   `IsSubnormal H ⊤ ⟹ IsSubnormal (H ⊔ N) ⊤`.
+* `IsSubnormal.sup` — Wielandt's full join theorem (`axiom`, `[Finite G]`):
+  `IsSubnormal H ⊤ → IsSubnormal K ⊤ → IsSubnormal (H ⊔ K) ⊤`.
 -/
 
 namespace FiniteSimpleGroups
@@ -61,5 +83,19 @@ theorem IsSubnormal.sup_normal {H N : Subgroup G} (hH : IsSubnormal H ⊤)
     Relation.ReflTransGen.lift (· ⊔ N)
       (fun _ _ hab => isNormalStep_sup_right hab hN) hH
   rwa [top_sup_eq] at key
+
+/-- **Wielandt's join theorem.** In a *finite* group, the join of two subnormal
+subgroups is again subnormal.
+
+This is **false without a finiteness/maximal-condition hypothesis** (there are
+infinite groups where the join of two subnormals is not subnormal), and mathlib
+provides no `sup` lemma for its own `Subgroup.IsSubnormal` (only `inf`). Its proof
+is a real piece of local group theory beyond the present scaffold, so — following
+the repository convention for such results (cf.
+`genFittingSubgroup_self_centralizing`) — it is recorded as an honest `axiom`
+under `[Finite G]` rather than a `sorry`. See the module docstring for references
+(Wielandt 1939; Isaacs, *Finite Group Theory* 2.13). -/
+axiom IsSubnormal.sup {G : Type*} [Group G] [Finite G] {H K : Subgroup G}
+    (hH : IsSubnormal H ⊤) (hK : IsSubnormal K ⊤) : IsSubnormal (H ⊔ K) ⊤
 
 end FiniteSimpleGroups

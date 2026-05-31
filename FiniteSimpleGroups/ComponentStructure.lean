@@ -77,7 +77,50 @@ theorem IsQuasisimple.subnormal_le_center_or_eq_top {Q : Type*} [Group Q] [IsQua
     {N : Subgroup Q} (hN : IsSubnormal N ⊤) : N ≤ center Q ∨ N = ⊤ :=
   subnormal_aux hN rfl
 
+/-- **A quasisimple group is not abelian.** If every pair of elements commuted, the
+center would be everything, so the simple quotient `Q ⧸ Z(Q)` would be trivial —
+impossible, as a simple group is nontrivial. -/
+theorem IsQuasisimple.not_forall_commute {Q : Type*} [Group Q] [hQ : IsQuasisimple Q]
+    (h : ∀ a b : Q, a * b = b * a) : False := by
+  haveI := hQ.isSimpleGroup_quotient_center
+  have hcenter : center Q = ⊤ := by
+    rw [Subgroup.eq_top_iff']
+    exact fun x => Subgroup.mem_center_iff.mpr (fun g => h g x)
+  have hnt : Nontrivial (Q ⧸ center Q) := inferInstance
+  rw [hcenter] at hnt
+  exact absurd hnt
+    (not_nontrivial_iff_subsingleton.mpr QuotientGroup.subsingleton_quotient_top)
+
 variable {G : Type*} [Group G]
+
+/-- A normal step transfers into a subgroup `M` containing both ends: `A ⊴ B` (in `G`)
+gives `A.subgroupOf M ⊴ B.subgroupOf M` (in `↥M`). Via the normalizer rephrasing and
+`subgroupOf_normalizer_eq`. -/
+theorem IsNormalStep.subgroupOf {A B M : Subgroup G} (h : IsNormalStep A B)
+    (hAM : A ≤ M) (hBM : B ≤ M) :
+    IsNormalStep (A.subgroupOf M) (B.subgroupOf M) := by
+  rw [isNormalStep_iff_le_normalizer] at h ⊢
+  obtain ⟨hAB, hnorm⟩ := h
+  refine ⟨Subgroup.subgroupOf_mono M hAB, ?_⟩
+  rw [← Subgroup.subgroupOf_normalizer_eq hAM]
+  exact Subgroup.subgroupOf_mono M hnorm
+
+/-- Auxiliary: transfer a subnormal chain `A ⊴⋯⊴ K` into `↥M` for any `M ⊇ K`. -/
+private theorem isSubnormal_subgroupOf_aux {A K M : Subgroup G} (h : IsSubnormal A K) :
+    K ≤ M → IsSubnormal (A.subgroupOf M) (K.subgroupOf M) := by
+  induction h with
+  | refl => intro _; exact IsSubnormal.refl _
+  | @tail c K' hAc hstep ih =>
+    intro hK'M
+    have hcM : c ≤ M := hstep.le.trans hK'M
+    exact (ih hcM).tail (hstep.subgroupOf hcM hK'M)
+
+/-- **Subnormality transfers into the subtype.** If `A` is subnormal in `M` (inside
+`G`), then `A.subgroupOf M` is subnormal in `↥M` (i.e. in `⊤`). -/
+theorem IsSubnormal.subgroupOf_top {A M : Subgroup G} (h : IsSubnormal A M) :
+    IsSubnormal (A.subgroupOf M) (⊤ : Subgroup M) := by
+  have h2 := isSubnormal_subgroupOf_aux h (le_refl M)
+  rwa [Subgroup.subgroupOf_self] at h2
 
 /-- **A normal step meets a subgroup `H` in a normal step.** If `A ⊴ B` then
 `A ⊓ H ⊴ B ⊓ H`: an element of `B ⊓ H` normalizes `A` (it lies in `B`) and `H` (it
@@ -109,5 +152,32 @@ theorem IsSubnormal.inf_top_right {M : Subgroup G} (h : IsSubnormal M ⊤) (H : 
     IsSubnormal (M ⊓ H) H := by
   have h2 := h.inf_right H
   rwa [top_inf_eq] at h2
+
+/-- **Components are incomparable: `L ≤ M` between components forces `L = M`.**
+`L` is subnormal in `M`, so `L.subgroupOf M` is subnormal in the quasisimple group
+`↥M`; by `subnormal_le_center_or_eq_top` it is `⊤` (giving `M ≤ L`, hence `L = M`) or
+central in `↥M` — but the latter makes `↥L` abelian, impossible for the quasisimple
+`↥L`. -/
+theorem IsComponent.eq_of_le {L M : Subgroup G} (hL : IsComponent L) (hM : IsComponent M)
+    (hLM : L ≤ M) : L = M := by
+  haveI := hM.isQuasisimple
+  haveI := hL.isQuasisimple
+  -- `L` is subnormal in `M`
+  have hsub : IsSubnormal L M := by
+    have h2 := IsSubnormal.inf_top_right hL.isSubnormal M
+    rwa [inf_eq_left.mpr hLM] at h2
+  rcases IsQuasisimple.subnormal_le_center_or_eq_top (IsSubnormal.subgroupOf_top hsub)
+    with hc | htop
+  · -- central case: `↥L` would be abelian
+    exfalso
+    have e := Subgroup.subgroupOfEquivOfLe hLM
+    have hcommM : ∀ a b : (L.subgroupOf M), a * b = b * a := fun a b =>
+      Subtype.ext (by simpa using (Subgroup.mem_center_iff.mp (hc a.2) (b : M)).symm)
+    have hcommL : ∀ a b : L, a * b = b * a := fun a b => by
+      have hp := congrArg e (hcommM (e.symm a) (e.symm b))
+      simpa [map_mul] using hp
+    exact IsQuasisimple.not_forall_commute hcommL
+  · -- top case: `M ≤ L`
+    exact le_antisymm hLM (Subgroup.subgroupOf_eq_top.mp htop)
 
 end FiniteSimpleGroups

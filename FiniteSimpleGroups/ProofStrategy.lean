@@ -69,12 +69,46 @@ axiom Feit_Thompson_odd_order (G : Type*) [Group G] [Finite G]
 /-- **The Feit–Thompson dichotomy (CFSG entry point).** A finite simple group
 is either cyclic of prime order, or contains an involution.
 
-Follows from `Feit_Thompson_odd_order` (odd order ⇒ solvable ⇒, being simple,
-cyclic of prime order) together with Cauchy's theorem (even order ⇒ an element
-of order 2). Stated as an axiom here; the derivation is standard. -/
-axiom feitThompson_dichotomy (G : Type*) [Group G] [IsFSG G] :
+**Discharged from `Feit_Thompson_odd_order` + mathlib (2026-05-31).** This was an
+axiom; it is now a real theorem. The deep input (Feit–Thompson odd-order) stays
+an axiom, but the *dichotomy itself* is elementary on top of it:
+* **odd order** ⇒ `Feit_Thompson_odd_order` gives solvable ⇒ a simple solvable
+  group is commutative (`IsSimpleGroup.comm_iff_isSolvable`) ⇒ cyclic of prime
+  order (`IsSimpleGroup.isCyclic`, `IsSimpleGroup.prime_card`) ⇒ the iso to
+  `Multiplicative (ZMod p)` via `mulEquivOfPrimeCardEq`;
+* **even order** ⇒ Cauchy (`exists_prime_orderOf_dvd_card`) yields an element of
+  order 2, i.e. an involution. -/
+theorem feitThompson_dichotomy (G : Type*) [Group G] [IsFSG G] :
     (∃ p : ℕ, p.Prime ∧ Nonempty (G ≃* Multiplicative (ZMod p)))
-      ∨ (∃ x : G, x ≠ 1 ∧ x ^ 2 = 1)
+      ∨ (∃ x : G, x ≠ 1 ∧ x ^ 2 = 1) := by
+  classical
+  haveI : Finite G := IsFSG.finite
+  haveI : Fintype G := Fintype.ofFinite G
+  by_cases hodd : Odd (Nat.card G)
+  · -- odd ⇒ Feit–Thompson ⇒ solvable ⇒ commutative ⇒ cyclic of prime order
+    left
+    have hsol : IsSolvable G := Feit_Thompson_odd_order G hodd
+    have hcomm : ∀ a b : G, a * b = b * a := IsSimpleGroup.comm_iff_isSolvable.mpr hsol
+    haveI : IsMulCommutative G := ⟨⟨hcomm⟩⟩
+    have hp : (Nat.card G).Prime := IsSimpleGroup.prime_card
+    refine ⟨Nat.card G, hp, ?_⟩
+    haveI : Fact (Nat.card G).Prime := ⟨hp⟩
+    have hG' : Nat.card (Multiplicative (ZMod (Nat.card G))) = Nat.card G := by
+      simp
+    exact ⟨mulEquivOfPrimeCardEq (rfl) hG'⟩
+  · -- even ⇒ Cauchy gives an element of order 2
+    right
+    have heven : 2 ∣ Nat.card G := by
+      rcases Nat.even_or_odd (Nat.card G) with he | ho
+      · exact he.two_dvd
+      · exact absurd ho hodd
+    obtain ⟨x, hx⟩ := exists_prime_orderOf_dvd_card 2
+      (by rwa [Nat.card_eq_fintype_card] at heven)
+    refine ⟨x, ?_, ?_⟩
+    · intro h; rw [h] at hx; simp [orderOf_one] at hx
+    · have := orderOf_dvd_iff_pow_eq_one (n := 2) (x := x)
+      rw [hx] at this
+      exact this.mp dvd_rfl
 
 /-! ### Milestone 2: Aschbacher's dichotomy (odd type vs even type) -/
 

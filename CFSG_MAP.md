@@ -27,19 +27,28 @@ Genuinely-unformalized elementary group theory we *did* prove:
   center) + the `|G|=6` concrete case.
 - `PSLIwasawa.lean` — the reduction `Iwasawa ⟹ IsSimpleGroup (PSL 2 q)`
   (sorry-free reduction; the inputs are axioms in bucket B).
+- `ProofStrategy.lean` `feitThompson_dichotomy` — **discharged from axiom to
+  theorem 2026-05-31.** Simple group ⇒ prime-cyclic OR has an involution, proved
+  on top of `Feit_Thompson_odd_order` (deep, stays axiom) + mathlib
+  (`comm_iff_isSolvable`, `isCyclic`, `prime_card`, `mulEquivOfPrimeCardEq`,
+  Cauchy). `#print axioms` → depends only on `Feit_Thompson_odd_order` + the 3
+  standard axioms. Plus the existing assembly `classification_via_program`
+  (real case-analysis proof on the milestone interfaces).
 - `Wielandt.lean` `IsSubnormal.sup_normal` (warm-up), the §1 *assembly* theorems
   in `FeitThompson/BGsection1.lean` (they're proven *given* their bucket-B
   axioms), the component/layer centralizer reformulations.
 
-### 🟦 B — STAYS AN AXIOM (deep + formalized in Coq, or genuinely deep). 45 axioms.
+### 🟦 B — STAYS AN AXIOM (deep + formalized in Coq, or genuinely deep). 44 axioms.
 **Do not touch. Not targets.** These are honest dependency declarations for
 results that are either (i) formalized in MathComp/Coq (the entire §1
 Bender–Glauberman + Feit–Thompson line — re-porting is explicitly off the table)
 or (ii) deep theory far beyond an elementary brick. Leave as `axiom`.
-- **CFSG milestones** (`ProofStrategy.lean`, 9): `Burnside_paqb`,
-  `Feit_Thompson_odd_order`, `feitThompson_dichotomy`, `aschbacher_dichotomy`,
+- **CFSG milestones** (`ProofStrategy.lean`, 8): `Burnside_paqb`,
+  `Feit_Thompson_odd_order`, `aschbacher_dichotomy`,
   `oddType_isClassified`, `evenType_dichotomy`, `componentType_isClassified`,
   `quasithin_isClassified`, `nonQuasithin_char2_isClassified`.
+  (`feitThompson_dichotomy` was discharged to a **theorem** 2026-05-31 — see
+  bucket A — on top of `Feit_Thompson_odd_order`, which stays an axiom.)
 - **CFSG itself** (`Classification.lean`, 1): `CFSG`.
 - **Bender–Glauberman §1** (`FeitThompson/BGsection1/*`, ~10): `commutator_lt_of_minnormal`,
   `comm_norm_cent_subset_cent`, `critical_subgroup_exists`, `coprimeR_cent_prod`,
@@ -92,9 +101,10 @@ hand-provable bricks (D). The mistake to avoid is mistaking a B (deep, leave it)
 or a C (pin-lag, delete it) for a D (brick, build it). This map exists to prevent
 exactly that.
 
-## Counts (2026-05-31, HEAD `4dd3756`, compiler-verified)
-- Axioms: **45** (all bucket B; includes the 3 Alternating case-witness leaves,
-  which are bucket C / delete-on-bump).
+## Counts (2026-05-31, compiler-verified)
+- Axioms: **44** (all bucket B; includes the 3 Alternating case-witness leaves,
+  which are bucket C / delete-on-bump). Was 45 until `feitThompson_dichotomy` was
+  discharged to a theorem (bucket A).
 - Real sorries: **1** — `SmallOrders:104` (`lt60`, bucket D, in progress).
   Confirmed via `lake build`: `SmallOrders` emits exactly 1 `declaration uses
   'sorry'`; `Alternating` emits **0** (its 3 "sorry" string-matches are docstring

@@ -31,7 +31,7 @@ Genuinely-unformalized elementary group theory we *did* prove:
   in `FeitThompson/BGsection1.lean` (they're proven *given* their bucket-B
   axioms), the component/layer centralizer reformulations.
 
-### 🟦 B — STAYS AN AXIOM (deep + formalized in Coq, or genuinely deep). 40 axioms.
+### 🟦 B — STAYS AN AXIOM (deep + formalized in Coq, or genuinely deep). 45 axioms.
 **Do not touch. Not targets.** These are honest dependency declarations for
 results that are either (i) formalized in MathComp/Coq (the entire §1
 Bender–Glauberman + Feit–Thompson line — re-porting is explicitly off the table)
@@ -92,6 +92,11 @@ hand-provable bricks (D). The mistake to avoid is mistaking a B (deep, leave it)
 or a C (pin-lag, delete it) for a D (brick, build it). This map exists to prevent
 exactly that.
 
-## Counts (2026-05-31, HEAD `4dd3756`)
-- Axioms: **40** (all bucket B). Real sorries: **1** (`SmallOrders`, bucket D, in
-  progress). Build green (8282 jobs).
+## Counts (2026-05-31, HEAD `4dd3756`, compiler-verified)
+- Axioms: **45** (all bucket B; includes the 3 Alternating case-witness leaves,
+  which are bucket C / delete-on-bump).
+- Real sorries: **1** — `SmallOrders:104` (`lt60`, bucket D, in progress).
+  Confirmed via `lake build`: `SmallOrders` emits exactly 1 `declaration uses
+  'sorry'`; `Alternating` emits **0** (its 3 "sorry" string-matches are docstring
+  mentions, not tactics — the leaves are genuine axioms now).
+- Build green.

@@ -77,4 +77,37 @@ theorem IsQuasisimple.subnormal_le_center_or_eq_top {Q : Type*} [Group Q] [IsQua
     {N : Subgroup Q} (hN : IsSubnormal N ⊤) : N ≤ center Q ∨ N = ⊤ :=
   subnormal_aux hN rfl
 
+variable {G : Type*} [Group G]
+
+/-- **A normal step meets a subgroup `H` in a normal step.** If `A ⊴ B` then
+`A ⊓ H ⊴ B ⊓ H`: an element of `B ⊓ H` normalizes `A` (it lies in `B`) and `H` (it
+lies in `H`), hence normalizes `A ⊓ H`. -/
+theorem IsNormalStep.inf_right {A B : Subgroup G} (h : IsNormalStep A B) (H : Subgroup G) :
+    IsNormalStep (A ⊓ H) (B ⊓ H) := by
+  rw [isNormalStep_iff_le_normalizer] at h ⊢
+  obtain ⟨hAB, hnorm⟩ := h
+  refine ⟨inf_le_inf_right H hAB, fun x hx => ?_⟩
+  obtain ⟨hxB, hxH⟩ := Subgroup.mem_inf.mp hx
+  have hxA := Subgroup.mem_normalizer_iff.mp (hnorm hxB)
+  have hxnH := Subgroup.mem_normalizer_iff.mp (Subgroup.le_normalizer hxH)
+  rw [Subgroup.mem_normalizer_iff]
+  intro n
+  rw [Subgroup.mem_inf, Subgroup.mem_inf, hxA n, hxnH n]
+
+/-- **Subnormality is preserved by meeting with a subgroup.** If `A` is subnormal in
+`K` then `A ⊓ H` is subnormal in `K ⊓ H` — intersect every link of the chain with
+`H`. -/
+theorem IsSubnormal.inf_right {A K : Subgroup G} (h : IsSubnormal A K) (H : Subgroup G) :
+    IsSubnormal (A ⊓ H) (K ⊓ H) := by
+  induction h with
+  | refl => exact IsSubnormal.refl _
+  | @tail c K' _ hstep ih => exact ih.tail (hstep.inf_right H)
+
+/-- A subnormal subgroup of the whole group meets any `H` in a subnormal subgroup of
+`H` (the case `K = ⊤`). -/
+theorem IsSubnormal.inf_top_right {M : Subgroup G} (h : IsSubnormal M ⊤) (H : Subgroup G) :
+    IsSubnormal (M ⊓ H) H := by
+  have h2 := h.inf_right H
+  rwa [top_inf_eq] at h2
+
 end FiniteSimpleGroups

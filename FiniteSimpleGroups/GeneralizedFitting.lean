@@ -28,6 +28,12 @@ the definition and the normality.
 * `genFittingSubgroup_normal` — `F*(G)` is normal.
 * `layer_le_genFittingSubgroup`, `fittingSubgroup_le_genFittingSubgroup` — both
   factors lie in `F*(G)`.
+* `genFittingSubgroup_eq_layer_of_fittingSubgroup_eq_bot` /
+  `..._eq_fittingSubgroup_of_layer_eq_bot` — the degenerate cases (e.g. the
+  B-theorem reduction `F(G) = 1 ⟹ F*(G) = E(G)`).
+* `genFittingSubgroup_self_centralizing` (**axiom**, finite `G`) — Bender's
+  cornerstone `C_G(F*(G)) ≤ F*(G)`; and its corollary
+  `centralizer_genFittingSubgroup_eq_center` (`C_G(F*(G)) = Z(F*(G))`).
 -/
 
 namespace FiniteSimpleGroups
@@ -54,5 +60,47 @@ theorem genFittingSubgroup_normal (G : Type*) [Group G] :
   haveI := layer_normal (G := G)
   haveI := fittingSubgroup_normal G
   exact Subgroup.sup_normal (layer G) (fittingSubgroup G)
+
+/-- If the Fitting subgroup is trivial then `F*(G) = E(G)`. This is the shape of the
+**B-theorem reduction**: once `F(G) = 1`, the generalized Fitting subgroup collapses
+to the layer, a (central) product of quasisimple components. -/
+theorem genFittingSubgroup_eq_layer_of_fittingSubgroup_eq_bot
+    (h : fittingSubgroup G = ⊥) : genFittingSubgroup G = layer G := by
+  rw [genFittingSubgroup, h, sup_bot_eq]
+
+/-- If the layer is trivial then `F*(G) = F(G)` — the soluble case, where the
+generalized Fitting subgroup is just the ordinary Fitting subgroup. -/
+theorem genFittingSubgroup_eq_fittingSubgroup_of_layer_eq_bot
+    (h : layer G = ⊥) : genFittingSubgroup G = fittingSubgroup G := by
+  rw [genFittingSubgroup, h, bot_sup_eq]
+
+/-- **Bender's theorem — the cornerstone of the theory of the generalized Fitting
+subgroup.** In any finite group, `F*(G)` is *self-centralizing*:
+`C_G(F*(G)) ≤ F*(G)`. Equivalently `C_G(F*(G)) = Z(F*(G))`
+(`centralizer_genFittingSubgroup_eq_center`).
+
+This is what makes `F*(G)` the load-bearing object of the local theory: the action
+of `G` on `F*(G)` by conjugation is faithful modulo the center, so
+`G/Z(F*(G)) ↪ Aut(F*(G))` and the structure of `G` is controlled by `F*(G)`. It is
+the generalized-Fitting analogue of the elementary fact `C_G(F(G)) ≤ F(G)` for
+*soluble* `G`, extended past solubility by the layer.
+
+Declared as an `axiom`: the proof (Aschbacher, *Finite Group Theory* 31.13; or
+Kurzweil-Stellmacher 6.5.8) rests on `[E(G), F(G)] = 1` and the central-product
+structure of `E(G)` — a chunk of local group theory well beyond this scaffold.
+Following the repository's convention (cf. `Classification.CFSG`, the
+`ProofStrategy` milestones), an honest dependency declaration rather than a
+`sorry`. -/
+axiom genFittingSubgroup_self_centralizing (G : Type*) [Group G] [Finite G] :
+    Subgroup.centralizer (genFittingSubgroup G : Set G) ≤ genFittingSubgroup G
+
+/-- **`C_G(F*(G)) = Z(F*(G))`.** The centralizer of the generalized Fitting subgroup
+is exactly its center, realized in `G` as `F*(G) ⊓ C_G(F*(G))`. The `≥` inclusion is
+trivial; the `≤` inclusion is precisely Bender's cornerstone
+(`genFittingSubgroup_self_centralizing`). -/
+theorem centralizer_genFittingSubgroup_eq_center (G : Type*) [Group G] [Finite G] :
+    Subgroup.centralizer (genFittingSubgroup G : Set G)
+      = genFittingSubgroup G ⊓ Subgroup.centralizer (genFittingSubgroup G : Set G) :=
+  (le_inf (genFittingSubgroup_self_centralizing G) le_rfl).antisymm inf_le_right
 
 end FiniteSimpleGroups

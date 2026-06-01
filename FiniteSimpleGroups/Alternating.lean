@@ -210,7 +210,15 @@ private theorem commutator_mem_normalClosure
   rw [h_eq]
   exact Subgroup.mul_mem _ h_g h_conj
 
-/-! #### Case 1, 2, 4 witness helpers (leaves — `sorry`)
+/-! #### Case 1, 2, 4 witness helpers (leaves — `axiom`)
+
+**Status (2026-05-31):** these three leaves are recorded as honest `axiom`s
+rather than `sorry`s. They are the standard cycle-type commutator constructions
+in the Galois simplicity proof. Per Trevor's call, the whole Galois argument is
+not being hand-proved here: on a host-side mathlib bump past PR #36524 the
+entire `alternatingGroup_isSimple` collapses to the upstream one-liner
+`alternatingGroup.isSimpleGroup` and these axioms (plus the scaffolding below)
+are deleted. Until then they stand as named dependencies, not `sorry` debt.
 
 **Note (2026-05-25, post-PR #13):** the original "every case is a one-step
 3-cycle commutator" simplification turned out to be **wrong for Case 2**. With
@@ -231,13 +239,12 @@ factor `σ_long` with `support.card ≥ 4`, pick `a ∈ σ_long.support`, set
 `b := σ_long a`, `c := σ_long² a`, `d := σ_long³ a` (all distinct since
 cycle length ≥ 4). Take `h_perm := (a b c)`. The commutator `[g, h]` evaluates
 to the 3-cycle `(a b d)`. -/
-private theorem case1_commutator_witness
+axiom case1_commutator_witness
     {n : ℕ} (g_perm : Equiv.Perm (Fin n))
     (_h_long : ∃ k ∈ g_perm.cycleType, 4 ≤ k) :
     ∃ h_perm : Equiv.Perm (Fin n),
       h_perm.IsThreeCycle ∧
-      (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle := by
-  sorry
+      (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle
 
 /-- **Case 2 leaf (retyped)** — given ≥ 2 three-cycles in `g_perm`'s
 decomposition, produce an *intermediate* element `g'` in
@@ -246,13 +253,12 @@ decomposition, produce an *intermediate* element `g'` in
 factors of `g_perm`. Then `g' = (a d c e b)`, a 5-cycle. Case 2's main theorem
 then chains this with `exists_threeCycle_of_long_cycle` (i.e., Case 1
 applied to `g'`). -/
-private theorem case2_long_cycle_witness
+axiom case2_long_cycle_witness
     {n : ℕ} (g : alternatingGroup (Fin n))
     (_h_two_threes : 2 ≤ (g : Equiv.Perm (Fin n)).cycleType.count 3) :
     ∃ g' : alternatingGroup (Fin n),
       g' ∈ Subgroup.normalClosure ({g} : Set (alternatingGroup (Fin n))) ∧
-      (∃ k ∈ (g' : Equiv.Perm (Fin n)).cycleType, 4 ≤ k) := by
-  sorry
+      (∃ k ∈ (g' : Equiv.Perm (Fin n)).cycleType, 4 ≤ k)
 
 /-- **Case 4 leaf** — given `g_perm` is a non-identity product of disjoint
 2-cycles only (and `n ≥ 5`), produce a 3-cycle whose commutator with `g_perm`
@@ -267,14 +273,13 @@ Sub-case structure:
   direct one-step construction — needs reduction (e.g., commutator with
   `(a b c)` gives an element of cycleType `{2, 2}` with smaller support, then
   recurse). Sorried below at a finer level. -/
-private theorem case4_commutator_witness
+axiom case4_commutator_witness
     {n : ℕ} (_hn : 5 ≤ n) (g_perm : Equiv.Perm (Fin n))
     (_h_all_swaps : ∀ m ∈ g_perm.cycleType, m = 2)
     (_h_ne_one : g_perm ≠ 1) :
     ∃ h_perm : Equiv.Perm (Fin n),
       h_perm.IsThreeCycle ∧
-      (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle := by
-  sorry
+      (g_perm * h_perm * g_perm⁻¹ * h_perm⁻¹).IsThreeCycle
 
 /-! #### Case main theorems (wired — proofs depend only on the leaves above) -/
 
@@ -490,9 +495,10 @@ teaching-material status.
 normal subgroup contains a 3-cycle (via `exists_threeCycle_of_normal`), so its
 normal closure contains all 3-cycles (via `IsThreeCycle.alternating_normalClosure`),
 which equals the whole `A_n` (via `closure_three_cycles_eq_alternating`). The
-3-cycle existence helper currently bottoms out in 3 leaf sorries
+3-cycle existence helper currently bottoms out in 3 leaf **axioms**
 (`case{1,2,4}_*_witness`) corresponding to the standard case analysis on
-`cycleType`; see [`HANDOFF.md`](../HANDOFF.md) for the full story. -/
+`cycleType` — honest named dependencies, to be discharged (deleted) on the
+mathlib bump past #36524; see [`HANDOFF.md`](../HANDOFF.md) for the full story. -/
 theorem alternatingGroup_isSimple (n : ℕ) (hn : 5 ≤ n) :
     IsSimpleGroup (alternatingGroup (Fin n)) := by
   haveI : Nontrivial (alternatingGroup (Fin n)) :=

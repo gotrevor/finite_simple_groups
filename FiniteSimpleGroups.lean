@@ -10,6 +10,7 @@ import FiniteSimpleGroups.SmallOrders
 import FiniteSimpleGroups.Adjacent.PrimeMul
 import FiniteSimpleGroups.FittingSubgroup
 import FiniteSimpleGroups.PSLIwasawa
+import FiniteSimpleGroups.Wielandt
 
 /-!
 # Finite Simple Groups — scaffold

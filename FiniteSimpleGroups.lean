@@ -6,6 +6,7 @@ import FiniteSimpleGroups.LieType
 import FiniteSimpleGroups.Exceptional
 import FiniteSimpleGroups.Sporadics
 import FiniteSimpleGroups.ProofStrategy
+import FiniteSimpleGroups.ProofTree
 import FiniteSimpleGroups.SmallOrders
 import FiniteSimpleGroups.ClassifiedSmallOrders
 import FiniteSimpleGroups.Adjacent.PrimeMul

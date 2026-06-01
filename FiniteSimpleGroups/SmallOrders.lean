@@ -27,15 +27,16 @@ non-abelian finite simple group has order at least 60.
    analysis. The hardest cases under 60 are `|G| = 24, 30, 36, 48`. Standard
    textbook exercises.
 
-This file proves (1) in full, cites (2) from `PrimeMul.lean`, provides a
-reusable Sylow-counting toolkit, discharges the two element-counting mixed
-orders `30` and `56`, and gives a structured sorry for the unified
-"every simple group of order < 60 has prime order" statement.
+This file proves the unified statement `prime_card_of_simpleGroup_card_lt_sixty`
+in full, sorry-free: (1) via `not_isSimpleGroup_of_card_prime_pow_ge_two`, (2) via
+`Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime`, and every mixed order via
+a reusable Sylow-counting toolkit (counts forced to `1`, the faithful-action
+embedding `|G| ∣ n_p!`, and element counting for `30` and `56`).
 
-The Sylow-counting infrastructure in this file (the `private` lemmas) was
-substantially produced by Harmonic's Aristotle auto-formalizer (the `lt60`
-job), then ported v4.28.0 → v4.29.1 and assembled here; the order-30
-discharge was reconstructed by hand from the proven counting lemma.
+Part of the Sylow-counting infrastructure (several of the `private` toolkit
+lemmas) was substantially produced by Harmonic's Aristotle auto-formalizer (the
+`lt60` job), then ported v4.28.0 → v4.29.1 and assembled here; the order-30
+discharge and the mixed-order + dispatch lemmas were written by hand on top of it.
 -/
 
 namespace FiniteSimpleGroups
@@ -99,6 +100,14 @@ private lemma card_dvd_factorial_of_card_sylow_gt_one
   convert Subgroup.card_subgroup_dvd_card (φ.range) using 1
   · exact Nat.card_congr (Equiv.ofInjective _ <| (MonoidHom.ker_eq_bot_iff _).mp h_kernel_bot)
   · exact?
+
+/-- Sylow III, packaged: the number of Sylow `p`-subgroups divides `|G|` and is
+`≡ 1 [MOD p]`. -/
+private lemma sylow_card_dvd_modEq (G : Type*) [Group G] [Finite G] {p : ℕ} [Fact p.Prime] :
+    Nat.card (Sylow p G) ∣ Nat.card G ∧ Nat.card (Sylow p G) ≡ 1 [MOD p] := by
+  refine ⟨?_, card_sylow_modEq_one p G⟩
+  rw [Nat.card_congr (Sylow.equivQuotientNormalizer (Classical.arbitrary (Sylow p G)))]
+  exact Subgroup.card_quotient_dvd_card _
 
 /-- Two finite subgroups of coprime orders intersect trivially. -/
 private lemma card_coprime_inf_eq_bot {G : Type*} [Group G] [Finite G]
@@ -314,8 +323,6 @@ private lemma no_simple_group_order_30
     (h : Nat.card G = 30) : False := by
   haveI hp5 : Fact (Nat.Prime 5) := ⟨by norm_num⟩
   haveI hp3 : Fact (Nat.Prime 3) := ⟨by norm_num⟩
-  -- If either Sylow count is 1, that Sylow subgroup is a proper nontrivial normal
-  -- subgroup, contradicting simplicity.
   rcases sylow_5_options_30 h with h5 | h5
   · exact false_of_card_sylow_eq_one_of_not_isPGroup h5 (by rw [h]; norm_num)
       (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
@@ -365,6 +372,232 @@ private lemma no_simple_group_order_30
     rw [Set.ncard_union_eq h_disj (Set.toFinite _) (Set.toFinite _), hS5, hS3]
   omega
 
+/-! ### Mixed orders: a Sylow count is forced to 1 (proper normal Sylow subgroup)
+
+For these orders there is a prime `p` for which the only value of `n_p` compatible
+with `n_p ∣ |G|` and `n_p ≡ 1 [MOD p]` is `1` — so the Sylow `p`-subgroup is normal,
+contradicting simplicity. (`omega` discharges the divisibility+congruence arithmetic.) -/
+
+private lemma no_simple_group_order_18
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 18) : False := by
+  haveI : Fact (Nat.Prime 3) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 3)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 3 G) = 1 := by
+    have hle := Nat.le_of_dvd (by norm_num) hd
+    interval_cases (Nat.card (Sylow 3 G)) <;> omega
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_20
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 20) : False := by
+  haveI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 5)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 5 G) = 1 := by
+    have hle := Nat.le_of_dvd (by norm_num) hd
+    interval_cases (Nat.card (Sylow 5 G)) <;> omega
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_28
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 28) : False := by
+  haveI : Fact (Nat.Prime 7) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 7)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 7 G) = 1 := by
+    have hle := Nat.le_of_dvd (by norm_num) hd
+    interval_cases (Nat.card (Sylow 7 G)) <;> omega
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_40
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 40) : False := by
+  haveI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 5)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 5 G) = 1 := by
+    have hle := Nat.le_of_dvd (by norm_num) hd
+    interval_cases (Nat.card (Sylow 5 G)) <;> omega
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_42
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 42) : False := by
+  haveI : Fact (Nat.Prime 7) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 7)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 7 G) = 1 := by
+    have hle := Nat.le_of_dvd (by norm_num) hd
+    interval_cases (Nat.card (Sylow 7 G)) <;> omega
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_44
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 44) : False := by
+  haveI : Fact (Nat.Prime 11) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 11)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 11 G) = 1 := by
+    have hle := Nat.le_of_dvd (by norm_num) hd
+    interval_cases (Nat.card (Sylow 11 G)) <;> omega
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_45
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 45) : False := by
+  haveI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 5)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 5 G) = 1 := by
+    have hle := Nat.le_of_dvd (by norm_num) hd
+    interval_cases (Nat.card (Sylow 5 G)) <;> omega
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_50
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 50) : False := by
+  haveI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 5)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 5 G) = 1 := by
+    have hle := Nat.le_of_dvd (by norm_num) hd
+    interval_cases (Nat.card (Sylow 5 G)) <;> omega
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_52
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 52) : False := by
+  haveI : Fact (Nat.Prime 13) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 13)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 13 G) = 1 := by
+    have hle := Nat.le_of_dvd (by norm_num) hd
+    interval_cases (Nat.card (Sylow 13 G)) <;> omega
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_54
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 54) : False := by
+  haveI : Fact (Nat.Prime 3) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 3)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 3 G) = 1 := by
+    have hle := Nat.le_of_dvd (by norm_num) hd
+    interval_cases (Nat.card (Sylow 3 G)) <;> omega
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+/-! ### Mixed orders: the faithful action on Sylow subgroups embeds `G` (`|G| ∣ n_p!`)
+
+Here `n_p ∈ {1, k}` with `k > 1`, but `k` is killed by `|G| ∣ k!` being false (the
+conjugation action on the `k` Sylow `p`-subgroups is faithful in a simple group), so
+`n_p = 1` and the Sylow `p`-subgroup is normal. -/
+
+private lemma no_simple_group_order_12
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 12) : False := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 2)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 2 G) = 1 := by
+    by_contra h1
+    have hpos : 0 < Nat.card (Sylow 2 G) := Nat.card_pos
+    have hgt : 1 < Nat.card (Sylow 2 G) := lt_of_le_of_ne hpos (Ne.symm h1)
+    have hemb := card_dvd_factorial_of_card_sylow_gt_one hgt
+    rw [h] at hemb
+    have hk : Nat.card (Sylow 2 G) = 3 := by
+      have hle := Nat.le_of_dvd (by norm_num) hd
+      interval_cases (Nat.card (Sylow 2 G)) <;> omega
+    rw [hk] at hemb
+    exact absurd hemb (by decide)
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_24
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 24) : False := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 2)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 2 G) = 1 := by
+    by_contra h1
+    have hpos : 0 < Nat.card (Sylow 2 G) := Nat.card_pos
+    have hgt : 1 < Nat.card (Sylow 2 G) := lt_of_le_of_ne hpos (Ne.symm h1)
+    have hemb := card_dvd_factorial_of_card_sylow_gt_one hgt
+    rw [h] at hemb
+    have hk : Nat.card (Sylow 2 G) = 3 := by
+      have hle := Nat.le_of_dvd (by norm_num) hd
+      interval_cases (Nat.card (Sylow 2 G)) <;> omega
+    rw [hk] at hemb
+    exact absurd hemb (by decide)
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_36
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 36) : False := by
+  haveI : Fact (Nat.Prime 3) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 3)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 3 G) = 1 := by
+    by_contra h1
+    have hpos : 0 < Nat.card (Sylow 3 G) := Nat.card_pos
+    have hgt : 1 < Nat.card (Sylow 3 G) := lt_of_le_of_ne hpos (Ne.symm h1)
+    have hemb := card_dvd_factorial_of_card_sylow_gt_one hgt
+    rw [h] at hemb
+    have hk : Nat.card (Sylow 3 G) = 4 := by
+      have hle := Nat.le_of_dvd (by norm_num) hd
+      interval_cases (Nat.card (Sylow 3 G)) <;> omega
+    rw [hk] at hemb
+    exact absurd hemb (by decide)
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
+private lemma no_simple_group_order_48
+    {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 48) : False := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  obtain ⟨hd, hm⟩ := sylow_card_dvd_modEq G (p := 2)
+  rw [h] at hd
+  simp only [Nat.ModEq] at hm
+  have h1 : Nat.card (Sylow 2 G) = 1 := by
+    by_contra h1
+    have hpos : 0 < Nat.card (Sylow 2 G) := Nat.card_pos
+    have hgt : 1 < Nat.card (Sylow 2 G) := lt_of_le_of_ne hpos (Ne.symm h1)
+    have hemb := card_dvd_factorial_of_card_sylow_gt_one hgt
+    rw [h] at hemb
+    have hk : Nat.card (Sylow 2 G) = 3 := by
+      have hle := Nat.le_of_dvd (by norm_num) hd
+      interval_cases (Nat.card (Sylow 2 G)) <;> omega
+    rw [hk] at hemb
+    exact absurd hemb (by decide)
+  exact false_of_card_sylow_eq_one_of_not_isPGroup h1 (by rw [h]; norm_num)
+    (fun hp => absurd (h ▸ prime_of_simple_isPGroup hp) (by norm_num))
+
 /-! ### Prime-power case -/
 
 /-- Any group of prime-power order `p^k` with `k ≥ 2` has a non-trivial center,
@@ -380,21 +613,17 @@ theorem not_isSimpleGroup_of_card_prime_pow_ge_two
   haveI : Nontrivial (Subgroup.center G) := (IsPGroup.of_card h_card).center_nontrivial
   rcases h_simple.eq_bot_or_eq_top_of_normal (Subgroup.center G) inferInstance with
     h_bot | h_top
-  · -- center = ⊥ would make the center subsingleton, contradicting nontriviality.
-    have h_sub : Subsingleton ↥(Subgroup.center G) := by
+  · have h_sub : Subsingleton ↥(Subgroup.center G) := by
       rw [h_bot]
       refine ⟨fun a b => Subtype.ext ?_⟩
       rw [Subgroup.mem_bot.mp a.2, Subgroup.mem_bot.mp b.2]
     exact (not_subsingleton_iff_nontrivial.mpr inferInstance) h_sub
-  · -- center = ⊤ → G is commutative → finite simple commutative → prime order
-    let _ : CommGroup G := Group.commGroupOfCenterEqTop h_top
+  · let _ : CommGroup G := Group.commGroupOfCenterEqTop h_top
     have h_pcard : (Nat.card G).Prime := IsSimpleGroup.prime_card
     rw [h_card] at h_pcard
-    -- p^k prime with k ≥ 2 is impossible
     have h_factor : p ∣ p ^ k := dvd_pow_self p (by omega : k ≠ 0)
     have h_p_eq_pk : p = p ^ k :=
       h_pcard.eq_one_or_self_of_dvd p h_factor |>.resolve_left hp.one_lt.ne'
-    -- p = p^k with k ≥ 2 ⇒ p^1 = p^k ⇒ 1 = k by Nat.pow_right_injective
     have : p ^ 1 = p ^ k := by simpa using h_p_eq_pk
     have hk_eq : 1 = k := Nat.pow_right_injective hp.two_le this
     omega
@@ -409,31 +638,182 @@ theorem not_isSimpleGroup_of_card_six
     Nat.prime_two Nat.prime_three (by omega : 2 < 3)
   rw [h_card]
 
-/-! ### Main theorem (structured sorry)
+/-! ### Uniform `False`-returning wrappers for every composite order < 60
 
-The unified statement requires checking all composite orders `< 60`. The pieces
-in place:
-* Prime powers (4, 8, 9, 16, 25, 27, 32, 49) — `not_isSimpleGroup_of_card_prime_pow_ge_two`.
+So the main theorem's `interval_cases` dispatch is uniform: each composite order
+`k` gets `no_simple_group_order_k : Nat.card G = k → False`. Prime powers delegate
+to `not_isSimpleGroup_of_card_prime_pow_ge_two`; products of two distinct primes to
+`Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime`; the mixed orders use the
+Sylow-counting lemmas above. -/
+
+-- Prime powers p^k, k ≥ 2.
+private lemma no_simple_group_order_4 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 4) : False :=
+  not_isSimpleGroup_of_card_prime_pow_ge_two (p := 2) (k := 2) (by norm_num) (by norm_num)
+    (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_8 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 8) : False :=
+  not_isSimpleGroup_of_card_prime_pow_ge_two (p := 2) (k := 3) (by norm_num) (by norm_num)
+    (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_9 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 9) : False :=
+  not_isSimpleGroup_of_card_prime_pow_ge_two (p := 3) (k := 2) (by norm_num) (by norm_num)
+    (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_16 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 16) : False :=
+  not_isSimpleGroup_of_card_prime_pow_ge_two (p := 2) (k := 4) (by norm_num) (by norm_num)
+    (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_25 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 25) : False :=
+  not_isSimpleGroup_of_card_prime_pow_ge_two (p := 5) (k := 2) (by norm_num) (by norm_num)
+    (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_27 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 27) : False :=
+  not_isSimpleGroup_of_card_prime_pow_ge_two (p := 3) (k := 3) (by norm_num) (by norm_num)
+    (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_32 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 32) : False :=
+  not_isSimpleGroup_of_card_prime_pow_ge_two (p := 2) (k := 5) (by norm_num) (by norm_num)
+    (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_49 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 49) : False :=
+  not_isSimpleGroup_of_card_prime_pow_ge_two (p := 7) (k := 2) (by norm_num) (by norm_num)
+    (h.trans (by norm_num)) ‹IsSimpleGroup G›
+
+-- Products of two distinct primes p·q.
+private lemma no_simple_group_order_6 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 6) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 2) (q := 3)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_10 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 10) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 2) (q := 5)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_14 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 14) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 2) (q := 7)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_15 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 15) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 3) (q := 5)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_21 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 21) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 3) (q := 7)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_22 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 22) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 2) (q := 11)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_26 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 26) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 2) (q := 13)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_33 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 33) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 3) (q := 11)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_34 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 34) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 2) (q := 17)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_35 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 35) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 5) (q := 7)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_38 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 38) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 2) (q := 19)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_39 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 39) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 3) (q := 13)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_46 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 46) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 2) (q := 23)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_51 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 51) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 3) (q := 17)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_55 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 55) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 5) (q := 11)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_57 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 57) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 3) (q := 19)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+private lemma no_simple_group_order_58 {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
+    (h : Nat.card G = 58) : False :=
+  Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime (p := 2) (q := 29)
+    (by norm_num) (by norm_num) (by norm_num) (h.trans (by norm_num)) ‹IsSimpleGroup G›
+
+/-! ### Main theorem
+
+The unified statement is proved by order-by-order Sylow analysis. Every composite
+order `< 60` is dispatched to a `no_simple_group_order_k : Nat.card G = k → False`:
+* Prime powers (4, 8, 9, 16, 25, 27, 32, 49) → `not_isSimpleGroup_of_card_prime_pow_ge_two`.
 * Products of two distinct primes (6, 10, 14, 15, 21, 22, 26, 33, 34, 35, 38,
-  39, 46, 51, 55, 57, 58) — `Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime`.
-* Element-counting mixed orders `30` (`no_simple_group_order_30`) and `56`
-  (`no_simple_group_order_56`).
-
-Still needing individual Sylow analysis before the final `interval_cases`
-dispatch can close: `12, 18, 20, 24, 28, 36, 40, 42, 44, 45, 48, 50, 52, 54`
-(`n_p = 1` forced for some `p`, or the faithful-action embedding
-`card_dvd_factorial_of_card_sylow_gt_one` for `12, 24, 36, 48`).
-
-The unified theorem is left as `sorry`; the toolkit is in place. -/
+  39, 46, 51, 55, 57, 58) → `Adjacent.not_isSimpleGroup_of_card_eq_prime_mul_prime`.
+* Mixed orders: a Sylow count forced to `1` (18, 20, 28, 40, 42, 44, 45, 50, 52,
+  54), the faithful-action embedding `|G| ∣ n_p!` (12, 24, 36, 48), or element
+  counting (30, 56). -/
 
 /-- **The main result.** Every finite simple group of order less than 60 has
-prime order (and is therefore cyclic). Proven for prime-power, two-distinct-
-prime, and the order-30/56 mixed cases; the remaining mixed orders are `sorry`. -/
+prime order (hence is cyclic) — equivalently, the smallest non-abelian finite
+simple group, `A₅`, has order 60. Proved sorry-free by `interval_cases` over
+`2 ≤ |G| < 60`, dispatching each composite order to its Sylow argument. -/
 theorem prime_card_of_simpleGroup_card_lt_sixty
     {G : Type*} [Group G] [Finite G] [Nontrivial G] [IsSimpleGroup G]
     (h_lt : Nat.card G < 60) : (Nat.card G).Prime := by
-  sorry -- Order-by-order case analysis using the lemmas above. Remaining mixed
-        -- cases (12, 18, 20, 24, 28, 36, 40, 42, 44, 45, 48, 50, 52, 54) still
-        -- need their per-order Sylow arguments before the interval_cases dispatch.
+  obtain ⟨n, hn⟩ : ∃ n, Nat.card G = n := ⟨_, rfl⟩
+  have h2 : 2 ≤ n := by rw [← hn]; exact Finite.one_lt_card
+  rw [hn] at h_lt
+  interval_cases n <;>
+    first
+      | exact (no_simple_group_order_4 hn).elim
+      | exact (no_simple_group_order_6 hn).elim
+      | exact (no_simple_group_order_8 hn).elim
+      | exact (no_simple_group_order_9 hn).elim
+      | exact (no_simple_group_order_10 hn).elim
+      | exact (no_simple_group_order_12 hn).elim
+      | exact (no_simple_group_order_14 hn).elim
+      | exact (no_simple_group_order_15 hn).elim
+      | exact (no_simple_group_order_16 hn).elim
+      | exact (no_simple_group_order_18 hn).elim
+      | exact (no_simple_group_order_20 hn).elim
+      | exact (no_simple_group_order_21 hn).elim
+      | exact (no_simple_group_order_22 hn).elim
+      | exact (no_simple_group_order_24 hn).elim
+      | exact (no_simple_group_order_25 hn).elim
+      | exact (no_simple_group_order_26 hn).elim
+      | exact (no_simple_group_order_27 hn).elim
+      | exact (no_simple_group_order_28 hn).elim
+      | exact (no_simple_group_order_30 hn).elim
+      | exact (no_simple_group_order_32 hn).elim
+      | exact (no_simple_group_order_33 hn).elim
+      | exact (no_simple_group_order_34 hn).elim
+      | exact (no_simple_group_order_35 hn).elim
+      | exact (no_simple_group_order_36 hn).elim
+      | exact (no_simple_group_order_38 hn).elim
+      | exact (no_simple_group_order_39 hn).elim
+      | exact (no_simple_group_order_40 hn).elim
+      | exact (no_simple_group_order_42 hn).elim
+      | exact (no_simple_group_order_44 hn).elim
+      | exact (no_simple_group_order_45 hn).elim
+      | exact (no_simple_group_order_46 hn).elim
+      | exact (no_simple_group_order_48 hn).elim
+      | exact (no_simple_group_order_49 hn).elim
+      | exact (no_simple_group_order_50 hn).elim
+      | exact (no_simple_group_order_51 hn).elim
+      | exact (no_simple_group_order_52 hn).elim
+      | exact (no_simple_group_order_54 hn).elim
+      | exact (no_simple_group_order_55 hn).elim
+      | exact (no_simple_group_order_56 hn).elim
+      | exact (no_simple_group_order_57 hn).elim
+      | exact (no_simple_group_order_58 hn).elim
+      | (rw [hn]; norm_num)
 
 end FiniteSimpleGroups

@@ -204,4 +204,17 @@ theorem classification_via_program (G : Type*) [Group G] [IsFSG G] :
         · exact quasithin_isClassified G hchar2 hqt
         · exact nonQuasithin_char2_isClassified G hchar2 hqt
 
+/-- **The Classification of Finite Simple Groups** (CFSG), as a *theorem*.
+
+Formerly a bare `axiom CFSG` in `Classification.lean`; now **derived** from the
+program milestones via `classification_via_program`. The trust base is the named
+deep inputs — Feit–Thompson (`Feit_Thompson_odd_order`), Aschbacher's dichotomy,
+and the four type-classifications (`oddType`/`evenType`/`componentType`/
+`quasithin`/`nonQuasithin_char2`) — each an honest `axiom`, rather than one
+monolithic assertion of the whole theorem.
+
+`#print axioms CFSG` therefore exhibits the actual deductive debt of the proof. -/
+theorem CFSG (G : Type*) [Group G] [IsFSG G] : IsClassified G :=
+  classification_via_program G
+
 end FiniteSimpleGroups

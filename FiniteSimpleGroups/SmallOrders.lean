@@ -817,3 +817,4 @@ theorem prime_card_of_simpleGroup_card_lt_sixty
       | (rw [hn]; norm_num)
 
 end FiniteSimpleGroups
+

@@ -77,4 +77,19 @@ Declared as an `axiom` — established in the math literature; not realistically
 formalizable in any proof assistant for years to come. -/
 axiom CFSG (G : Type*) [Group G] [IsFSG G] : IsClassified G
 
+/-- **Bridge: prime order ⟹ classified.** A finite group of prime order `p` is
+cyclic (`isCyclic_of_prime_card`), hence isomorphic to `Multiplicative (ZMod p)`,
+so it lands in the `cyclic` family of `IsClassified`. No simplicity hypothesis is
+needed — prime order alone forces cyclicity.
+
+This is a genuine (sorry-free, `CFSG`-axiom-free) discharge of the classification
+*conclusion* for the cyclic family, reusing the same `mulEquivOfPrimeCardEq` route
+as `ProofStrategy.feitThompson_dichotomy`. -/
+theorem isClassified_of_card_prime {G : Type*} [Group G] {p : ℕ}
+    (hp : p.Prime) (hcard : Nat.card G = p) : IsClassified G := by
+  haveI : Fact p.Prime := ⟨hp⟩
+  refine IsClassified.cyclic ⟨p, hp, ⟨?_⟩⟩
+  have hH : Nat.card (Multiplicative (ZMod p)) = p := by simp
+  exact mulEquivOfPrimeCardEq hcard hH
+
 end FiniteSimpleGroups

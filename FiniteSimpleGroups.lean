@@ -7,6 +7,7 @@ import FiniteSimpleGroups.Exceptional
 import FiniteSimpleGroups.Sporadics
 import FiniteSimpleGroups.ProofStrategy
 import FiniteSimpleGroups.SmallOrders
+import FiniteSimpleGroups.ClassifiedSmallOrders
 import FiniteSimpleGroups.Adjacent.PrimeMul
 import FiniteSimpleGroups.FittingSubgroup
 import FiniteSimpleGroups.PSLIwasawa

@@ -67,15 +67,24 @@ inductive IsClassified (G : Type*) [Group G] : Prop where
         Nonempty (G ≃* name.carrier)) →
       IsClassified G
 
-/-- **The Classification Theorem.** Every finite simple group is classified.
+/-!
+## The Classification Theorem itself
 
-This statement is the entire point of CFSG. Its proof spans tens of thousands
-of pages across hundreds of papers (1955-2004), with the second-generation
-self-contained proof still being written (10 of 12 volumes by 2023).
+Every finite simple group is classified — `IsClassified G` for `[IsFSG G]`. This
+is the entire point of CFSG; its mathematical proof spans tens of thousands of
+pages (1955–2004, second-generation proof still being written down).
 
-Declared as an `axiom` — established in the math literature; not realistically
-formalizable in any proof assistant for years to come. -/
-axiom CFSG (G : Type*) [Group G] [IsFSG G] : IsClassified G
+Rather than assert it as a bare `axiom` here (which would hide the proof's whole
+structure behind one opaque word), it is **proven as the theorem `CFSG`** in
+`ProofStrategy.lean`, by assembling the named program milestones (Feit–Thompson,
+Aschbacher's dichotomy, and the odd/even/component/char-2/quasithin
+classifications) via `classification_via_program`. Those milestones stay honest
+`axiom`s — they are the genuinely-deep inputs — but the *deductive skeleton*
+connecting them to the conclusion is machine-checked.
+
+The payoff: `#print axioms CFSG` itemizes the real mathematical debt (the 7
+milestone axioms + the standard trio), instead of a single monolithic assertion.
+-/
 
 /-- **Bridge: prime order ⟹ classified.** A finite group of prime order `p` is
 cyclic (`isCyclic_of_prime_card`), hence isomorphic to `Multiplicative (ZMod p)`,

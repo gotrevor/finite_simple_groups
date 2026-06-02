@@ -20,6 +20,8 @@ The chain (all elementary — no deep classification):
 
 namespace FiniteSimpleGroups
 
+universe u
+
 variable {G : Type*} [Group G]
 
 /-- `M` is a **minimal normal subgroup** of `G`: nontrivial, normal, and minimal among
@@ -120,5 +122,65 @@ theorem IsMinimalNormal.exists_nonabelian_sub {M : Subgroup G} [Finite G]
     ⟨1, (upperCentralSeries_one (K : Type _)).trans hKab⟩
   exact hK.2.1 (le_bot_iff.mp
     (hF ▸ normal_nilpotent_le_fittingSubgroup K hK.1 hKnil))
+
+/-- If `⊤` is a minimal normal subgroup of `N`, then `N` is simple: minimality makes every
+nontrivial normal subgroup `= ⊤`, and `⊤ ≠ ⊥` gives nontriviality. -/
+theorem IsMinimalNormal.isSimpleGroup_of_top {N : Type*} [Group N]
+    (hM : IsMinimalNormal (⊤ : Subgroup N)) : IsSimpleGroup N := by
+  haveI : Nontrivial (↥(⊤ : Subgroup N)) := (Subgroup.nontrivial_iff_ne_bot (⊤ : Subgroup N)).mpr hM.2.1
+  haveI : Nontrivial (N : Type _) := Function.Injective.nontrivial Subgroup.topEquiv.injective
+  refine ⟨fun H _ => ?_⟩
+  by_cases hb : H = ⊥
+  · exact Or.inl hb
+  · exact Or.inr (hM.2.2 H ‹H.Normal› hb le_top)
+
+/-- **Layer-structure induction.** A finite group with a non-abelian minimal normal subgroup
+has a nontrivial layer. Strong induction on `|N|`: a simple `↥M` is a component; otherwise
+`↥M` is char-simple non-abelian and not simple, so `M ≠ ⊤` (`isSimpleGroup_of_top`), giving
+`|↥M| < |N|`, and `exists_nonabelian_sub` feeds the inductive hypothesis on `↥M`; the
+resulting `layer ↥M ≠ ⊥` pushes to `layer N ≠ ⊥` via `layer_map_subtype_le`. -/
+private theorem layer_ne_bot_aux : ∀ (n : ℕ) (N : Type u) [Group N] [Finite N],
+    Nat.card N ≤ n →
+    (∃ M : Subgroup N, IsMinimalNormal M ∧ Subgroup.center (M : Type _) ≠ ⊤) →
+    layer N ≠ ⊥ := by
+  intro n
+  induction n with
+  | zero => intro N _ _ hle _; exact absurd (Nat.card_pos.trans_le hle) (by simp)
+  | succ m ih =>
+    rintro N _ _ hle ⟨M, hM, hMna⟩
+    haveI := hM.1
+    by_cases hsimp : IsSimpleGroup (M : Type _)
+    · exact layer_ne_bot_of_isComponent
+        (isComponent_of_isSubnormal_of_isSimpleGroup hM.1.isSubnormal_top hsimp hMna)
+    · -- `M ≠ ⊤`, else `N` is simple and `↥M ≃ N` is simple.
+      have hMtop : M ≠ ⊤ := by
+        rintro rfl
+        haveI := hM.isSimpleGroup_of_top
+        exact hsimp (MulEquiv.isSimpleGroup Subgroup.topEquiv)
+      -- `|↥M| < |N|`, so the inductive hypothesis applies to `↥M`.
+      have hcard : Nat.card (M : Type _) ≤ m := by
+        have hlt : Nat.card (M : Type _) < Nat.card N :=
+          lt_of_le_of_ne (Nat.card_le_card_of_injective _ M.subtype_injective)
+            (fun heq => hMtop (Subgroup.eq_top_of_card_eq M heq))
+        omega
+      obtain ⟨K, hK, hKna⟩ := hM.exists_nonabelian_sub hMna
+      have hlayerM : layer (M : Type _) ≠ ⊥ := ih (M : Type _) hcard ⟨K, hK, hKna⟩
+      -- Push `layer ↥M ≠ ⊥` forward to `layer N` along `M ↪ N`.
+      intro hbot
+      apply hlayerM
+      have h3 : (layer (M : Type _)).map M.subtype = ⊥ :=
+        le_bot_iff.mp (hbot ▸ layer_map_subtype_le)
+      have hmapinj := Subgroup.map_injective (G := (M : Type _)) (N := N) M.subtype_injective
+      apply hmapinj
+      rw [Subgroup.map_bot]; exact h3
+
+/-- **The layer-structure residual `(a)` of Bender's soluble kernel.** If `E(G) = ⊥` (no
+components) then every minimal normal subgroup of `G` is abelian (its center is everything):
+a non-abelian one would, by the structure-induction `layer_ne_bot_aux`, force `E(G) ≠ ⊥`. -/
+theorem center_eq_top_of_isMinimalNormal_of_layer_eq_bot [Finite G]
+    (hE : layer G = ⊥) {M : Subgroup G} (hM : IsMinimalNormal M) :
+    Subgroup.center (M : Type _) = ⊤ := by
+  by_contra hna
+  exact layer_ne_bot_aux (Nat.card G) G le_rfl ⟨M, hM, hna⟩ hE
 
 end FiniteSimpleGroups

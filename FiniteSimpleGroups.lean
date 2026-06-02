@@ -13,6 +13,8 @@ import FiniteSimpleGroups.Adjacent.PrimeMul
 import FiniteSimpleGroups.FittingSubgroup
 import FiniteSimpleGroups.PSLIwasawa
 import FiniteSimpleGroups.Wielandt
+import FiniteSimpleGroups.AschbacherDichotomy
+import FiniteSimpleGroups.ComponentCommute
 
 /-!
 # Finite Simple Groups — scaffold

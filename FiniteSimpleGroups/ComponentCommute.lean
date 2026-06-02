@@ -1,4 +1,4 @@
-import FiniteSimpleGroups.ComponentStructure
+import FiniteSimpleGroups.AschbacherDichotomy
 import FiniteSimpleGroups.GeneralizedFitting
 
 /-!
@@ -12,26 +12,20 @@ feed Bender's cornerstone (`genFittingSubgroup_self_centralizing`):
 * **the layer centralizes the Fitting subgroup** (`layer_commutator_fittingSubgroup_eq_bot`,
   Kurzweil-Stellmacher 6.5.2): `[E(G), F(G)] = 1`.
 
-`commute_of_ne` is now a **theorem**, routed through the component-vs-subnormal
-*dichotomy* `IsComponent.subnormal_dichotomy` (Aschbacher 31.4: a component `L` and a
-subnormal `H` satisfy `L ≤ H ∨ ⁅L, H⁆ = ⊥`). That dichotomy is itself a **theorem** —
-an induction on the subnormal length of `H` — onto the single remaining axiom
-`aschbacher_base`, the *normal* base case (`H ⊴ K`). So the deep debt is now just the
-base case; the subnormal-length lift is machine-checked. `aschbacher_base` still needs
-the Wielandt join / normal-closure `⟨L^H⟩` theory (as does `IsSubnormal.sup`), and is the
-precise minimal target for a future discharge (an Aristotle job on the full commute
-statement is in flight — see `ARISTOTLE-JOB-components-commute.md`).
-`layer_commutator_fittingSubgroup_eq_bot` is **also a theorem** now — the *same*
-dichotomy discharges it (a component cannot sit inside the nilpotent `F(G)`), so it no
-longer needs its own axiom. The base case `aschbacher_base` follows the repository's
-honest-dependency convention (cf. `genFittingSubgroup_self_centralizing`,
-`Classification.CFSG`).
+Both are now **theorems** — and the cluster is **fully axiom-free** (no Wielandt join).
+They route through the component-vs-subnormal *dichotomy* `IsComponent.subnormal_dichotomy`
+(Aschbacher 31.4: a component `L` and a subnormal `H` satisfy `L ≤ H ∨ ⁅L, H⁆ = ⊥`),
+proved without `IsSubnormal.sup` in `AschbacherDichotomy.lean` (a *forward* induction along
+`H`'s subnormal chain replaces the classical normal-closure argument — found by Aristotle,
+ported there; see `ARISTOTLE-JOB-components-commute.md`). `commute_of_ne` excludes the
+`L ≤ M` branch via `eq_of_le`; `layer_commutator_fittingSubgroup_eq_bot` excludes it via
+nilpotency of `F(G)`. The repository's earlier belief that this needed the Wielandt join
+was simply too pessimistic.
 
 ## Main results
 
-* `aschbacher_base` (axiom — normal base case) ⟹ `IsComponent.subnormal_dichotomy`
-  (**theorem**, the induction) ⟹ `IsComponent.commute_of_ne` (**theorem**) +
-  `IsComponent.le_centralizer_of_ne`.
+* `IsComponent.subnormal_dichotomy` (**theorem**, axiom-free, in `AschbacherDichotomy.lean`)
+  ⟹ `IsComponent.commute_of_ne` (**theorem**) + `IsComponent.le_centralizer_of_ne`.
 * `layer_commutator_fittingSubgroup_eq_bot` (**theorem**, also via the dichotomy) +
   `layer_le_centralizer_fittingSubgroup`.
 -/
@@ -41,42 +35,6 @@ namespace FiniteSimpleGroups
 variable {G : Type*} [Group G]
 
 open Subgroup
-
-/-- **Aschbacher 31.4, base case** (`H` *normal* in `K`): for a subnormal
-quasisimple `L ≤ K` and a normal subgroup `H ⊴ K`, either `L ≤ H` or `⁅L, H⁆ = ⊥`.
-
-This is the irreducible deep core. The classical proof runs `H ∩ L ⊴ L`, the
-quasisimple dichotomy (a normal subgroup of `↥L` is central or all of it), and the
-Wielandt subnormal-join / normal-closure `⟨L^H⟩` to force `⁅L, H⁆ = 1` in the
-central case — so it needs the same join theory as `IsSubnormal.sup`. Recorded as an
-honest `axiom` pending that (see `Wielandt.lean`).
-
-It is *sharper* than the previous `normalizes_of_ne` axiom: the **subnormal-length
-induction** that lifts it to arbitrary subnormal `H` is proven below
-(`IsComponent.subnormal_dichotomy`), so only the normal base case remains axiomatic —
-the precise, minimal target for a future discharge. -/
-axiom aschbacher_base {K L H : Subgroup G} (hLsub : IsSubnormal L K)
-    [IsQuasisimple L] (hstep : IsNormalStep H K) : L ≤ H ∨ ⁅L, H⁆ = ⊥
-
-/-- **Aschbacher 31.4** (component-vs-subnormal dichotomy): for a component `L` and a
-*subnormal* subgroup `H`, either `L ≤ H` or `⁅L, H⁆ = ⊥`.
-
-**Theorem** — the induction on the subnormal length of `H` (peeling each normal step
-off the top via `head_induction_on`) onto the normal base case `aschbacher_base`. The
-`L ≤ Hᵢ` branch recurses into the smaller group via `IsSubnormal.inf_right`; the
-`⁅L, Hᵢ⁆ = ⊥` branch propagates downward by `commutator_mono`. -/
-theorem IsComponent.subnormal_dichotomy {L H : Subgroup G} (hL : IsComponent L)
-    (hH : IsSubnormal H ⊤) : L ≤ H ∨ ⁅L, H⁆ = ⊥ := by
-  haveI := hL.isQuasisimple
-  induction hH using Relation.ReflTransGen.head_induction_on with
-  | refl => exact Or.inl le_top
-  | @head a c h' _ ih =>
-    rcases ih with hLc | hcomm
-    · have hLsubc : IsSubnormal L c := by
-        have hx := hL.isSubnormal.inf_right c
-        rwa [top_inf_eq, inf_eq_left.mpr hLc] at hx
-      exact aschbacher_base hLsubc h'
-    · exact Or.inr (le_bot_iff.mp ((commutator_mono le_rfl h'.le).trans_eq hcomm))
 
 /-- **Distinct components commute** (Aschbacher, *Finite Group Theory* 31.4).
 

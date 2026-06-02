@@ -115,15 +115,34 @@ restored here excludes `SL(2, 𝔽₅)` (whose layer is non-trivial). With `laye
 The companion "no components ⟹ minimal normals abelian" half is a *theorem*
 (`center_eq_top_of_isMinimalNormal_of_layer_eq_bot`, `MinimalNormal.lean`); it is a
 genuine corollary of this kernel but cannot *replace* the `layer = ⊥` hypothesis (it
-is one direction only). Recorded as an honest `axiom` (Aschbacher, *Finite Group
-Theory* 31.13; Kurzweil-Stellmacher 6.5.8). The matching *solvable* statement
-(`[IsSolvable G] → F(G) ≤ Z(G) → F(G) = ⊤`) is machine-checked (no axioms) in-repo as
-`fittingSubgroup_eq_top_of_isSolvable_of_le_center` (`SolubleFittingKernel.lean`); the
-residual gap to discharge THIS axiom is `layer = ⊥ → IsSolvable G` under `F(G) ≤ Z(G)`. -/
-axiom fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center (G : Type*) [Group G] [Finite G]
+is one direction only).
+
+**The axiom surface is now exactly the solvability gap.** Since the *solvable* case
+`[IsSolvable G] → F(G) ≤ Z(G) → F(G) = ⊤` is machine-checked (no axioms,
+`fittingSubgroup_eq_top_of_isSolvable_of_le_center`, `SolubleFittingKernel.lean`), the
+only residual hypothesis needed is `IsSolvable G`. So we axiomatize *just that*:
+`isSolvable_of_layer_eq_bot_of_le_center` (a finite group with no components and
+central Fitting subgroup is solvable — equivalently, a non-solvable group with central
+`F` has a component), and *derive* `F(G) = ⊤` as a theorem. The remaining axiom is the
+sharpest possible boundary; its proof needs the central-product structure of `F*(G)`
+(Aschbacher, *Finite Group Theory* 31.13; Kurzweil-Stellmacher 6.5.8 — see
+`ON-LINE-REQUEST.md`). -/
+axiom isSolvable_of_layer_eq_bot_of_le_center (G : Type*) [Group G] [Finite G]
     (hE : layer G = ⊥)
     (hF : fittingSubgroup G ≤ Subgroup.center G) :
-    fittingSubgroup G = ⊤
+    IsSolvable G
+
+/-- **The soluble base case of Bender's cornerstone**, now a *theorem*: a finite group
+with no components (`layer G = ⊥`) and central Fitting subgroup (`F(G) ≤ Z(G)`) has
+`F(G) = ⊤`. The group is solvable (`isSolvable_of_layer_eq_bot_of_le_center`, the lone
+residual axiom), and the machine-checked solvable kernel
+(`fittingSubgroup_eq_top_of_isSolvable_of_le_center`) finishes. -/
+theorem fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center (G : Type*) [Group G] [Finite G]
+    (hE : layer G = ⊥)
+    (hF : fittingSubgroup G ≤ Subgroup.center G) :
+    fittingSubgroup G = ⊤ :=
+  have : IsSolvable G := isSolvable_of_layer_eq_bot_of_le_center G hE hF
+  fittingSubgroup_eq_top_of_isSolvable_of_le_center G hF
 
 /-- **Bender's central base case.** If `F*(G)` is central (`C_G(F*(G)) = ⊤`, i.e.
 `F*(G) ≤ Z(G)`) then `F*(G) = ⊤`. A central `F*` makes the layer central, so it vanishes

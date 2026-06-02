@@ -298,4 +298,52 @@ applies directly. -/
 theorem fittingSubgroup_normal (G : Type*) [Group G] : (fittingSubgroup G).Normal :=
   sSup_normal_of_forall_normal (fun _ hK => hK.1)
 
+/-- The defining set of `F(G)` — normal nilpotent subgroups — is closed under the
+image of any automorphism: an iso carries a normal subgroup to a normal subgroup
+and a nilpotent subgroup to an isomorphic, hence nilpotent, subgroup. -/
+private theorem map_mem_normalNilpotent {G : Type*} [Group G] (ϕ : G ≃* G)
+    {H : Subgroup G} (hH : H ∈ {K : Subgroup G | K.Normal ∧ Group.IsNilpotent K}) :
+    H.map ϕ.toMonoidHom ∈ {K : Subgroup G | K.Normal ∧ Group.IsNilpotent K} := by
+  refine ⟨hH.1.map ϕ.toMonoidHom ϕ.surjective, ?_⟩
+  haveI := hH.2
+  exact nilpotent_of_surjective (ϕ.subgroupMap H).toMonoidHom (ϕ.subgroupMap H).surjective
+
+/-- **`F(G)` is characteristic.** The Fitting subgroup is canonical: it is the join
+of all normal nilpotent subgroups, a set every automorphism permutes
+(`map_mem_normalNilpotent`), so its `sSup` is fixed by every automorphism. This is
+the brick that makes `F(N) ⊴ G` for `N ⊴ G` (a characteristic subgroup of a normal
+subgroup is normal), the first step of Bender's cornerstone. -/
+theorem fittingSubgroup_characteristic (G : Type*) [Group G] :
+    (fittingSubgroup G).Characteristic := by
+  rw [Subgroup.characteristic_iff_map_eq]
+  intro ϕ
+  refine le_antisymm ?_ ?_
+  · rw [fittingSubgroup, (Subgroup.gc_map_comap ϕ.toMonoidHom).l_sSup]
+    exact iSup₂_le fun H hH => le_sSup (map_mem_normalNilpotent ϕ hH)
+  · refine sSup_le fun H hH => ?_
+    have hsymm : H.map ϕ.symm.toMonoidHom ∈ {K : Subgroup G | K.Normal ∧ Group.IsNilpotent K} :=
+      map_mem_normalNilpotent ϕ.symm hH
+    calc H = (H.map ϕ.symm.toMonoidHom).map ϕ.toMonoidHom := by
+            rw [Subgroup.map_map]; simp
+      _ ≤ (fittingSubgroup G).map ϕ.toMonoidHom := Subgroup.map_mono (le_sSup hsymm)
+
+/-- **`F(N) ≤ F(G)` for a normal subgroup `N ⊴ G`** (finite `G`). The Fitting
+subgroup `F(N)` is characteristic in `N` (`fittingSubgroup_characteristic`) and `N`
+is normal in `G`, so its image `F(N)` is normal in `G`
+(`Subgroup.normal_of_characteristic_of_normal`); it is also nilpotent (an iso-image
+of the nilpotent `F(N)`), hence contained in `F(G)` by the universal property
+(`normal_nilpotent_le_fittingSubgroup`). This is the monotonicity step that lets the
+Fitting/layer of a normal subgroup feed into the ambient `F(G)` — the first move of
+the induction in Bender's `genFittingSubgroup_self_centralizing`. -/
+theorem fittingSubgroup_map_subtype_le {G : Type*} [Group G] [Finite G]
+    {N : Subgroup G} [hN : N.Normal] :
+    (fittingSubgroup N).map N.subtype ≤ fittingSubgroup G := by
+  haveI : (fittingSubgroup (N : Type _)).Characteristic := fittingSubgroup_characteristic N
+  haveI := fittingSubgroup_isNilpotent (N : Type _)
+  have hnil : Group.IsNilpotent ((fittingSubgroup (N : Type _)).map N.subtype) :=
+    nilpotent_of_surjective
+      (Subgroup.equivMapOfInjective (fittingSubgroup N) N.subtype N.subtype_injective).toMonoidHom
+      (Subgroup.equivMapOfInjective (fittingSubgroup N) N.subtype N.subtype_injective).surjective
+  exact normal_nilpotent_le_fittingSubgroup _ inferInstance hnil
+
 end FiniteSimpleGroups

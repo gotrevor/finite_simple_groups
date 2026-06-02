@@ -47,4 +47,23 @@ theorem IsMinimalNormal.eq_bot_or_eq_top_of_characteristic {M : Subgroup G}
     refine hmapinj ?_
     rw [heq, ← MonoidHom.range_eq_map, Subgroup.range_subtype]
 
+/-- **Distinct minimal normal subgroups intersect trivially.** `H ⊓ K` is normal and lies in
+both; minimality of `H` forces it to be `⊥` or `H`, and `H` would give `H ≤ K`, hence `H = K`
+by minimality of `K` — excluded. -/
+theorem IsMinimalNormal.inf_eq_bot {H K : Subgroup G} (hH : IsMinimalNormal H)
+    (hK : IsMinimalNormal K) (hne : H ≠ K) : H ⊓ K = ⊥ := by
+  obtain ⟨hHnorm, _, hHmin⟩ := hH
+  obtain ⟨hKnorm, hKbot, hKmin⟩ := hK
+  haveI := hHnorm; haveI := hKnorm
+  by_contra hbot
+  have hHK : H ⊓ K = H := hHmin _ inferInstance hbot inf_le_left
+  exact hne (hHK ▸ hKmin H hHnorm (fun h => hbot (h ▸ hHK)) (hHK ▸ inf_le_right))
+
+/-- **Distinct minimal normal subgroups commute.** Both are normal, so `⁅H, K⁆ ≤ H ⊓ K = ⊥`
+(`IsMinimalNormal.inf_eq_bot`, `commutator_le_inf`). -/
+theorem IsMinimalNormal.commutator_eq_bot {H K : Subgroup G} (hH : IsMinimalNormal H)
+    (hK : IsMinimalNormal K) (hne : H ≠ K) : ⁅H, K⁆ = ⊥ := by
+  haveI := hH.1; haveI := hK.1
+  exact le_bot_iff.mp ((Subgroup.commutator_le_inf H K).trans_eq (hH.inf_eq_bot hK hne))
+
 end FiniteSimpleGroups

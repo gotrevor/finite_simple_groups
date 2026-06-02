@@ -60,9 +60,9 @@ or (ii) deep theory far beyond an elementary brick. Leave as `axiom`.
   sporadic `Co1/Co2/Co3` (`Sporadics.lean`, 3).
 - **Bender cornerstone + local theory**: `genFittingSubgroup_self_centralizing`
   (`GeneralizedFitting.lean`), the Wielandt full join `IsSubnormal.sup`
-  (`Wielandt.lean`), `aschbacher_base` +
-  `layer_commutator_fittingSubgroup_eq_bot` (`ComponentCommute.lean`, blocked on
-  the Wielandt join).
+  (`Wielandt.lean`), and `aschbacher_base` (`ComponentCommute.lean`) — the *only*
+  axiom left in that file (`commute_of_ne` AND
+  `layer_commutator_fittingSubgroup_eq_bot` are now both theorems on it).
   - **The component-commuting theory, refactored down to one base-case axiom
     (2026-06-02, `0009c90` → `2acbf06`).** Chain, all machine-checked except the
     leaf: `aschbacher_base` (axiom — Aschbacher 31.4 *normal* base case: `L`
@@ -171,9 +171,19 @@ or a C (pin-lag, delete it) for a D (brick, build it). This map exists to preven
 exactly that.
 
 ## Counts (2026-06-02, compiler-verified)
-- Axioms: **44** (all bucket B; includes the 3 Alternating case-witness leaves,
-  which are bucket C / delete-on-bump). Was 45 until `feitThompson_dichotomy` was
-  discharged to a theorem (bucket A).
+- Top-level `axiom` declarations in the tree: **35** (`rg -c '^axiom ' FiniteSimpleGroups/`).
+  This session discharged `layer_commutator_fittingSubgroup_eq_bot` to a theorem
+  (one fewer than before), and refactored the component-commuting axiom down to
+  `aschbacher_base` (count-neutral). ⚠️ The earlier headline "**44**" counted ~9
+  Bender–Glauberman §1 axioms under `FeitThompson/BGsection1/*` — **that directory is
+  not present in this tree**, so either it was aspirational or those files live
+  elsewhere; treat 35 as the verified current number and recount the buckets.
+- `#print axioms CFSG` (the meaningful trail, unchanged this session): the **7
+  milestone axioms** (`Feit_Thompson_odd_order`, `aschbacher_dichotomy`,
+  `oddType_isClassified`, `evenType_dichotomy`, `componentType_isClassified`,
+  `quasithin_isClassified`, `nonQuasithin_char2_isClassified`) + the standard trio.
+  The local-theory axiom `aschbacher_base` is NOT in this trail (it builds toward
+  Bender's cornerstone, a separate track CFSG doesn't route through).
 - Real sorries: **0** — `lt60` closed in `22aa823` (2026-06-01, merged to main),
   so bucket D is empty. Repo-wide `grep "sorry"` returns only docstring prose
   (Wielandt/GeneralizedFitting/PSLIwasawa/Sporadics), no `sorry` tactic;

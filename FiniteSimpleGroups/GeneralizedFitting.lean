@@ -1,6 +1,7 @@
 import FiniteSimpleGroups.LayerNormal
 import FiniteSimpleGroups.FittingSubgroup
 import FiniteSimpleGroups.MinimalNormal
+import FiniteSimpleGroups.SolubleFittingKernel
 
 /-!
 # The generalized Fitting subgroup `F*(G)`
@@ -90,29 +91,45 @@ theorem genFittingSubgroup_eq_fittingSubgroup_of_layer_eq_bot
   rw [genFittingSubgroup, h, bot_sup_eq]
 
 /-- **The soluble base case of Bender's cornerstone (the irreducible kernel).** A
-finite group with *no components* (`E(G) = 1`) whose Fitting subgroup is *central*
-(`F(G) ≤ Z(G)`) equals its Fitting subgroup: `F(G) = ⊤`. Equivalently it is the
-soluble-type statement `C_G(F(G)) ≤ F(G)` restricted to the central, component-free
-case — a finite group with no components and central `F(G)` is nilpotent.
+finite group with *no components* (`E(G) = 1`, i.e. `layer G = ⊥`) whose Fitting
+subgroup is *central* (`F(G) ≤ Z(G)`) equals its Fitting subgroup: `F(G) = ⊤`.
+Equivalently it is the soluble-type statement `C_G(F(G)) ≤ F(G)` restricted to the
+central, component-free case — a finite group with no components and central `F(G)`
+is nilpotent (indeed abelian, since `F(G) ≤ Z(G) ≤ F(G)` forces `G = F(G) = Z(G)`).
 
-This is the one genuinely hard step the order-induction below cannot remove. It is the
-**soluble Fitting self-centralizing fact** `C_G(F(G)) ≤ F(G)` in its purest form — a finite
-group all of whose minimal normal subgroups are abelian, with central `F(G)`, is nilpotent
-(`F(G) = ⊤`). The companion "no components ⟹ minimal normals abelian" half is now a *theorem*
-(`center_eq_top_of_isMinimalNormal_of_layer_eq_bot`, `MinimalNormal.lean`), so this is the only
-remaining axiom in Bender's trail. It *needs* the abelian-minimal-normal hypothesis: without it
-`A₅` is a counterexample (`F(A₅) = 1 ≤ Z`, yet `F(A₅) ≠ ⊤`). Recorded as an honest `axiom`
-(Aschbacher, *Finite Group Theory* 31.13; Kurzweil-Stellmacher 6.5.8). -/
-axiom fittingSubgroup_eq_top_of_minNormal_abelian (G : Type*) [Group G] [Finite G]
-    (hmin : ∀ M : Subgroup G, IsMinimalNormal M → Subgroup.center (M : Type _) = ⊤)
+This is the one genuinely hard step the order-induction below cannot remove.
+
+⚠️ **The `layer G = ⊥` hypothesis is essential and the previous formalization was
+unsound without it.** A prior version of this axiom replaced `layer G = ⊥` with the
+strictly weaker "all minimal normal subgroups are abelian"
+(`∀ M, IsMinimalNormal M → center ↥M = ⊤`). That statement is *false*:
+**`SL(2, 𝔽₅)`** (order 120) is a counterexample — its unique minimal normal subgroup
+is the central `ℤ/2`, which is abelian, and `F(G) = Z(G) = ℤ/2`, so both the
+"minimal normals abelian" and `F(G) ≤ Z(G)` hypotheses hold, yet `F(G) ≠ ⊤`. The
+weaker form fails to exclude perfect central extensions of non-abelian simple groups
+(`SL(2, 𝔽₅)` is a component of itself, so its `layer ≠ ⊥`). Aristotle (Harmonic's
+auto-formalizer) found this counterexample on 2026-06-02; the `layer G = ⊥` form
+restored here excludes `SL(2, 𝔽₅)` (whose layer is non-trivial). With `layer G = ⊥`,
+`A₅` is likewise excluded (`layer A₅ = A₅ ≠ ⊥`).
+
+The companion "no components ⟹ minimal normals abelian" half is a *theorem*
+(`center_eq_top_of_isMinimalNormal_of_layer_eq_bot`, `MinimalNormal.lean`); it is a
+genuine corollary of this kernel but cannot *replace* the `layer = ⊥` hypothesis (it
+is one direction only). Recorded as an honest `axiom` (Aschbacher, *Finite Group
+Theory* 31.13; Kurzweil-Stellmacher 6.5.8). The matching *solvable* statement
+(`[IsSolvable G] → F(G) ≤ Z(G) → F(G) = ⊤`) is machine-checked (no axioms) in-repo as
+`fittingSubgroup_eq_top_of_isSolvable_of_le_center` (`SolubleFittingKernel.lean`); the
+residual gap to discharge THIS axiom is `layer = ⊥ → IsSolvable G` under `F(G) ≤ Z(G)`. -/
+axiom fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center (G : Type*) [Group G] [Finite G]
+    (hE : layer G = ⊥)
     (hF : fittingSubgroup G ≤ Subgroup.center G) :
     fittingSubgroup G = ⊤
 
 /-- **Bender's central base case.** If `F*(G)` is central (`C_G(F*(G)) = ⊤`, i.e.
 `F*(G) ≤ Z(G)`) then `F*(G) = ⊤`. A central `F*` makes the layer central, so it vanishes
-(`layer_eq_bot_of_le_center`); the vanishing layer makes every minimal normal subgroup abelian
-(`center_eq_top_of_isMinimalNormal_of_layer_eq_bot`); the soluble kernel
-(`fittingSubgroup_eq_top_of_minNormal_abelian`) then gives `F(G) = ⊤`, hence
+(`layer_eq_bot_of_le_center`); the soluble kernel
+(`fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center`), applied with the now-trivial
+layer and the central `F(G) ≤ F*(G) ≤ Z(G)`, gives `F(G) = ⊤`, hence
 `F*(G) = E(G) ⊔ F(G) = ⊥ ⊔ ⊤ = ⊤`. -/
 theorem genFittingSubgroup_eq_top_of_centralizer_eq_top (G : Type*) [Group G] [Finite G]
     (h : Subgroup.centralizer (genFittingSubgroup G : Set G) = ⊤) :
@@ -122,8 +139,7 @@ theorem genFittingSubgroup_eq_top_of_centralizer_eq_top (G : Type*) [Group G] [F
   have hE : layer G = ⊥ :=
     layer_eq_bot_of_le_center (layer_le_genFittingSubgroup.trans hcentral)
   have hF : fittingSubgroup G = ⊤ :=
-    fittingSubgroup_eq_top_of_minNormal_abelian G
-      (fun _ hM => center_eq_top_of_isMinimalNormal_of_layer_eq_bot hE hM)
+    fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center G hE
       (fittingSubgroup_le_genFittingSubgroup.trans hcentral)
   rw [genFittingSubgroup, hE, hF, bot_sup_eq]
 

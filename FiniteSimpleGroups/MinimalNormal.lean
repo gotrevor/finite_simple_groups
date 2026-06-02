@@ -66,4 +66,13 @@ theorem IsMinimalNormal.commutator_eq_bot {H K : Subgroup G} (hH : IsMinimalNorm
   haveI := hH.1; haveI := hK.1
   exact le_bot_iff.mp ((Subgroup.commutator_le_inf H K).trans_eq (hH.inf_eq_bot hK hne))
 
+/-- **A finite nontrivial group has a minimal normal subgroup.** The nontrivial normal
+subgroups form a nonempty (`⊤`) collection in the well-founded (finite) subgroup lattice; a
+`≤`-minimal element is a minimal normal subgroup. -/
+theorem exists_isMinimalNormal [Finite G] [Nontrivial G] :
+    ∃ M : Subgroup G, IsMinimalNormal M := by
+  obtain ⟨M, hMP, hmin⟩ := exists_minimal_of_wellFoundedLT
+    (fun N : Subgroup G => N.Normal ∧ N ≠ ⊥) ⟨⊤, inferInstance, top_ne_bot⟩
+  exact ⟨M, hMP.1, hMP.2, fun N hNnorm hNbot hNle => le_antisymm hNle (hmin ⟨hNnorm, hNbot⟩ hNle)⟩
+
 end FiniteSimpleGroups

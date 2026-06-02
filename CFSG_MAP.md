@@ -60,9 +60,19 @@ or (ii) deep theory far beyond an elementary brick. Leave as `axiom`.
   sporadic `Co1/Co2/Co3` (`Sporadics.lean`, 3).
 - **Bender cornerstone + local theory**: `genFittingSubgroup_self_centralizing`
   (`GeneralizedFitting.lean`), the Wielandt full join `IsSubnormal.sup`
-  (`Wielandt.lean`), `IsComponent.commute_of_ne` +
+  (`Wielandt.lean`), `IsComponent.normalizes_of_ne` +
   `layer_commutator_fittingSubgroup_eq_bot` (`ComponentCommute.lean`, blocked on
   the Wielandt join).
+  - **`commute_of_ne` discharged to a theorem (2026-06-02, `0009c90`).** It now
+    rests on the *sharper* axiom `IsComponent.normalizes_of_ne` ("distinct
+    components normalize one another") — the irreducible core, the one fact that
+    still needs the join / normal-closure `⟨L^M⟩` theory. The commutator collapse
+    `⁅L,M⁆=⊥` on top of it is proven (three-subgroups + perfectness `⁅L,L⁆=L` +
+    the proven `inf_le_center_of_ne`). Empirically confirmed irreducible: `exact?`
+    over the existing subnormal machinery cannot close `normalizes_of_ne`. So #1
+    has *not* outgrown the keystone — `normalizes_of_ne` is the precise next target
+    the Wielandt join unblocks (and a candidate Aristotle hand-off as a bounded
+    classical lemma). Axiom count unchanged (one sharpened, not removed).
 
 ### 🟥 C — PIN-LAG (already in mathlib, newer). Delete on bump. **NEVER build.**
 Formalized in mathlib past our v4.29.1 pin. Building our own proof = re-deriving
@@ -113,6 +123,19 @@ unprovable for genuine instances. The sporadic pin works precisely because it si
 in the sweet spot (opaque carrier + high-confidence constant), not as a general
 pattern. (`PSU`/`POmega` are opaque, so a pin there would be *safe* but low-value —
 the constants are less certain than the sporadics'.)
+
+**Subtlety — the `IsClassified` Lie-type disjuncts are SAFE to pin, but deferred
+on faithfulness grounds.** `Classification.lean`'s `classicalLieType` /
+`exceptionalLieType` disjuncts quantify over `classicalLieTypeCarrier fam n q` /
+`exceptionalLieTypeCarrier fam k`, which are **opaque** — *not* the real `PSL`/`PSp`
+of `LieType.lean`. So pinning *their* order sits in the safe sweet spot (the hazard
+above is specifically about the real mathlib-typed carriers). The reason it is still
+**not done**: the order formulas `|PSL_n(q)|`, `|PSU_n(q)|`, `|PSp_{2n}(q)|`, `|PΩ|`,
+`|G₂(q)|`, … are *parameterized* and high-confabulation-risk to reconstruct from
+memory in the box (a transposed exponent is undetectable without web/ATLAS). Per
+`faithfulness-not-fluency`, those are exactly the claims to *not* fluently invent.
+Deferred to a web-capable session with the formulas in hand — tracked as a sibling
+of `RFI-ATLAS-sporadic-orders.md`.
 
 The ATLAS orders themselves are **documented guesses** (~85–95% confidence,
 reconstructed from memory, no web in the box). The honest discipline: factored form

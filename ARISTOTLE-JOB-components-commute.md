@@ -1,7 +1,29 @@
 # Aristotle job: distinct components commute (⁅L,M⁆ = ⊥)
 
 **Submitted** 2026-06-02 · **Project UUID** `adf60350-2414-40ec-8105-d9327383ff62`
-· name `aristotle-normalize` · status at submit: RUNNING.
+· name `aristotle-normalize` · **✅ SOLVED** (downloaded 2026-06-02).
+
+## ✅ RESULT — solved, and JOIN-FREE (the surprise)
+Aristotle returned a complete proof (saved verbatim:
+`aristotle-solution-components-commute.lean`, 281 lines). **It does NOT use the
+Wielandt join** — `#print axioms components_commute` is `[propext, Classical.choice,
+Quot.sound]` only; the supplied `isSubnormal_sup` axiom sits unused. Compiles clean in
+our v4.29.1 toolchain; definitions + statement are byte-identical to what we submitted
+(faithful), so the Lean kernel has verified a genuine join-free proof.
+
+**The insight** (`centralizing_by_subnormal`): instead of the classical normal-closure
+`⟨L^H⟩` argument (which needs the join), do a *forward* induction along `H`'s subnormal
+chain — at each step `M ◁ J`, `⁅L, H⊓J⁆ ≤ H⊓M` (`commutator_le_inf_of_normalStep`), and
+three-subgroups + perfectness propagate `⁅L,H⊓J⁆=⊥`. So the repo's belief that
+component-commuting needs `IsSubnormal.sup` was simply too pessimistic.
+
+**Consequence:** `aschbacher_base` is dischargeable with NO axiom — the whole
+component-commuting cluster (`subnormal_dichotomy`, `commute_of_ne`,
+`layer_commutator_fittingSubgroup_eq_bot`) can be made fully sorry-free AND axiom-free.
+Port in progress (Aristotle's helpers → repo defs in `ComponentCommute.lean`).
+
+---
+## Original submission record
 
 ## What it's proving
 The bounded core under `IsComponent.normalizes_of_ne` / `commute_of_ne`: in a

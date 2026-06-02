@@ -215,6 +215,75 @@ theorem card_happy_family :
     (Finset.univ.filter (fun n : Name => ¬ n.isPariah)).card = 20 := by
   decide
 
+/-- The **order** (number of elements) of each sporadic simple group, as an
+ATLAS value written in *factored* form.
+
+**Why factored, not decimal.** The exponents in the prime factorization are far
+easier to audit against the ATLAS of Finite Groups than a 54-digit decimal, and
+Lean reduces the product to the true `ℕ` either way. So the source-of-truth here
+is the exponent vector; the giant decimals (Monster ≈ 8·10⁵³) never have to be
+typed correctly.
+
+**Faithfulness status (read before trusting).** These are reconstructed from
+memory, not copied from a verified source in this session (the box has no web).
+- Small orders (Mathieu, J₁, J₂, J₃, Co₂/Co₃, McL, HS, He, Suz, Ru, O'N):
+  confidence ≈ 95%.
+- Large factorizations (Monster, Baby Monster, J₄, Fi₂₃, Fi₂₄′, Co₁, Th, Ly,
+  HN): confidence ≈ 85% — **cross-check the exponent vectors against the ATLAS
+  on the host before relying on these.** A transposed exponent is the likely
+  failure mode.
+The set of *primes* dividing each order is the cheapest external check (e.g. the
+15 supersingular primes for the Monster: 2,3,5,7,11,13,17,19,23,29,31,41,47,59,71).
+
+This pins the otherwise-`opaque` carriers: `IsClassified.sporadic` asserts
+`Nat.card name.carrier = name.order`, so any eventual construction whose
+cardinality disagrees with the ATLAS trips a contradiction. (Order is a complete
+fingerprint *among the 26 sporadics* — all 26 are distinct — even though it is
+not in general; e.g. `A₈` and `PSL(3,4)` share order 20160.) -/
+def Name.order : Name → ℕ
+  -- Mathieu
+  | .M11 => 2^4 * 3^2 * 5 * 11                                  -- 7,920
+  | .M12 => 2^6 * 3^3 * 5 * 11                                  -- 95,040
+  | .M22 => 2^7 * 3^2 * 5 * 7 * 11                              -- 443,520
+  | .M23 => 2^7 * 3^2 * 5 * 7 * 11 * 23                         -- 10,200,960
+  | .M24 => 2^10 * 3^3 * 5 * 7 * 11 * 23                        -- 244,823,040
+  -- Janko
+  | .J1  => 2^3 * 3 * 5 * 7 * 11 * 19                           -- 175,560
+  | .J2  => 2^7 * 3^3 * 5^2 * 7                                 -- 604,800
+  | .J3  => 2^7 * 3^5 * 5 * 17 * 19                             -- 50,232,960
+  | .J4  => 2^21 * 3^3 * 5 * 7 * 11^3 * 23 * 29 * 31 * 37 * 43  -- ≈ 8.7·10¹⁹
+  -- Conway
+  | .Co1 => 2^21 * 3^9 * 5^4 * 7^2 * 11 * 13 * 23              -- ≈ 4.2·10¹⁸
+  | .Co2 => 2^18 * 3^6 * 5^3 * 7 * 11 * 23                      -- 42,305,421,312,000
+  | .Co3 => 2^10 * 3^7 * 5^3 * 7 * 11 * 23                      -- 495,766,656,000
+  -- Fischer
+  | .Fi22 => 2^17 * 3^9 * 5^2 * 7 * 11 * 13                     -- 64,561,751,654,400
+  | .Fi23 => 2^18 * 3^13 * 5^2 * 7 * 11 * 13 * 17 * 23          -- ≈ 4.1·10¹⁸
+  | .Fi24' => 2^21 * 3^16 * 5^2 * 7^3 * 11 * 13 * 17 * 23 * 29  -- ≈ 1.3·10²¹
+  -- Monster + relatives
+  | .Monster =>
+      2^46 * 3^20 * 5^9 * 7^6 * 11^2 * 13^3 * 17 * 19 * 23 * 29 * 31 *
+        41 * 47 * 59 * 71                                       -- ≈ 8.08·10⁵³
+  | .BabyMonster =>
+      2^41 * 3^13 * 5^6 * 7^2 * 11 * 13 * 17 * 19 * 23 * 31 * 47 -- ≈ 4.15·10³³
+  | .Thompson => 2^15 * 3^10 * 5^3 * 7^2 * 13 * 19 * 31         -- 90,745,943,887,872,000
+  | .HaradaNorton => 2^14 * 3^6 * 5^6 * 7 * 11 * 19             -- 273,030,912,000,000
+  | .Held => 2^10 * 3^3 * 5^2 * 7^3 * 17                        -- 4,030,387,200
+  -- McLaughlin / Suzuki sporadic / Higman-Sims
+  | .McLaughlin => 2^7 * 3^6 * 5^3 * 7 * 11                     -- 898,128,000
+  | .SuzukiSporadic => 2^13 * 3^7 * 5^2 * 7 * 11 * 13           -- 448,345,497,600
+  | .HigmanSims => 2^9 * 3^2 * 5^3 * 7 * 11                     -- 44,352,000
+  -- Pariahs (remaining)
+  | .ONan => 2^9 * 3^4 * 5 * 7^3 * 11 * 19 * 31                 -- 460,815,505,920
+  | .Rudvalis => 2^14 * 3^3 * 5^3 * 7 * 13 * 29                 -- 145,926,144,000
+  | .Lyons => 2^8 * 3^7 * 5^6 * 7 * 11 * 31 * 37 * 67           -- ≈ 5.18·10¹⁶
+
+/-- The 26 sporadic orders are pairwise **distinct** — so `Name.order` is a
+complete fingerprint among the sporadics, and the `Nat.card = order` pin in
+`IsClassified.sporadic` selects a unique name. (Machine-checked: this catches any
+collision typo in the table above, though not a wrong-but-still-unique value.) -/
+theorem order_injective : Function.Injective Name.order := by decide
+
 /-- Lookup the underlying opaque carrier type for a sporadic group by name.
 
 Used by `Classification.IsClassified.sporadic` to quantify over sporadics

@@ -35,6 +35,14 @@ free). They now quantify over the parameterized carriers introduced in Inc 28:
 `Sporadics.Name.carrier name`. The carriers themselves remain opaque (no
 construction yet), but the *statement* of CFSG is now meaningful — it asserts
 existence of specific (family, parameter) data and a group isomorphism.
+
+**Order-pin (2026-06-02):** the `sporadic` disjunct additionally asserts
+`Nat.card name.carrier = name.order` (the ATLAS order). This is the cheapest
+*faithfulness anchor* on the opaque carriers: any eventual construction whose
+cardinality disagrees with the ATLAS value trips a contradiction, so a wrong
+carrier can't silently satisfy CFSG. It does not de-opaque the carrier (that is
+*definitional* debt), but it constrains it. The same pin is the natural next
+step for the Lie-type disjuncts (carrier order as a function of `(fam, n, q)`).
 -/
 
 namespace FiniteSimpleGroups
@@ -64,6 +72,7 @@ inductive IsClassified (G : Type*) [Group G] : Prop where
   | sporadic :
       (∃ (name : Sporadics.Name)
          (_ : Group name.carrier),
+        Nat.card name.carrier = name.order ∧
         Nonempty (G ≃* name.carrier)) →
       IsClassified G
 

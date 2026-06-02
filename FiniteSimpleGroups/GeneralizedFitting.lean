@@ -90,6 +90,87 @@ theorem genFittingSubgroup_eq_fittingSubgroup_of_layer_eq_bot
     (h : layer G = ⊥) : genFittingSubgroup G = fittingSubgroup G := by
   rw [genFittingSubgroup, h, bot_sup_eq]
 
+/-- **Component pullback under the central quotient — the lone residual axiom of
+Bender's cornerstone.** If a finite group has no components (`layer G = ⊥`), then neither
+does `G/Z(G)`. A component `L̄` of `G/Z(G)` is subnormal and quasisimple; its preimage
+`L ⊇ Z(G)` is subnormal in `G` and `Z(G)` is central in `L`, so `L` is a *perfect central
+extension* of the quasisimple `L̄`, and its perfect core `K = [L,L]` is a subnormal
+*quasisimple* subgroup of `G` — a component — using **Grün's lemma** (a perfect central
+extension of a quasisimple group is quasisimple). Hence `layer G = ⊥` rules out any such
+`L̄`, giving `layer (G/Z(G)) = ⊥`.
+
+This is the only remaining non-elementary input to Bender's cornerstone. Its proof needs
+the quasisimple-central-extension lemma (submitted to Aristotle as job `9f7b6b74`:
+`center_quotient_center_eq_bot_of_perfect` + `perfect_central_ext_quasisimple`) together
+with subnormal-preimage and characteristic-in-subnormal transport; recorded as an honest
+`axiom` pending that port. It is far sharper than the original "solvable Fitting" or
+"layer = ⊥ ⟹ F = ⊤" axioms — a clean statement purely about how the layer behaves under a
+central quotient. -/
+axiom layer_quotient_center_eq_bot (G : Type*) [Group G] [Finite G]
+    (hE : layer G = ⊥) : layer (G ⧸ Subgroup.center G) = ⊥
+
+/-- **Order-bounded solvability of the component-free central case**, by strong induction
+on `|G|`. A finite group with no components (`layer G = ⊥`) and central Fitting subgroup
+(`F(G) ≤ Z(G)`) is solvable.
+
+* `Z(G) = ⊤`: `G` abelian.
+* `Z(G) = ⊥`: then `F(G) ≤ Z(G) = ⊥`, but a minimal normal subgroup of a nontrivial group
+  is abelian (`center_eq_top_of_isMinimalNormal_of_layer_eq_bot`, as `layer G = ⊥`), hence
+  nilpotent normal, hence `≤ F(G) = ⊥` — impossible; so `G` is trivial.
+* `⊥ < Z(G) < ⊤`: `Ḡ = G/Z(G)` is smaller with `F(Ḡ) = ⊥` (`fittingSubgroup_quotient_center_eq_bot`)
+  and `layer Ḡ = ⊥` (`layer_quotient_center_eq_bot`); by induction `Ḡ` is solvable, and `G`
+  is the extension of the abelian `Z(G)` by the solvable `Ḡ`. -/
+private theorem isSolvable_aux : ∀ (n : ℕ) (G : Type u) [Group G] [Finite G],
+    Nat.card G ≤ n → layer G = ⊥ → fittingSubgroup G ≤ Subgroup.center G → IsSolvable G := by
+  intro n
+  induction n with
+  | zero => intro G _ _ hle _ _; exact absurd (Nat.card_pos.trans_le hle) (by simp)
+  | succ m ih =>
+    intro G _ _ hle hE hF
+    by_cases hZtop : Subgroup.center G = ⊤
+    · -- `Z(G) = ⊤`: `G` is abelian, hence solvable.
+      refine isSolvable_of_comm (fun a b => ?_)
+      have ha : a ∈ Subgroup.center G := hZtop ▸ Subgroup.mem_top a
+      exact (Subgroup.mem_center_iff.mp ha b).symm
+    · by_cases hZbot : Subgroup.center G = ⊥
+      · -- `F(G) ≤ Z(G) = ⊥`: a (necessarily abelian) minimal normal subgroup would lie in
+        -- `F(G) = ⊥`; impossible, so `G` is trivial.
+        rcases subsingleton_or_nontrivial G with hsub | _
+        · exact isSolvable_of_subsingleton G
+        · exfalso
+          obtain ⟨M, hMnorm, hMne, hMmin⟩ := exists_isMinimalNormal (G := G)
+          have hctr : Subgroup.center (M : Type _) = ⊤ :=
+            center_eq_top_of_isMinimalNormal_of_layer_eq_bot hE ⟨hMnorm, hMne, hMmin⟩
+          letI : CommGroup (M : Type _) := Group.commGroupOfCenterEqTop hctr
+          have hMnil : Group.IsNilpotent (M : Type _) := CommGroup.isNilpotent
+          have hMle : M ≤ fittingSubgroup G :=
+            normal_nilpotent_le_fittingSubgroup M hMnorm hMnil
+          exact hMne (le_bot_iff.mp ((hMle.trans hF).trans (le_of_eq hZbot)))
+      · -- `⊥ < Z(G) < ⊤`: the quotient `G/Z(G)` is strictly smaller.
+        have hcardlt : Nat.card (G ⧸ Subgroup.center G) < Nat.card G := by
+          have hmul := Subgroup.card_eq_card_quotient_mul_card_subgroup (Subgroup.center G)
+          have h1 : 1 < Nat.card (Subgroup.center G) :=
+            (Subgroup.center G).one_lt_card_iff_ne_bot.mpr hZbot
+          have hqpos : 0 < Nat.card (G ⧸ Subgroup.center G) := Nat.card_pos
+          calc Nat.card (G ⧸ Subgroup.center G)
+              < Nat.card (G ⧸ Subgroup.center G) * Nat.card (Subgroup.center G) := by
+                exact lt_mul_of_one_lt_right hqpos h1
+            _ = Nat.card G := hmul.symm
+        haveI hsolvQ : IsSolvable (G ⧸ Subgroup.center G) :=
+          ih (G ⧸ Subgroup.center G) (by omega)
+            (layer_quotient_center_eq_bot G hE)
+            (by rw [fittingSubgroup_quotient_center_eq_bot G hF]; exact bot_le)
+        exact solvable_of_ker_le_range (Subgroup.center G).subtype
+          (QuotientGroup.mk' (Subgroup.center G))
+          (le_of_eq (by rw [QuotientGroup.ker_mk', Subgroup.range_subtype]))
+
+/-- **A finite group with no components and central Fitting subgroup is solvable.** The
+order-bounded `isSolvable_aux` at `n = |G|`. This is the solvability hypothesis the
+machine-checked solvable kernel needs; together they give Bender's central base case. -/
+theorem isSolvable_of_layer_eq_bot_of_le_center (G : Type*) [Group G] [Finite G]
+    (hE : layer G = ⊥) (hF : fittingSubgroup G ≤ Subgroup.center G) : IsSolvable G :=
+  isSolvable_aux (Nat.card G) G le_rfl hE hF
+
 /-- **The soluble base case of Bender's cornerstone (the irreducible kernel).** A
 finite group with *no components* (`E(G) = 1`, i.e. `layer G = ⊥`) whose Fitting
 subgroup is *central* (`F(G) ≤ Z(G)`) equals its Fitting subgroup: `F(G) = ⊤`.
@@ -117,26 +198,16 @@ The companion "no components ⟹ minimal normals abelian" half is a *theorem*
 genuine corollary of this kernel but cannot *replace* the `layer = ⊥` hypothesis (it
 is one direction only).
 
-**The axiom surface is now exactly the solvability gap.** Since the *solvable* case
-`[IsSolvable G] → F(G) ≤ Z(G) → F(G) = ⊤` is machine-checked (no axioms,
-`fittingSubgroup_eq_top_of_isSolvable_of_le_center`, `SolubleFittingKernel.lean`), the
-only residual hypothesis needed is `IsSolvable G`. So we axiomatize *just that*:
-`isSolvable_of_layer_eq_bot_of_le_center` (a finite group with no components and
-central Fitting subgroup is solvable — equivalently, a non-solvable group with central
-`F` has a component), and *derive* `F(G) = ⊤` as a theorem. The remaining axiom is the
-sharpest possible boundary; its proof needs the central-product structure of `F*(G)`
-(Aschbacher, *Finite Group Theory* 31.13; Kurzweil-Stellmacher 6.5.8 — see
-`ON-LINE-REQUEST.md`). -/
-axiom isSolvable_of_layer_eq_bot_of_le_center (G : Type*) [Group G] [Finite G]
-    (hE : layer G = ⊥)
-    (hF : fittingSubgroup G ≤ Subgroup.center G) :
-    IsSolvable G
-
-/-- **The soluble base case of Bender's cornerstone**, now a *theorem*: a finite group
-with no components (`layer G = ⊥`) and central Fitting subgroup (`F(G) ≤ Z(G)`) has
-`F(G) = ⊤`. The group is solvable (`isSolvable_of_layer_eq_bot_of_le_center`, the lone
-residual axiom), and the machine-checked solvable kernel
-(`fittingSubgroup_eq_top_of_isSolvable_of_le_center`) finishes. -/
+**The axiom surface is now a single, sharp, clearly-true statement about the layer.**
+Since the *solvable* case `[IsSolvable G] → F(G) ≤ Z(G) → F(G) = ⊤` is machine-checked
+(`fittingSubgroup_eq_top_of_isSolvable_of_le_center`), solvability is the only missing
+hypothesis. Solvability is then proved by strong induction on `|G|` (`isSolvable_aux`
+below): the quotient `Ḡ = G/Z(G)` has `F(Ḡ) = ⊥` (`fittingSubgroup_quotient_center_eq_bot`,
+the central-extension argument) and — by the *one* residual axiom
+`layer_quotient_center_eq_bot` — also `layer Ḡ = ⊥`, so `Ḡ` is solvable by induction and
+`G` is the extension of the abelian `Z(G)` by the solvable `Ḡ`. So Bender's cornerstone
+now rests on exactly `layer_quotient_center_eq_bot`: *a central quotient of a
+component-free group is component-free*. -/
 theorem fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center (G : Type*) [Group G] [Finite G]
     (hE : layer G = ⊥)
     (hF : fittingSubgroup G ≤ Subgroup.center G) :

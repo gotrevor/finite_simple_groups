@@ -74,6 +74,59 @@ theorem isNilpotent_of_quotient_by_central_isNilpotent (G : Type*) [Group G]
         exact ⟨QuotientGroup.mk y, rfl⟩
   exact nilpotent_of_surjective _ h_surj.choose_spec
 
+/-- **`F(G/Z(G)) = ⊥` when `F(G) ≤ Z(G)`.** If the Fitting subgroup is central then the
+Fitting subgroup of `G/Z(G)` is trivial. A nilpotent normal subgroup `A` of `G/Z(G)`
+pulls back to a normal subgroup `N` of `G` with `Z(G) ≤ N` and `N/(Z(G) ⊓ N) ≅ A`
+nilpotent; since `Z(G) ⊓ N ≤ Z(N)`, `N` is nilpotent, so `N ≤ F(G) ≤ Z(G)`, forcing
+`A = ⊥`. This is the fact that defeats the naïve "the central quotient inherits
+`F ≤ Z`" worry in the solvability induction: the quotient's Fitting subgroup is not
+just central, it is *trivial*. -/
+theorem fittingSubgroup_quotient_center_eq_bot (G : Type*) [Group G] [Finite G]
+    (hF : fittingSubgroup G ≤ Subgroup.center G) :
+    fittingSubgroup (G ⧸ Subgroup.center G) = ⊥ := by
+  -- It suffices to show every nilpotent normal subgroup `A` of `G/Z(G)` is trivial.
+  suffices key : ∀ A : Subgroup (G ⧸ Subgroup.center G), A.Normal →
+      Group.IsNilpotent A → A = ⊥ by
+    exact key _ (fittingSubgroup_normal _) (fittingSubgroup_isNilpotent _)
+  intro A hAnorm hAnil
+  set Z := Subgroup.center G with hZ
+  haveI hZN : Z.Normal := by rw [hZ]; infer_instance
+  set π := QuotientGroup.mk' Z with hπ
+  set N := A.comap π with hNdef
+  haveI hNnorm : N.Normal := hAnorm.comap π
+  -- `φ : ↥N →* G/Z`, with `range φ = A` and `ker φ = Z.subgroupOf N`.
+  set φ := π.comp N.subtype with hφ
+  have hker : φ.ker = Z.subgroupOf N := by
+    rw [hφ, ← MonoidHom.comap_ker, QuotientGroup.ker_mk']; rfl
+  have hrange : φ.range = A := by
+    rw [hφ, MonoidHom.range_comp, Subgroup.range_subtype, hNdef,
+      Subgroup.map_comap_eq, hπ, QuotientGroup.range_mk', top_inf_eq]
+  -- `N/(Z ⊓ N) ≅ A` is nilpotent, hence so is `N/(Z.subgroupOf N)`.
+  haveI hAnil' : Group.IsNilpotent φ.range := hrange ▸ hAnil
+  haveI hqnil : Group.IsNilpotent (N ⧸ Z.subgroupOf N) := by
+    haveI hnil : Group.IsNilpotent (N ⧸ φ.ker) :=
+      nilpotent_of_mulEquiv (QuotientGroup.quotientKerEquivRange φ).symm
+    exact nilpotent_of_mulEquiv (QuotientGroup.quotientMulEquivOfEq hker)
+  -- `Z ⊓ N` is central in `N`, so `N` is nilpotent (central-by-nilpotent).
+  have hcentral : Z.subgroupOf N ≤ Subgroup.center N := by
+    intro x hx
+    rw [Subgroup.mem_subgroupOf] at hx
+    rw [Subgroup.mem_center_iff]
+    intro n
+    exact Subtype.ext (by simpa using Subgroup.mem_center_iff.mp hx (n : G))
+  haveI hNnil : Group.IsNilpotent N :=
+    isNilpotent_of_quotient_by_central_isNilpotent N (Z.subgroupOf N) hcentral hqnil
+  -- `N` normal and nilpotent ⟹ `N ≤ F(G) ≤ Z`; then `A = map π N ≤ map π Z = ⊥`.
+  have hNleZ : N ≤ Z :=
+    (normal_nilpotent_le_fittingSubgroup N hNnorm hNnil).trans hF
+  have hAmap : A = N.map π := by
+    rw [hNdef, Subgroup.map_comap_eq, hπ, QuotientGroup.range_mk']; simp
+  rw [hAmap]
+  refine le_antisymm ?_ bot_le
+  calc N.map π ≤ Z.map π := Subgroup.map_mono hNleZ
+    _ = ⊥ := by
+        rw [hπ, Subgroup.map_eq_bot_iff, QuotientGroup.ker_mk']
+
 /-- **The soluble Fitting kernel (Bender's soluble base case).** A finite *solvable*
 group whose Fitting subgroup is central has `F(G) = ⊤`.
 

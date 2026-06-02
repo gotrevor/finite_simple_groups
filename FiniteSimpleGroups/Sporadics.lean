@@ -308,6 +308,40 @@ are *not* Monster subquotients, so no such divisibility is asserted for them. -/
 theorem happyFamily_order_dvd_monster :
     ∀ n : Name, ¬ n.isPariah → n.order ∣ Name.order .Monster := by decide
 
+/-- The **subquotients of `Co₁`** among the sporadics: the "second generation" of
+the Happy Family (the Leech-lattice groups), together with the first-generation
+Mathieu groups. Each is a subquotient of `Co₁` (equivalently of `Co₀ = 2·Co₁`,
+the automorphism group of the Leech lattice), so its order divides `|Co₁|`.
+
+**Membership** (Robert Wilson's "three generations" organization of the Happy
+Family): the Conway groups `Co₂`, `Co₃`; the Leech-lattice sporadics
+`Suz`, `McL`, `HS`, and `J₂` (Hall-Janko); and the Mathieu groups
+`M₁₁, M₁₂, M₂₂, M₂₃, M₂₄` (the first generation, themselves subquotients of the
+second). Confidence ≈ 90% on this membership list — `J₂`'s inclusion (via
+`J₂ < G₂(4) < Suz`) is the least-certain edge; everything else is a textbook
+Leech-lattice stabilizer chain. The *divisibility* consequence is `decide`-checked
+below and so is independent of any membership error: a wrong member that failed to
+divide would simply not compile. -/
+def Name.isCo1Subquotient : Name → Bool
+  | .Co2 | .Co3 | .SuzukiSporadic | .McLaughlin | .HigmanSims | .J2
+  | .M11 | .M12 | .M22 | .M23 | .M24 => true
+  | _ => false
+
+/-- There are **11** sporadic subquotients of `Co₁` (excluding `Co₁` itself). -/
+theorem card_co1_subquotients :
+    (Finset.univ.filter (fun n : Name => n.isCo1Subquotient)).card = 11 := by decide
+
+/-- **Co₁ subquotients ⟹ order divides `|Co₁|`.** Each of the 11 sporadics above is
+a subquotient of `Co₁`, so (`|H| = |A|/|B|` for `B ⊴ A ≤ Co₁`) its order divides
+`Name.order .Co1`. This `decide`-checks the table's *second*-largest uncertain value
+(`Co₁ ≈ 4.2·10¹⁸`) against 11 independent smaller orders at once — the analogue of
+`happyFamily_order_dvd_monster` one rung down the subquotient lattice. Catches a
+transposed exponent in `Co₁` (or in any of the 11) that `order_injective` would miss.
+The Conway simplicity axioms (`Co{1,2,3}_isSimpleGroup`) are unrelated; this is a
+pure arithmetic consistency test on the order table. -/
+theorem co1Subquotient_order_dvd_co1 :
+    ∀ n : Name, n.isCo1Subquotient → n.order ∣ Name.order .Co1 := by decide
+
 /-- Lookup the underlying opaque carrier type for a sporadic group by name.
 
 Used by `Classification.IsClassified.sporadic` to quantify over sporadics

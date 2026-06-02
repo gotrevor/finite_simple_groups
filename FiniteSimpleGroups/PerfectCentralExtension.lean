@@ -111,4 +111,52 @@ theorem commutator_sup_central_eq {H : Type*} [Group H] (K C : Subgroup H) [C.No
   rw [commutatorElement_mul_central k k' c c' (hC hc) (hC hc')]
   exact Subgroup.commutator_mem_commutator hk hk'
 
+/-- **The simplicity half of "a perfect central extension of a quasisimple group is
+quasisimple".** If `K` is finite and perfect, `C ≤ Z(K)` is central, and `(K/C)/Z(K/C)` is
+simple, then `K/Z(K)` is simple. Proof (ported from Aristotle job `9f7b6b74`, re-checked in
+our kernel): the image of `Z(K)` under `K ↠ K/C` equals `Z(K/C)` — the `⊇` inclusion uses
+**Grün's lemma** (`center_quotient_center_eq_bot_of_perfect`) — so the third isomorphism
+theorem gives `(K/C)/Z(K/C) ≃* K/Z(K)`, transporting simplicity. -/
+theorem perfect_central_ext_quasisimple (K : Type*) [Group K] [Finite K]
+    (hperf : commutator K = ⊤) (C : Subgroup K) [C.Normal] (hC : C ≤ Subgroup.center K)
+    (hsimple : IsSimpleGroup ((K ⧸ C) ⧸ Subgroup.center (K ⧸ C))) :
+    IsSimpleGroup (K ⧸ Subgroup.center K) := by
+  have h_iso : (K ⧸ C) ⧸ Subgroup.center (K ⧸ C) ≃* K ⧸ Subgroup.center K := by
+    have h_iso : Subgroup.map (QuotientGroup.mk' C) (Subgroup.center K)
+        = Subgroup.center (K ⧸ C) := by
+      refine le_antisymm ?_ ?_ <;> intro x <;>
+        simp_all +decide [Subgroup.mem_center_iff, Subgroup.mem_map]
+      · rintro y hy rfl g
+        obtain ⟨g, rfl⟩ := QuotientGroup.mk_surjective g
+        simp +decide [← QuotientGroup.mk_mul, hy]
+      · intro hx
+        obtain ⟨g, hg⟩ : ∃ g : K, (QuotientGroup.mk' C) g = x := QuotientGroup.mk_surjective x
+        have hg_center : (QuotientGroup.mk' (Subgroup.center K)) g
+            ∈ Subgroup.center (K ⧸ Subgroup.center K) := by
+          have hg_center : ∀ k : K,
+              (QuotientGroup.mk' (Subgroup.center K)) (g * k * g⁻¹ * k⁻¹) = 1 := by
+            intro k
+            have h_comm : (QuotientGroup.mk' C) (g * k * g⁻¹ * k⁻¹) = 1 := by
+              simp_all +decide [mul_inv_eq_iff_eq_mul]
+            erw [QuotientGroup.eq_one_iff] at *; aesop
+          simp_all +decide [Subgroup.mem_center_iff, mul_inv_eq_iff_eq_mul]
+          rintro ⟨k⟩; exact hg_center k ▸ rfl
+        have := center_quotient_center_eq_bot_of_perfect K hperf
+        simp_all +decide [Subgroup.eq_bot_iff_forall]
+        exact ⟨g, fun k => by rw [Subgroup.mem_center_iff.mp hg_center k], hg⟩
+    have := QuotientGroup.quotientQuotientEquivQuotient C (Subgroup.center K) hC
+    convert this; all_goals exact h_iso.symm
+  exact MulEquiv.isSimpleGroup h_iso.symm
+
+/-- **A finite perfect central extension of a quasisimple group is quasisimple.** If `Q` is
+finite and perfect, `D ≤ Z(Q)` is central, and `Q/D` is quasisimple, then `Q` is
+quasisimple. (`Q` is perfect by hypothesis; `Q/Z(Q)` is simple by
+`perfect_central_ext_quasisimple`.) -/
+theorem isQuasisimple_of_perfect_of_central_quotient {Q : Type*} [Group Q] [Finite Q]
+    (hperf : commutator Q = ⊤) {D : Subgroup Q} [D.Normal] (hD : D ≤ Subgroup.center Q)
+    (hQ : IsQuasisimple (Q ⧸ D)) : IsQuasisimple Q where
+  isPerfect := Group.isPerfect_def.mpr hperf
+  isSimpleGroup_quotient_center :=
+    perfect_central_ext_quasisimple Q hperf D hD hQ.isSimpleGroup_quotient_center
+
 end FiniteSimpleGroups

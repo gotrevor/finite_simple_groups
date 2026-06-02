@@ -21,16 +21,19 @@ base case; the subnormal-length lift is machine-checked. `aschbacher_base` still
 the Wielandt join / normal-closure `⟨L^H⟩` theory (as does `IsSubnormal.sup`), and is the
 precise minimal target for a future discharge (an Aristotle job on the full commute
 statement is in flight — see `ARISTOTLE-JOB-components-commute.md`).
-`layer_commutator_fittingSubgroup_eq_bot` remains an axiom pending the same join theory.
-Both follow the repository's honest-dependency convention (cf.
-`genFittingSubgroup_self_centralizing`, `Classification.CFSG`).
+`layer_commutator_fittingSubgroup_eq_bot` is **also a theorem** now — the *same*
+dichotomy discharges it (a component cannot sit inside the nilpotent `F(G)`), so it no
+longer needs its own axiom. The base case `aschbacher_base` follows the repository's
+honest-dependency convention (cf. `genFittingSubgroup_self_centralizing`,
+`Classification.CFSG`).
 
 ## Main results
 
 * `aschbacher_base` (axiom — normal base case) ⟹ `IsComponent.subnormal_dichotomy`
   (**theorem**, the induction) ⟹ `IsComponent.commute_of_ne` (**theorem**) +
   `IsComponent.le_centralizer_of_ne`.
-* `layer_commutator_fittingSubgroup_eq_bot` (axiom) + `layer_le_centralizer_fittingSubgroup`.
+* `layer_commutator_fittingSubgroup_eq_bot` (**theorem**, also via the dichotomy) +
+  `layer_le_centralizer_fittingSubgroup`.
 -/
 
 namespace FiniteSimpleGroups
@@ -94,13 +97,32 @@ theorem IsComponent.le_centralizer_of_ne [Finite G] {L M : Subgroup G}
   Subgroup.commutator_eq_bot_iff_le_centralizer.mp (hL.commute_of_ne hM hne)
 
 /-- **The layer centralizes the Fitting subgroup**, `[E(G), F(G)] = 1`
-(Kurzweil-Stellmacher, *The Theory of Finite Groups* 6.5.2). A component is perfect
-and subnormal, so it centralizes every nilpotent normal subgroup; joining over the
-components gives `[E(G), F(G)] = 1`.
+(Kurzweil-Stellmacher, *The Theory of Finite Groups* 6.5.2).
 
-`axiom` pending the same subnormal-action theory as `IsComponent.commute_of_ne`. -/
-axiom layer_commutator_fittingSubgroup_eq_bot [Finite G] :
-    ⁅layer G, fittingSubgroup G⁆ = ⊥
+**Theorem** (discharged via `subnormal_dichotomy`): `F(G)` is normal, hence subnormal,
+so each component `L` satisfies `L ≤ F(G)` or `⁅L, F(G)⁆ = ⊥`. The first is impossible —
+`F(G)` is nilpotent (Fitting's theorem) hence solvable, so a subgroup `↥L` of it would be
+solvable, contradicting that the quasisimple `↥L` is perfect and nontrivial
+(`IsPerfect.not_isSolvable`). So `⁅L, F(G)⁆ = ⊥` for every component, and joining over the
+components (`layer_le`) gives `⁅E(G), F(G)⁆ = ⊥`. -/
+theorem layer_commutator_fittingSubgroup_eq_bot [Finite G] :
+    ⁅layer G, fittingSubgroup G⁆ = ⊥ := by
+  rw [Subgroup.commutator_eq_bot_iff_le_centralizer]
+  apply layer_le
+  intro L hL
+  haveI := hL.isQuasisimple
+  rw [← Subgroup.commutator_eq_bot_iff_le_centralizer]
+  rcases hL.subnormal_dichotomy (fittingSubgroup_normal G).isSubnormal_top with hLF | hcomm
+  · exfalso
+    haveI : Group.IsNilpotent (fittingSubgroup G) := fittingSubgroup_isNilpotent G
+    have e := Subgroup.subgroupOfEquivOfLe hLF
+    haveI : IsSolvable (L.subgroupOf (fittingSubgroup G)) := inferInstance
+    have hinj : Function.Injective e.symm.toMonoidHom := e.symm.injective
+    haveI : IsSolvable L := solvable_of_solvable_injective hinj
+    haveI : Nontrivial L := IsQuasisimple.nontrivial L
+    haveI : Group.IsPerfect L := ⟨IsQuasisimple.commutator_eq_top L⟩
+    exact Group.IsPerfect.not_isSolvable L inferInstance
+  · exact hcomm
 
 /-- The layer lies in the centralizer of the Fitting subgroup — the centralizer
 reformulation of `layer_commutator_fittingSubgroup_eq_bot`. -/

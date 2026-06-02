@@ -61,6 +61,18 @@ theorem genFittingSubgroup_normal (G : Type*) [Group G] :
   haveI := fittingSubgroup_normal G
   exact Subgroup.sup_normal (layer G) (fittingSubgroup G)
 
+/-- **`F*(N) ≤ F*(G)` for a normal subgroup `N ⊴ G`** (finite `G`). Both factors push
+forward along the inclusion `N ↪ G`: `E(N) ≤ E(G)` (`layer_map_subtype_le`) and
+`F(N) ≤ F(G)` (`fittingSubgroup_map_subtype_le`), and `map` distributes over the join.
+This monotonicity is the structural step the induction in Bender's cornerstone
+(`genFittingSubgroup_self_centralizing`) runs on: applied to `N = C_G(F*(G))`, it gives
+`F*(C_G(F*(G))) ≤ F*(G)`. -/
+theorem genFittingSubgroup_map_subtype_le {G : Type*} [Group G] [Finite G]
+    {N : Subgroup G} [N.Normal] :
+    (genFittingSubgroup N).map N.subtype ≤ genFittingSubgroup G := by
+  rw [genFittingSubgroup, Subgroup.map_sup]
+  exact sup_le_sup layer_map_subtype_le fittingSubgroup_map_subtype_le
+
 /-- If the Fitting subgroup is trivial then `F*(G) = E(G)`. This is the shape of the
 **B-theorem reduction**: once `F(G) = 1`, the generalized Fitting subgroup collapses
 to the layer, a (central) product of quasisimple components. -/

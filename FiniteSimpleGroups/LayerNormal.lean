@@ -136,4 +136,52 @@ theorem layer_normal : (layer G).Normal := by
   simp only [← Subgroup.pointwise_smul_def]
   rw [← sSup_image, hset]
 
+/-! ### `E(N) ≤ E(G)` for `N ⊴ G` — the layer pushes forward along `N ↪ G`
+
+The layer analogue of `fittingSubgroup_map_subtype_le`: a component of a normal
+subgroup is a component of the whole group, so `E(N)` lands inside `E(G)`. This is
+the layer-monotonicity step the induction in Bender's cornerstone
+(`genFittingSubgroup_self_centralizing`) needs alongside the Fitting one. -/
+
+variable {N : Subgroup G}
+
+/-- A normal step in `↥N` maps to a normal step in `G` under the inclusion `N ↪ G`:
+inclusion is monotone and `(normalizer A).map f ≤ normalizer (A.map f)`
+(`Subgroup.le_normalizer_map`). -/
+theorem isNormalStep_map_subtype {A B : Subgroup N} (h : IsNormalStep A B) :
+    IsNormalStep (A.map N.subtype) (B.map N.subtype) := by
+  rw [isNormalStep_iff_le_normalizer] at h ⊢
+  exact ⟨Subgroup.map_mono h.1, (Subgroup.map_mono h.2).trans (Subgroup.le_normalizer_map _)⟩
+
+/-- Subnormality in `↥N` maps to subnormality in `G`: lift the chain of normal steps
+along the inclusion (`Relation.ReflTransGen.lift`). -/
+theorem isSubnormal_map_subtype {A B : Subgroup N} (h : IsSubnormal A B) :
+    IsSubnormal (A.map N.subtype) (B.map N.subtype) := by
+  induction h with
+  | refl => exact IsSubnormal.refl _
+  | tail _ hstep ih => exact ih.tail (isNormalStep_map_subtype hstep)
+
+/-- **A component of a normal subgroup is a component of the whole group.** If
+`N ⊴ G` and `K` is a component of `↥N`, then its image in `G` is a component:
+subnormal — the chain `K ◁◁ N` maps in (`isSubnormal_map_subtype`, using
+`(⊤ : Subgroup N).map N.subtype = N`) and stacks onto `N ◁ G` — and quasisimple, an
+iso-invariant (`IsQuasisimple.ofMulEquiv` along `Subgroup.equivMapOfInjective`). -/
+theorem isComponent_map_subtype [N.Normal] {K : Subgroup N} (h : IsComponent K) :
+    IsComponent (K.map N.subtype) := by
+  have htop : (⊤ : Subgroup N).map N.subtype = N := by
+    rw [← MonoidHom.range_eq_map, Subgroup.range_subtype]
+  refine ⟨?_, ?_⟩
+  · have h1 := isSubnormal_map_subtype h.isSubnormal
+    rw [htop] at h1
+    exact h1.trans (Subgroup.Normal.isSubnormal_top ‹N.Normal›)
+  · haveI := h.isQuasisimple
+    exact IsQuasisimple.ofMulEquiv (Subgroup.equivMapOfInjective K N.subtype N.subtype_injective)
+
+/-- **`E(N) ≤ E(G)` for a normal subgroup `N ⊴ G`.** Each component of `N` maps to a
+component of `G` (`isComponent_map_subtype`), so the join of the former lands inside
+the join of the latter. The layer analogue of `fittingSubgroup_map_subtype_le`. -/
+theorem layer_map_subtype_le [N.Normal] : (layer N).map N.subtype ≤ layer G := by
+  rw [layer_eq_sSup, (Subgroup.gc_map_comap N.subtype).l_sSup]
+  exact iSup₂_le fun K hK => (isComponent_map_subtype hK).le_layer
+
 end FiniteSimpleGroups

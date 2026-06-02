@@ -299,6 +299,15 @@ theorem order_M12_eq_12_mul_M11 : Name.order .M12 = 12 * Name.order .M11 := by d
 theorem order_M23_eq_23_mul_M22 : Name.order .M23 = 23 * Name.order .M22 := by decide
 theorem order_M24_eq_24_mul_M23 : Name.order .M24 = 24 * Name.order .M23 := by decide
 
+/-- **Happy Family ⟹ order divides `|M|`.** Each of the 20 non-pariah sporadics is a
+*subquotient* of the Monster (`H = A/B` with `B ⊴ A ≤ M`), so `|H| = |A|/|B|` divides `|M|`.
+This `decide`-checks all 20 Happy-Family orders against `Name.order .Monster` at once — the
+strongest single consistency net on the table, since it tests the Monster's (largest, least
+certain) order against 20 independent values. The 6 pariahs are excluded precisely because they
+are *not* Monster subquotients, so no such divisibility is asserted for them. -/
+theorem happyFamily_order_dvd_monster :
+    ∀ n : Name, ¬ n.isPariah → n.order ∣ Name.order .Monster := by decide
+
 /-- Lookup the underlying opaque carrier type for a sporadic group by name.
 
 Used by `Classification.IsClassified.sporadic` to quantify over sporadics

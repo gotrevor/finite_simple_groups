@@ -7,7 +7,23 @@ findings back for a later lap. Newest first.
 
 ---
 
-## 2026-06-02 — Bender base case: the central-product reduction of `C_G(F(G)) ≤ F(G)`
+## 2026-06-02 — Bender base case — ✅ IN-REPO PATH FOUND (this request is now LOW PRIORITY)
+
+**Update (later same day):** the gap below was *cracked in-repo*, no open-web input needed.
+Key realization: under `F(G) ≤ Z(G)`, the quotient `G/Z(G)` has `F(G/Z(G)) = ⊥` (not merely
+central), which makes the solvability induction go through. The whole solvability statement is
+now a machine-checked theorem (`isSolvable_aux`, `GeneralizedFitting.lean`), resting on a single
+sharp axiom `layer_quotient_center_eq_bot` (a central quotient of a component-free group is
+component-free). Grün's lemma — the crux of that axiom — is also proved in-repo
+(`center_quotient_center_eq_bot_of_perfect`, `PerfectCentralExtension.lean`). Only a mechanical
+final assembly (the quasisimple-central-extension lemma + component pullback) remains, with all
+prerequisites built. **The literature transcription below is no longer load-bearing**, though a
+cross-check of any existing Lean/Isabelle/Coq formalization of `F*(G)`/Bender (item 4) would still
+be a nice-to-have. Items 1–3 can be skipped.
+
+---
+
+### (Original, now superseded) Bender base case: the central-product reduction of `C_G(F(G)) ≤ F(G)`
 
 **Context / why this unblocks.** Bender's cornerstone `C_G(F*(G)) ≤ F*(G)`
 (`genFittingSubgroup_self_centralizing`) is a proved theorem resting on ONE axiom,

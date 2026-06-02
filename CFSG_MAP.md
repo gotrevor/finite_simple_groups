@@ -73,11 +73,15 @@ or (ii) deep theory far beyond an elementary brick. Leave as `axiom`.
   `17c03da4` found this counterexample. Reverted to the **true** `layer G = ⊥` form. The matching
   *solvable* statement (`[IsSolvable G] → F(G)≤Z(G) → F(G)=⊤`) is now a machine-checked **theorem**
   (`fittingSubgroup_eq_top_of_isSolvable_of_le_center`, `SolubleFittingKernel.lean`, no axioms,
-  ported from Aristotle's proof). The residual gap to make the kernel axiom-free is
-  `layer G = ⊥ ∧ F(G)≤Z(G) → IsSolvable G` (= a non-solvable group with central `F` has a
-  component — needs the central-product structure of `F*(G)`; see ON-LINE-REQUEST). The Wielandt
-  full join `IsSubnormal.sup` axiom was **deleted** (`7d2dc13`). The **component-commuting cluster
-  is fully axiom-free**. The in-repo layer-structure lemma
+  ported from Aristotle's proof). Also machine-checked: `fittingSubgroup_quotient_center_eq_bot`
+  (`F(G)≤Z(G) → F(G/Z(G))=⊥`), the solvability induction `isSolvable_aux`, and **Grün's lemma**
+  `center_quotient_center_eq_bot_of_perfect` (`Z(K/Z(K))=⊥` for perfect `K`, three subgroups lemma,
+  `PerfectCentralExtension.lean`). **The lone residual axiom is now `layer_quotient_center_eq_bot`**:
+  a central quotient of a component-free group is component-free. Discharge in progress — Grün +
+  subnormal-pullback bricks (`IsSubnormal.comap_top`, `IsSubnormal.of_characteristic_subgroupOf`)
+  built; only "perfect central extension of quasisimple is quasisimple" + a short assembly remain
+  (Aristotle `9f7b6b74`). The Wielandt full join `IsSubnormal.sup` axiom was **deleted** (`7d2dc13`).
+  The **component-commuting cluster is fully axiom-free**. The in-repo layer-structure lemma
   `center_eq_top_of_isMinimalNormal_of_layer_eq_bot` (no components ⟹ minimal normals abelian,
   `MinimalNormal.lean`) is a true corollary but cannot *replace* the `layer=⊥` hypothesis.
   - **Component-commuting theory: AXIOM-FREE as of 2026-06-02 (`0009c90` →

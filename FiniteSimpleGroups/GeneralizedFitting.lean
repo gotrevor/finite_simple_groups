@@ -99,13 +99,22 @@ extension* of the quasisimple `L̄`, and its perfect core `K = [L,L]` is a subno
 extension of a quasisimple group is quasisimple). Hence `layer G = ⊥` rules out any such
 `L̄`, giving `layer (G/Z(G)) = ⊥`.
 
-This is the only remaining non-elementary input to Bender's cornerstone. Its proof needs
-the quasisimple-central-extension lemma (submitted to Aristotle as job `9f7b6b74`:
-`center_quotient_center_eq_bot_of_perfect` + `perfect_central_ext_quasisimple`) together
-with subnormal-preimage and characteristic-in-subnormal transport; recorded as an honest
-`axiom` pending that port. It is far sharper than the original "solvable Fitting" or
-"layer = ⊥ ⟹ F = ⊤" axioms — a clean statement purely about how the layer behaves under a
-central quotient. -/
+This is the only remaining non-elementary input to Bender's cornerstone. **Most of its
+proof is already in-repo and machine-checked**; what remains is the final assembly:
+* `center_quotient_center_eq_bot_of_perfect` (**Grün's lemma**, `PerfectCentralExtension.lean`)
+  — proved, axiom-free. The crux: `Z(K/Z(K)) = ⊥` for perfect `K`.
+* `IsSubnormal.comap_top` (`Subnormal.lean`) — the preimage `comap π L̄` of the component is
+  subnormal in `G`. Proved.
+* `IsSubnormal.of_characteristic_subgroupOf` (`Subnormal.lean`) — the perfect core
+  `⁅comap π L̄, comap π L̄⁆`, being characteristic, is subnormal in `G`. Proved.
+* TODO (next lap): "a perfect central extension of a quasisimple group is quasisimple"
+  (Grün + `Subgroup.map_subtype_commutator` + a central-commutator distributivity step;
+  Aristotle job `9f7b6b74` is computing it), then assemble: the perfect core of
+  `comap π L̄` is a quasisimple subnormal subgroup of `G`, i.e. a component, contradicting
+  `layer G = ⊥`.
+Recorded as an honest `axiom` pending that final assembly. It is far sharper than the
+original "solvable Fitting" / "layer = ⊥ ⟹ F = ⊤" axioms — a clean statement purely about
+how the layer behaves under a central quotient. -/
 axiom layer_quotient_center_eq_bot (G : Type*) [Group G] [Finite G]
     (hE : layer G = ⊥) : layer (G ⧸ Subgroup.center G) = ⊥
 

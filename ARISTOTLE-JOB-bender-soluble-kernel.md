@@ -1,8 +1,34 @@
-# Aristotle job (PLANNED, not yet submitted): the soluble kernel of Bender's cornerstone
+# Aristotle job: the soluble kernel of Bender's cornerstone
 
-**Status**: spec only — architected 2026-06-02, NOT yet submitted. Bender's cornerstone
+**Status**: **SUBMITTED 2026-06-02** · **Project UUID `17c03da4-8ea8-464b-bb37-b354239569bb`**
+· framing (1) (the pure soluble climb, no component defs). Awaiting result. Bender's cornerstone
 `genFittingSubgroup_self_centralizing` was discharged to a THEOREM this lap (commit `4b58cea`)
-resting on exactly one axiom, the soluble kernel below. This is its planned Aristotle attack.
+resting on exactly one axiom, the soluble kernel below. This job attacks that kernel.
+
+## Poll / collect (next lap)
+```
+aristotle list                         # find 17c03da4… status (avoid `show` — live TUI)
+aristotle download 17c03da4-8ea8-464b-bb37-b354239569bb --destination /tmp/sk.tar.gz
+tar -xzf /tmp/sk.tar.gz -C /tmp/sk && rg -n "sorry|soluble_fitting_kernel" /tmp/sk
+```
+Submitted file preserved at `/tmp/aristotle-bender/Target.lean` (regenerate from the git
+history of this note if `/tmp` is wiped). The submitted statement (verified to elaborate in our
+v4.29.1 toolchain, only the goal `sorry`):
+```lean
+theorem soluble_fitting_kernel (G : Type*) [Group G] [Finite G]
+    (hmin : ∀ M : Subgroup G, IsMinimalNormal M → ∀ a ∈ M, ∀ b ∈ M, a * b = b * a)
+    (hF : fittingSubgroup G ≤ Subgroup.center G) : fittingSubgroup G = ⊤
+```
+with `fittingSubgroup` inlined byte-identical to the repo and `IsMinimalNormal M :=
+M.Normal ∧ M ≠ ⊥ ∧ ∀ N, N.Normal → N ≠ ⊥ → N ≤ M → N = M`.
+
+**If SOLVED:** verify in our kernel (`#print axioms`, no `sorryAx`, statement faithful), port the
+proof into a new repo lemma `soluble_fitting_kernel`, then discharge the repo axiom
+`fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center` from it by supplying the missing
+hypothesis — i.e. prove the residual **(a)** `layer G = ⊥ → every minimal normal subgroup of G
+is abelian` (a clean structural lemma: a non-abelian minimal normal subgroup is a product of
+non-abelian simple groups, each a component, contradicting `layer = ⊥`). That residual (a) is
+then the sole sharper axiom (or a further Aristotle target).
 
 ## The target axiom
 `FiniteSimpleGroups/GeneralizedFitting.lean`:

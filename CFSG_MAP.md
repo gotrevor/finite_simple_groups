@@ -78,12 +78,19 @@ what mathlib has = forbidden.
 
 ### 🟨 D — REAL WORK (novel + tractable + unformalized). The actual to-do.
 Part of the scaffold, absent from mathlib, and provable with reasonable effort.
-- **`SmallOrders.lean:104` `prime_card_of_simpleGroup_card_lt_sixty`** — the one
-  remaining real `sorry` in the repo. "Simple, order < 60 ⟹ prime order"
-  (≡ A_5 is the smallest non-abelian simple group). Verified absent from mathlib
-  (only `IsSimpleGroup.prime_card` for `CommGroup`). Order-by-order Sylow grind
-  over the mixed orders 12,18,20,24,28,30,36,40,42,44,45,48,50,52,54,56.
-  **In progress: delegated to Aristotle (job `lt60`).**
+- **✅ CLOSED `SmallOrders.lean` `prime_card_of_simpleGroup_card_lt_sixty`** —
+  "Simple, order < 60 ⟹ prime order" (≡ A_5 is the smallest non-abelian simple
+  group). Verified absent from mathlib (only `IsSimpleGroup.prime_card` for
+  `CommGroup`). Order-by-order Sylow grind over the mixed orders
+  12,18,20,24,28,30,36,40,42,44,45,48,50,52,54,56. **Closed sorry-free in
+  `22aa823` (2026-06-01), merged to main.** Trail: `propext/Classical.choice/
+  Quot.sound` **+ `native_decide` trust axioms** (a few order cases, e.g.
+  order-30, use `native_decide` — sorry-free but trusts the compiler, one notch
+  below pure `decide`).
+- **Bucket D is now EMPTY.** No known novel+tractable+unformalized brick is
+  open. The next one only appears when the scaffold (bucket A) grows enough to
+  expose it — so growing the architecture is the prerequisite, not a parallel
+  track.
 
 ## Two debts, and the order-pin (definitional debt)
 
@@ -126,8 +133,8 @@ Two places, and only two:
    wiring proven reductions on top of bucket-B axioms. This is unbounded,
    genuinely novel (CFSG isn't formalized anywhere), and the heart of the project.
 2. **Bucket D bricks (small, finite).** Elementary results mathlib lacks and that
-   aren't deep-Coq territory. Currently: just `lt60`. When it lands, bucket D is
-   empty until the scaffold grows enough to expose another.
+   aren't deep-Coq territory. **Currently empty** — `lt60` landed (2026-06-01).
+   The next brick only appears once the scaffold (A) grows enough to expose it.
 
 That bucket D is small is **correct for a scaffold**, not a failure: a well-built
 scaffold is mostly architecture (A) + honest axioms (B), with a thin frontier of
@@ -135,12 +142,13 @@ hand-provable bricks (D). The mistake to avoid is mistaking a B (deep, leave it)
 or a C (pin-lag, delete it) for a D (brick, build it). This map exists to prevent
 exactly that.
 
-## Counts (2026-05-31, compiler-verified)
+## Counts (2026-06-02, compiler-verified)
 - Axioms: **44** (all bucket B; includes the 3 Alternating case-witness leaves,
   which are bucket C / delete-on-bump). Was 45 until `feitThompson_dichotomy` was
   discharged to a theorem (bucket A).
-- Real sorries: **1** — `SmallOrders:104` (`lt60`, bucket D, in progress).
-  Confirmed via `lake build`: `SmallOrders` emits exactly 1 `declaration uses
-  'sorry'`; `Alternating` emits **0** (its 3 "sorry" string-matches are docstring
-  mentions, not tactics — the leaves are genuine axioms now).
-- Build green.
+- Real sorries: **0** — `lt60` closed in `22aa823` (2026-06-01, merged to main),
+  so bucket D is empty. Repo-wide `grep "sorry"` returns only docstring prose
+  (Wielandt/GeneralizedFitting/PSLIwasawa/Sporadics), no `sorry` tactic;
+  `#print axioms prime_card_of_simpleGroup_card_lt_sixty` shows no `sorryAx`.
+  (Was **1** at the 2026-05-31 count.)
+- Build green (8284 jobs).

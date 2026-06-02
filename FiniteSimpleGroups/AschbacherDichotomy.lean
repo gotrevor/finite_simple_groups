@@ -16,7 +16,8 @@ lemma and the perfectness `⁅L, L⁆ = L` of the quasisimple component.
 This proof was found by Harmonic's Aristotle (project `adf60350`, 2026-06-02) on a
 self-contained statement and ported here; the original is preserved verbatim in
 `aristotle-solution-components-commute.lean`. The surprise: the repository's earlier
-assumption that this needed `IsSubnormal.sup` was too pessimistic — the dichotomy is
+assumption that this needed the full Wielandt join (carried as an `IsSubnormal.sup`
+axiom, since removed from `Wielandt.lean`) was too pessimistic — the dichotomy is
 axiom-free.
 -/
 

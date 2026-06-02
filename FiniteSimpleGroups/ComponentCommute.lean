@@ -15,7 +15,7 @@ feed Bender's cornerstone (`genFittingSubgroup_self_centralizing`):
 Both are now **theorems** — and the cluster is **fully axiom-free** (no Wielandt join).
 They route through the component-vs-subnormal *dichotomy* `IsComponent.subnormal_dichotomy`
 (Aschbacher 31.4: a component `L` and a subnormal `H` satisfy `L ≤ H ∨ ⁅L, H⁆ = ⊥`),
-proved without `IsSubnormal.sup` in `AschbacherDichotomy.lean` (a *forward* induction along
+proved without the Wielandt join in `AschbacherDichotomy.lean` (a *forward* induction along
 `H`'s subnormal chain replaces the classical normal-closure argument — found by Aristotle,
 ported there; see `ARISTOTLE-JOB-components-commute.md`). `commute_of_ne` excludes the
 `L ≤ M` branch via `eq_of_le`; `layer_commutator_fittingSubgroup_eq_bot` excludes it via

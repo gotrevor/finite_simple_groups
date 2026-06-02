@@ -4,30 +4,30 @@ import FiniteSimpleGroups.Subnormal
 # Wielandt's join theorem — warm-up: `IsSubnormal.sup_normal`
 
 The **join theorem of Wielandt** states that the join of two subnormal subgroups
-of a *finite* group is again subnormal. This file establishes:
-
-* the **warm-up** `IsSubnormal.sup_normal` (proved), which already powers the
-  layer `E(G)`:
+of a *finite* group is again subnormal. This file establishes the **warm-up**
+`IsSubnormal.sup_normal` (proved), the case where one of the two subgroups is
+actually normal:
 
   > If `H` is subnormal in `G` and `N ⊴ G`, then `H ⊔ N` is subnormal in `G`.
 
-* the **full join** `IsSubnormal.sup` (declared as an `axiom` over `[Finite G]`).
+## The full Wielandt join is not needed by this scaffold
 
-## Why the full join is an axiom — and why it needs `[Finite G]`
+Earlier sessions carried the **full join** — the join of two arbitrary subnormal
+subgroups is subnormal (over `[Finite G]`) — as an honest `axiom`, on the belief
+that the Aschbacher 31.4 component-commuting dichotomy required it. That belief
+turned out to be **too pessimistic**: Aristotle found a proof of the dichotomy
+(`AschbacherDichotomy.lean`) that uses only a *forward* induction along `H`'s
+subnormal chain (`centralizing_by_subnormal`) and never the full join. With the
+dichotomy discharged join-free, nothing in the tree consumed the full-join axiom,
+so it was removed (2026-06-02) rather than left as dead proof debt.
 
-Unlike the warm-up, the full join is **false for arbitrary groups**: there exist
-(necessarily infinite) groups with two subnormal subgroups whose join is *not*
-subnormal. Wielandt's theorem holds under the maximal condition on subgroups, in
-particular for finite groups, and its proof is a genuine chunk of local group
-theory (a three-subgroups / repeated-commutator argument; mathlib has no `sup`
-lemma for its own `Subgroup.IsSubnormal`, only `inf`). Following the repository
-convention for deep results beyond the current scaffold (cf. Bender's
-`genFittingSubgroup_self_centralizing`, and the `Classification.CFSG` /
-`ProofStrategy` milestones), it is recorded as an honest `axiom` under `[Finite G]`
-rather than a `sorry`. Reference: H. Wielandt, *Eine Verallgemeinerung der
-invarianten Untergruppen*, Math. Z. **45** (1939); textbook treatment in Isaacs,
-*Finite Group Theory*, Thm 2.13, or Robinson, *A Course in the Theory of Groups*,
-13.1.4.
+For the record, the full join is **false for arbitrary groups** (there exist
+infinite groups with two subnormal subgroups whose join is not subnormal); it
+holds under the maximal condition, in particular for finite groups, by a genuine
+three-subgroups / repeated-commutator argument. Reference: H. Wielandt, *Eine
+Verallgemeinerung der invarianten Untergruppen*, Math. Z. **45** (1939); Isaacs,
+*Finite Group Theory*, Thm 2.13; Robinson, *A Course in the Theory of Groups*,
+13.1.4. The warm-up below is the slice the scaffold actually uses.
 
 The proof lifts a subnormal chain `H = H₀ ⊴ H₁ ⊴ ⋯ ⊴ Hₙ = G` to the chain
 `H ⊔ N ⊴ H₁ ⊔ N ⊴ ⋯ ⊴ G ⊔ N = G`. The single-step fact
@@ -50,8 +50,6 @@ so it is written applicatively (`normalizer (↑H)`), not via dot notation.
 * `isNormalStep_sup_right` — the single-step lift `A ⊴ B ⟹ A ⊔ N ⊴ B ⊔ N`.
 * `IsSubnormal.sup_normal` — Wielandt warm-up:
   `IsSubnormal H ⊤ ⟹ IsSubnormal (H ⊔ N) ⊤`.
-* `IsSubnormal.sup` — Wielandt's full join theorem (`axiom`, `[Finite G]`):
-  `IsSubnormal H ⊤ → IsSubnormal K ⊤ → IsSubnormal (H ⊔ K) ⊤`.
 -/
 
 namespace FiniteSimpleGroups
@@ -83,19 +81,5 @@ theorem IsSubnormal.sup_normal {H N : Subgroup G} (hH : IsSubnormal H ⊤)
     Relation.ReflTransGen.lift (· ⊔ N)
       (fun _ _ hab => isNormalStep_sup_right hab hN) hH
   rwa [top_sup_eq] at key
-
-/-- **Wielandt's join theorem.** In a *finite* group, the join of two subnormal
-subgroups is again subnormal.
-
-This is **false without a finiteness/maximal-condition hypothesis** (there are
-infinite groups where the join of two subnormals is not subnormal), and mathlib
-provides no `sup` lemma for its own `Subgroup.IsSubnormal` (only `inf`). Its proof
-is a real piece of local group theory beyond the present scaffold, so — following
-the repository convention for such results (cf.
-`genFittingSubgroup_self_centralizing`) — it is recorded as an honest `axiom`
-under `[Finite G]` rather than a `sorry`. See the module docstring for references
-(Wielandt 1939; Isaacs, *Finite Group Theory* 2.13). -/
-axiom IsSubnormal.sup {G : Type*} [Group G] [Finite G] {H K : Subgroup G}
-    (hH : IsSubnormal H ⊤) (hK : IsSubnormal K ⊤) : IsSubnormal (H ⊔ K) ⊤
 
 end FiniteSimpleGroups

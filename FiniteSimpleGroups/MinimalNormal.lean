@@ -1,4 +1,4 @@
-import FiniteSimpleGroups.LayerNormal
+import FiniteSimpleGroups.GeneralizedFitting
 
 /-!
 # Minimal normal subgroups and the layer-structure step of Bender's soluble kernel
@@ -74,5 +74,51 @@ theorem exists_isMinimalNormal [Finite G] [Nontrivial G] :
   obtain ⟨M, hMP, hmin⟩ := exists_minimal_of_wellFoundedLT
     (fun N : Subgroup G => N.Normal ∧ N ≠ ⊥) ⟨⊤, inferInstance, top_ne_bot⟩
   exact ⟨M, hMP.1, hMP.2, fun N hNnorm hNbot hNle => le_antisymm hNle (hmin ⟨hNnorm, hNbot⟩ hNle)⟩
+
+/-- **A characteristically simple non-abelian finite group has a non-abelian minimal normal
+subgroup.** Phrased for `↥M` with `M` a minimal normal subgroup of `G` (so `↥M` is
+characteristically simple). Such an `↥M` is *perfect* (the commutator subgroup is
+characteristic, and `⊥` would make it abelian), hence its Fitting subgroup is trivial (`F = ⊤`
+would make `↥M` nilpotent, so solvable, contradicting perfect + nontrivial). An abelian minimal
+normal subgroup would be normal nilpotent, hence `≤ F = ⊥` — impossible. So the minimal normal
+subgroup furnished by `exists_isMinimalNormal` is non-abelian. -/
+theorem IsMinimalNormal.exists_nonabelian_sub {M : Subgroup G} [Finite G]
+    (hM : IsMinimalNormal M) (hna : Subgroup.center (M : Type _) ≠ ⊤) :
+    ∃ K : Subgroup (M : Type _), IsMinimalNormal K ∧ Subgroup.center (K : Type _) ≠ ⊤ := by
+  haveI : Nontrivial (M : Type _) := by
+    by_contra h
+    rw [not_nontrivial_iff_subsingleton] at h
+    exact hna (eq_top_iff.mpr fun x _ =>
+      Subgroup.mem_center_iff.mpr fun g => Subsingleton.elim _ _)
+  -- commutator `= ⊥` would make `↥M` abelian; rule it out via `hna`.
+  have hbot_imp : commutator (M : Type _) = ⊥ → False := by
+    intro h
+    refine hna (eq_top_iff.mpr fun x _ => Subgroup.mem_center_iff.mpr fun g => ?_)
+    have hle := Subgroup.commutator_eq_bot_iff_le_centralizer.mp h
+    exact Subgroup.mem_centralizer_iff.mp (hle (Subgroup.mem_top x)) g (Subgroup.mem_top g)
+  -- `↥M` is perfect.
+  have hperf : Group.IsPerfect (M : Type _) := by
+    rw [Group.isPerfect_def]
+    rcases hM.eq_bot_or_eq_top_of_characteristic (C := commutator (M : Type _)) inferInstance
+      with h | h
+    · exact absurd h hbot_imp
+    · exact h
+  haveI := hperf
+  -- The Fitting subgroup of `↥M` is trivial.
+  have hF : fittingSubgroup (M : Type _) = ⊥ := by
+    rcases hM.eq_bot_or_eq_top_of_characteristic (fittingSubgroup_characteristic (M : Type _))
+      with h | h
+    · exact h
+    · haveI : Group.IsNilpotent (M : Type _) :=
+        (fittingSubgroup_eq_top_iff_isNilpotent (M : Type _)).mp h
+      exact absurd IsNilpotent.to_isSolvable (Group.IsPerfect.not_isSolvable (M : Type _))
+  -- A minimal normal subgroup of `↥M`; it must be non-abelian.
+  obtain ⟨K, hK⟩ := exists_isMinimalNormal (G := (M : Type _))
+  refine ⟨K, hK, fun hKab => ?_⟩
+  haveI := hK.1
+  have hKnil : Group.IsNilpotent (K : Type _) :=
+    ⟨1, (upperCentralSeries_one (K : Type _)).trans hKab⟩
+  exact hK.2.1 (le_bot_iff.mp
+    (hF ▸ normal_nilpotent_le_fittingSubgroup K hK.1 hKnil))
 
 end FiniteSimpleGroups

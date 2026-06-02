@@ -88,22 +88,38 @@ theorem genFittingSubgroup_eq_fittingSubgroup_of_layer_eq_bot
     (h : layer G = ⊥) : genFittingSubgroup G = fittingSubgroup G := by
   rw [genFittingSubgroup, h, bot_sup_eq]
 
-/-- **Bender's cornerstone — the central base case (the irreducible kernel).** If
-the generalized Fitting subgroup is *central* — its centralizer is everything,
-`C_G(F*(G)) = ⊤`, equivalently `F*(G) ≤ Z(G)` — then `F*(G)` is the whole group.
+/-- **The soluble base case of Bender's cornerstone (the irreducible kernel).** A
+finite group with *no components* (`E(G) = 1`) whose Fitting subgroup is *central*
+(`F(G) ≤ Z(G)`) equals its Fitting subgroup: `F(G) = ⊤`. Equivalently it is the
+soluble-type statement `C_G(F(G)) ≤ F(G)` restricted to the central, component-free
+case — a finite group with no components and central `F(G)` is nilpotent.
 
-This is the one genuinely hard step of Bender's theorem that the order-induction
-below cannot remove: it is the assertion that a finite group whose generalized
-Fitting subgroup is central must equal that subgroup (in particular be nilpotent).
-Concretely `F*(G) ≤ Z(G)` forces `E(G) = 1` and `F(G) = Z(G)`, and the content is
-that no *non-nilpotent* group can have its `F*` central — the generalized-Fitting
-form of `C_G(F(G)) ≤ F(G)`. Recorded as an honest `axiom` (Aschbacher, *Finite Group
-Theory* 31.13; Kurzweil-Stellmacher 6.5.8), strictly sharper than the full
-self-centralizing statement, which is now *derived* from it
-(`genFittingSubgroup_self_centralizing`) by induction on `|G|`. -/
-axiom genFittingSubgroup_eq_top_of_centralizer_eq_top (G : Type*) [Group G] [Finite G]
+This is the one genuinely hard step the order-induction below cannot remove. It
+*needs* `E(G) = 1`: without it `A₅` is a counterexample (`F(A₅) = 1 ≤ Z`, yet
+`F(A₅) ≠ ⊤`) — `A₅` is excluded precisely because it is its own component. Recorded
+as an honest `axiom` (Aschbacher, *Finite Group Theory* 31.13; Kurzweil-Stellmacher
+6.5.8), strictly sharper than the full self-centralizing statement, which is now
+*derived* from it (`genFittingSubgroup_self_centralizing`) by induction on `|G|`. -/
+axiom fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center (G : Type*) [Group G] [Finite G]
+    (hE : layer G = ⊥) (hF : fittingSubgroup G ≤ Subgroup.center G) :
+    fittingSubgroup G = ⊤
+
+/-- **Bender's central base case.** If `F*(G)` is central (`C_G(F*(G)) = ⊤`, i.e.
+`F*(G) ≤ Z(G)`) then `F*(G) = ⊤`. A central `F*` makes the layer central, so it
+vanishes (`layer_eq_bot_of_le_center`); what remains is the soluble kernel
+(`fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center`), giving `F(G) = ⊤` and hence
+`F*(G) = E(G) ⊔ F(G) = ⊥ ⊔ ⊤ = ⊤`. -/
+theorem genFittingSubgroup_eq_top_of_centralizer_eq_top (G : Type*) [Group G] [Finite G]
     (h : Subgroup.centralizer (genFittingSubgroup G : Set G) = ⊤) :
-    genFittingSubgroup G = ⊤
+    genFittingSubgroup G = ⊤ := by
+  have hcentral : genFittingSubgroup G ≤ Subgroup.center G :=
+    SetLike.coe_subset_coe.mp (Subgroup.centralizer_eq_top_iff_subset.mp h)
+  have hE : layer G = ⊥ :=
+    layer_eq_bot_of_le_center (layer_le_genFittingSubgroup.trans hcentral)
+  have hF : fittingSubgroup G = ⊤ :=
+    fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center G hE
+      (fittingSubgroup_le_genFittingSubgroup.trans hcentral)
+  rw [genFittingSubgroup, hE, hF, bot_sup_eq]
 
 /-- Order-bounded form of Bender's cornerstone, proved by strong induction on `|G|`.
 The induction step: let `C = C_G(F*(G))` (normal in `G`). If `C = ⊤` the central

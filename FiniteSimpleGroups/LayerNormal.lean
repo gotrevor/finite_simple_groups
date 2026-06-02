@@ -184,4 +184,26 @@ theorem layer_map_subtype_le [N.Normal] : (layer N).map N.subtype ≤ layer G :=
   rw [layer_eq_sSup, (Subgroup.gc_map_comap N.subtype).l_sSup]
   exact iSup₂_le fun K hK => (isComponent_map_subtype hK).le_layer
 
+/-- **A central layer is trivial.** If `E(G) ≤ Z(G)` then `E(G) = ⊥`: any component
+`K` would then lie in the center, making `↥K` abelian, which contradicts
+quasisimplicity — `↥K` is perfect (`⁅⊤,⊤⁆ = ⊤`) and nontrivial, but an abelian group
+has `⁅⊤,⊤⁆ = ⊥`. Used to purge the layer from the central base case of Bender's
+cornerstone: once `F*(G)` is central, `E(G)` vanishes and only `F(G)` remains. -/
+theorem layer_eq_bot_of_le_center (h : layer G ≤ Subgroup.center G) : layer G = ⊥ := by
+  refine layer_eq_bot_of_no_components (fun K hK => ?_)
+  haveI := hK.isQuasisimple
+  haveI := IsQuasisimple.nontrivial (K : Type _)
+  have hKc : (K : Set G) ⊆ Subgroup.center G := fun x hx => h (hK.le_layer hx)
+  have habelian :
+      (⊤ : Subgroup (K : Type _)) ≤ Subgroup.centralizer (↑(⊤ : Subgroup (K : Type _))) := by
+    intro a _
+    rw [Subgroup.mem_centralizer_iff]
+    intro b _
+    exact Subtype.ext (by simpa using Subgroup.mem_center_iff.mp (hKc a.2) (b : G))
+  have hbot : (⊤ : Subgroup (K : Type _)) = ⊥ := by
+    have hcomm : commutator (K : Type _) = ⊥ :=
+      Subgroup.commutator_eq_bot_iff_le_centralizer.mpr habelian
+    rwa [IsQuasisimple.commutator_eq_top (K : Type _)] at hcomm
+  exact absurd hbot top_ne_bot
+
 end FiniteSimpleGroups

@@ -16,6 +16,8 @@ is a quasisimple — hence a component — of `G`.
 
 namespace FiniteSimpleGroups
 
+open scoped commutatorElement
+
 /-- **Grün's lemma.** For a perfect group `K` (`⁅K,K⁆ = ⊤`), the centre of `K/Z(K)` is
 trivial: the second centre coincides with the first.
 
@@ -71,5 +73,42 @@ theorem center_quotient_center_eq_bot_of_perfect (K : Type*) [Group K]
   have hgZ : g ∈ Z := hWZ (show g ∈ W from Subgroup.mem_comap.mpr hq)
   rw [Subgroup.mem_bot, ← MonoidHom.mem_ker, QuotientGroup.ker_mk']
   exact hgZ
+
+/-- Central factors drop out of a commutator: `⁅k·c, k'·c'⁆ = ⁅k, k'⁆` when `c, c'` are
+central. -/
+theorem commutatorElement_mul_central {H : Type*} [Group H] (k k' c c' : H)
+    (hc : c ∈ Subgroup.center H) (hc' : c' ∈ Subgroup.center H) :
+    ⁅k * c, k' * c'⁆ = ⁅k, k'⁆ := by
+  have hcl : ∀ x y z : H, z ∈ Subgroup.center H → ⁅x * z, y⁆ = ⁅x, y⁆ := by
+    intro x y z hz
+    have hcomm : z * y = y * z := (Subgroup.mem_center_iff.mp hz y).symm
+    have hzy : z * y * z⁻¹ = y := by rw [hcomm]; group
+    rw [commutatorElement_def, commutatorElement_def, mul_inv_rev]
+    calc x * z * y * (z⁻¹ * x⁻¹) * y⁻¹
+        = x * (z * y * z⁻¹) * x⁻¹ * y⁻¹ := by group
+      _ = x * y * x⁻¹ * y⁻¹ := by rw [hzy]
+  have hcr : ∀ x y z : H, z ∈ Subgroup.center H → ⁅x, y * z⁆ = ⁅x, y⁆ := by
+    intro x y z hz
+    have hcomm : z * x⁻¹ = x⁻¹ * z := (Subgroup.mem_center_iff.mp hz x⁻¹).symm
+    rw [commutatorElement_def, commutatorElement_def, mul_inv_rev]
+    calc x * (y * z) * x⁻¹ * (z⁻¹ * y⁻¹)
+        = x * y * (z * x⁻¹) * z⁻¹ * y⁻¹ := by group
+      _ = x * y * (x⁻¹ * z) * z⁻¹ * y⁻¹ := by rw [hcomm]
+      _ = x * y * x⁻¹ * y⁻¹ := by group
+  rw [hcl k (k' * c') c hc, hcr k k' c' hc']
+
+/-- For a central subgroup `C ≤ Z(H)`, the commutator of `K ⊔ C` collapses to that of `K`:
+`⁅K ⊔ C, K ⊔ C⁆ = ⁅K, K⁆`. -/
+theorem commutator_sup_central_eq {H : Type*} [Group H] (K C : Subgroup H) [C.Normal]
+    (hC : C ≤ Subgroup.center H) :
+    ⁅K ⊔ C, K ⊔ C⁆ = ⁅K, K⁆ := by
+  refine le_antisymm ?_ (Subgroup.commutator_mono le_sup_left le_sup_left)
+  rw [Subgroup.commutator_le]
+  intro a ha b hb
+  rw [← SetLike.mem_coe, Subgroup.mul_normal] at ha hb
+  obtain ⟨k, hk, c, hc, rfl⟩ := ha
+  obtain ⟨k', hk', c', hc', rfl⟩ := hb
+  rw [commutatorElement_mul_central k k' c c' (hC hc) (hC hc')]
+  exact Subgroup.commutator_mem_commutator hk hk'
 
 end FiniteSimpleGroups

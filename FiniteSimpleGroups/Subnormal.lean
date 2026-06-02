@@ -127,4 +127,14 @@ theorem IsSubnormal.comap_top {G G' : Type*} [Group G] [Group G'] (f : G →* G'
   have := h.comap f
   rwa [Subgroup.comap_top] at this
 
+/-- **A characteristic subgroup of a subnormal subgroup is subnormal.** If `K ≤ L`,
+`K.subgroupOf L` is characteristic in `↥L` (e.g. `K` is the derived subgroup of `L`), and
+`L` is subnormal in `M`, then `K` is subnormal in `M`. Characteristic ⟹ normal gives one
+step `K ◁ L`; transitivity along the chain `L ◁ ⋯ ◁ M` finishes. -/
+theorem IsSubnormal.of_characteristic_subgroupOf {K L M : Subgroup G} (hKL : K ≤ L)
+    (hchar : (K.subgroupOf L).Characteristic) (hLM : IsSubnormal L M) :
+    IsSubnormal K M := by
+  haveI := hchar
+  exact ((isNormalStep_of_normal hKL inferInstance).isSubnormal).trans hLM
+
 end FiniteSimpleGroups

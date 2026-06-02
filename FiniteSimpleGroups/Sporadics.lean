@@ -284,6 +284,21 @@ complete fingerprint among the sporadics, and the `Nat.card = order` pin in
 collision typo in the table above, though not a wrong-but-still-unique value.) -/
 theorem order_injective : Function.Injective Name.order := by decide
 
+/-! ### Internal consistency cross-checks (machine-verified)
+
+The **Mathieu multiple-transitivity stabilizer relations.** `M₁₂`, `M₂₄` act
+sharply 5-transitively and `M₁₁`, `M₂₃` 4-transitively on 12 / 24 / 11 / 23
+points; in each transitive chain the smaller group is a one-point stabilizer of
+the larger, so its index is the number of points: `|M₁₂| = 12·|M₁₁|`,
+`|M₂₄| = 24·|M₂₃|`, `|M₂₃| = 23·|M₂₂|`. These are `decide`-checked against the
+`Name.order` table — an *independent* cross-check (rooted in the defining
+transitivity, not in the listed values) that catches a typo in any one of the
+five Mathieu orders, which `order_injective` alone would miss if it kept the
+values distinct. (The other 21 sporadics have no such elementary index relation.) -/
+theorem order_M12_eq_12_mul_M11 : Name.order .M12 = 12 * Name.order .M11 := by decide
+theorem order_M23_eq_23_mul_M22 : Name.order .M23 = 23 * Name.order .M22 := by decide
+theorem order_M24_eq_24_mul_M23 : Name.order .M24 = 24 * Name.order .M23 := by decide
+
 /-- Lookup the underlying opaque carrier type for a sporadic group by name.
 
 Used by `Classification.IsClassified.sporadic` to quantify over sporadics

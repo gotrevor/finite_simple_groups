@@ -12,20 +12,24 @@ feed Bender's cornerstone (`genFittingSubgroup_self_centralizing`):
 * **the layer centralizes the Fitting subgroup** (`layer_commutator_fittingSubgroup_eq_bot`,
   Kurzweil-Stellmacher 6.5.2): `[E(G), F(G)] = 1`.
 
-`commute_of_ne` is now a **theorem**, discharged onto the sharper axiom
-`IsComponent.normalizes_of_ne` ("distinct components normalize one another"). That
-axiom isolates the *one* fact still needing the Wielandt subnormal-join / normal-closure
-theory (the classical proof runs through `⟨L^M⟩`); the commutator collapse on top of it —
-three-subgroups lemma, perfectness `⁅L, L⁆ = L`, and the proven
-`IsComponent.inf_le_center_of_ne` — is fully proven here. `layer_commutator_fittingSubgroup_eq_bot`
-remains an axiom pending the same join theory. See `Wielandt.lean` for the discharge
-effort; both follow the repository's honest-dependency convention (cf.
+`commute_of_ne` is now a **theorem**, routed through the component-vs-subnormal
+*dichotomy* `IsComponent.subnormal_dichotomy` (Aschbacher 31.4: a component `L` and a
+subnormal `H` satisfy `L ≤ H ∨ ⁅L, H⁆ = ⊥`). That dichotomy is itself a **theorem** —
+an induction on the subnormal length of `H` — onto the single remaining axiom
+`aschbacher_base`, the *normal* base case (`H ⊴ K`). So the deep debt is now just the
+base case; the subnormal-length lift is machine-checked. `aschbacher_base` still needs
+the Wielandt join / normal-closure `⟨L^H⟩` theory (as does `IsSubnormal.sup`), and is the
+precise minimal target for a future discharge (an Aristotle job on the full commute
+statement is in flight — see `ARISTOTLE-JOB-components-commute.md`).
+`layer_commutator_fittingSubgroup_eq_bot` remains an axiom pending the same join theory.
+Both follow the repository's honest-dependency convention (cf.
 `genFittingSubgroup_self_centralizing`, `Classification.CFSG`).
 
 ## Main results
 
-* `IsComponent.normalizes_of_ne` (axiom — the irreducible core) ⟹
-  `IsComponent.commute_of_ne` (**theorem**) + `IsComponent.le_centralizer_of_ne`.
+* `aschbacher_base` (axiom — normal base case) ⟹ `IsComponent.subnormal_dichotomy`
+  (**theorem**, the induction) ⟹ `IsComponent.commute_of_ne` (**theorem**) +
+  `IsComponent.le_centralizer_of_ne`.
 * `layer_commutator_fittingSubgroup_eq_bot` (axiom) + `layer_le_centralizer_fittingSubgroup`.
 -/
 
@@ -35,61 +39,52 @@ variable {G : Type*} [Group G]
 
 open Subgroup
 
-/-- **Distinct components normalize one another** — the irreducible core of
-"distinct components commute" (Aschbacher, *Finite Group Theory* 31.4).
+/-- **Aschbacher 31.4, base case** (`H` *normal* in `K`): for a subnormal
+quasisimple `L ≤ K` and a normal subgroup `H ⊴ K`, either `L ≤ H` or `⁅L, H⁆ = ⊥`.
 
-This is the single fact `commute_of_ne` now rests on, and the *only* piece that
-needs the Wielandt subnormal-join / normal-closure theory (the classical proof
-runs through the normal closure `⟨L^M⟩`). Everything downstream of it — the
-commutator collapse `⁅L, M⁆ = ⊥` — is a *theorem* below.
+This is the irreducible deep core. The classical proof runs `H ∩ L ⊴ L`, the
+quasisimple dichotomy (a normal subgroup of `↥L` is central or all of it), and the
+Wielandt subnormal-join / normal-closure `⟨L^H⟩` to force `⁅L, H⁆ = 1` in the
+central case — so it needs the same join theory as `IsSubnormal.sup`. Recorded as an
+honest `axiom` pending that (see `Wielandt.lean`).
 
-`axiom` pending that join theory (see `Wielandt.lean`). Sharper than the previous
-`commute_of_ne` axiom: an `exact?` over the existing subnormal machinery cannot
-close it, confirming it is genuinely the missing input rather than a packaging
-gap. -/
-axiom IsComponent.normalizes_of_ne [Finite G] {L M : Subgroup G}
-    (hL : IsComponent L) (hM : IsComponent M) (hne : L ≠ M) : M ≤ normalizer L
+It is *sharper* than the previous `normalizes_of_ne` axiom: the **subnormal-length
+induction** that lifts it to arbitrary subnormal `H` is proven below
+(`IsComponent.subnormal_dichotomy`), so only the normal base case remains axiomatic —
+the precise, minimal target for a future discharge. -/
+axiom aschbacher_base {K L H : Subgroup G} (hLsub : IsSubnormal L K)
+    [IsQuasisimple L] (hstep : IsNormalStep H K) : L ≤ H ∨ ⁅L, H⁆ = ⊥
+
+/-- **Aschbacher 31.4** (component-vs-subnormal dichotomy): for a component `L` and a
+*subnormal* subgroup `H`, either `L ≤ H` or `⁅L, H⁆ = ⊥`.
+
+**Theorem** — the induction on the subnormal length of `H` (peeling each normal step
+off the top via `head_induction_on`) onto the normal base case `aschbacher_base`. The
+`L ≤ Hᵢ` branch recurses into the smaller group via `IsSubnormal.inf_right`; the
+`⁅L, Hᵢ⁆ = ⊥` branch propagates downward by `commutator_mono`. -/
+theorem IsComponent.subnormal_dichotomy {L H : Subgroup G} (hL : IsComponent L)
+    (hH : IsSubnormal H ⊤) : L ≤ H ∨ ⁅L, H⁆ = ⊥ := by
+  haveI := hL.isQuasisimple
+  induction hH using Relation.ReflTransGen.head_induction_on with
+  | refl => exact Or.inl le_top
+  | @head a c h' _ ih =>
+    rcases ih with hLc | hcomm
+    · have hLsubc : IsSubnormal L c := by
+        have hx := hL.isSubnormal.inf_right c
+        rwa [top_inf_eq, inf_eq_left.mpr hLc] at hx
+      exact aschbacher_base hLsubc h'
+    · exact Or.inr (le_bot_iff.mp ((commutator_mono le_rfl h'.le).trans_eq hcomm))
 
 /-- **Distinct components commute** (Aschbacher, *Finite Group Theory* 31.4).
 
-**Theorem** (discharged from axiom): from `normalizes_of_ne` (applied both ways) we
-get `⁅L, M⁆ ≤ M ⊓ L`; the proven `inf_le_center_of_ne` puts `M ⊓ L` in `C_G(L)`, so
-`⁅⁅L, M⁆, L⁆ = 1`; the three-subgroups lemma plus the perfectness `⁅L, L⁆ = L` of the
-quasisimple component then force `⁅L, M⁆ = 1`. -/
+**Theorem.** A second component `M` is subnormal, so `subnormal_dichotomy` gives
+`L ≤ M` or `⁅L, M⁆ = ⊥`. The first is impossible (`eq_of_le` would force `L = M`),
+leaving `⁅L, M⁆ = ⊥`. -/
 theorem IsComponent.commute_of_ne [Finite G] {L M : Subgroup G}
     (hL : IsComponent L) (hM : IsComponent M) (hne : L ≠ M) : ⁅L, M⁆ = ⊥ := by
-  haveI := hL.isQuasisimple
-  have hML : M ≤ normalizer L := hL.normalizes_of_ne hM hne
-  have hLM : L ≤ normalizer M := hM.normalizes_of_ne hL hne.symm
-  have hLcomm : ⁅M, L⁆ ≤ L := by
-    rw [commutator_le]; intro m hm l hl
-    rw [commutatorElement_def]
-    exact mul_mem ((mem_normalizer_iff.mp (hML hm) l).mp hl) (inv_mem hl)
-  have hMcomm : ⁅L, M⁆ ≤ M := by
-    rw [commutator_le]; intro l hl m hm
-    rw [commutatorElement_def]
-    exact mul_mem ((mem_normalizer_iff.mp (hLM hl) m).mp hm) (inv_mem hm)
-  have hLM_le_L : ⁅L, M⁆ ≤ L := by rw [Subgroup.commutator_comm]; exact hLcomm
-  have h_inf : ⁅L, M⁆ ≤ M ⊓ L := le_inf hMcomm hLM_le_L
-  have hcent : (M ⊓ L : Subgroup G) ≤ centralizer (L : Set G) := by
-    intro x hx
-    have hxL : x ∈ L := (mem_inf.mp hx).2
-    have hc := hL.inf_le_center_of_ne hM hne (mem_subgroupOf.mpr hx :
-      (⟨x, hxL⟩ : L) ∈ (M ⊓ L).subgroupOf L)
-    rw [mem_centralizer_iff]
-    intro h hh
-    exact (by simpa using congrArg (Subtype.val) (mem_center_iff.mp hc ⟨h, hh⟩))
-  have hrot : ⁅⁅L, M⁆, L⁆ = ⊥ :=
-    commutator_eq_bot_iff_le_centralizer.mpr (h_inf.trans hcent)
-  have hperf : ⁅L, L⁆ = L := by
-    have h2 := congrArg (Subgroup.map L.subtype) (IsQuasisimple.commutator_eq_top (L : Type _))
-    simp only [commutator_def, Subgroup.map_commutator, ← MonoidHom.range_eq_map,
-      Subgroup.range_subtype] at h2
-    exact h2
-  have h3 : ⁅⁅L, L⁆, M⁆ = ⊥ :=
-    commutator_commutator_eq_bot_of_rotate hrot
-      (by rw [Subgroup.commutator_comm M L]; exact hrot)
-  rwa [hperf] at h3
+  rcases hL.subnormal_dichotomy hM.isSubnormal with hle | hcomm
+  · exact absurd (hL.eq_of_le hM hle) hne
+  · exact hcomm
 
 /-- Distinct components centralize one another — the centralizer reformulation of
 `IsComponent.commute_of_ne`. -/

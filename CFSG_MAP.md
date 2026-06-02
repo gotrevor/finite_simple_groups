@@ -38,7 +38,7 @@ Genuinely-unformalized elementary group theory we *did* prove:
   in `FeitThompson/BGsection1.lean` (they're proven *given* their bucket-B
   axioms), the component/layer centralizer reformulations.
 
-### 🟦 B — STAYS AN AXIOM (deep + formalized in Coq, or genuinely deep). 44 axioms.
+### 🟦 B — STAYS AN AXIOM (deep + formalized in Coq, or genuinely deep). ~43 axioms (45 total in tree).
 **Do not touch. Not targets.** These are honest dependency declarations for
 results that are either (i) formalized in MathComp/Coq (the entire §1
 Bender–Glauberman + Feit–Thompson line — re-porting is explicitly off the table)
@@ -58,10 +58,15 @@ or (ii) deep theory far beyond an elementary brick. Leave as `axiom`.
 - **Family simplicity** (deep): Lie type `PSL/PSU/PSp/POmega` (`LieType.lean`, 4);
   exceptional `G2/F4/E6/E7/E8/Suzuki/SmallRee/LargeRee/3D4/2E6` (`Exceptional.lean`, 10);
   sporadic `Co1/Co2/Co3` (`Sporadics.lean`, 3).
-- **Bender cornerstone + local theory**: `genFittingSubgroup_self_centralizing`
-  (`GeneralizedFitting.lean`) and the Wielandt full join `IsSubnormal.sup`
-  (`Wielandt.lean`). The **component-commuting cluster is now fully axiom-free** —
-  `ComponentCommute.lean` declares **no** axioms.
+- **Bender cornerstone — DISCHARGED TO A THEOREM 2026-06-02 (`4b58cea`).**
+  `genFittingSubgroup_self_centralizing` (`C_G(F*(G)) ≤ F*(G)`) is no longer an axiom:
+  proved by strong induction on `|G|` (`bender_aux`) on top of the axiom-free monotonicity
+  bricks `genFittingSubgroup_map_subtype_le` (= `F*(N) ≤ F*(G)` for `N ⊴ G`, built from
+  `fittingSubgroup_characteristic`/`fittingSubgroup_map_subtype_le` + `layer_map_subtype_le`).
+  The lone remaining axiom in its trail is the **sharp soluble kernel**
+  `fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center` (no components + central `F(G)` ⟹
+  `F(G) = ⊤`). The Wielandt full join `IsSubnormal.sup` axiom was **deleted** (`7d2dc13`) —
+  the join-free dichotomy made it dead. The **component-commuting cluster is fully axiom-free**.
   - **Component-commuting theory: AXIOM-FREE as of 2026-06-02 (`0009c90` →
     `19c57e2`).** The arc: started as the `commute_of_ne` axiom → sharpened to
     `normalizes_of_ne` → sharpened to the *normal base case* `aschbacher_base` (with

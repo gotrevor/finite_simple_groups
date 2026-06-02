@@ -1,4 +1,5 @@
-import FiniteSimpleGroups.GeneralizedFitting
+import FiniteSimpleGroups.LayerNormal
+import FiniteSimpleGroups.FittingSubgroup
 
 /-!
 # Minimal normal subgroups and the layer-structure step of Bender's soluble kernel

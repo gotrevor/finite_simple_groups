@@ -38,6 +38,8 @@ the definition and the normality.
 
 namespace FiniteSimpleGroups
 
+universe u
+
 variable {G : Type*} [Group G]
 
 /-- The **generalized Fitting subgroup** `F*(G) = E(G)·F(G)`, realized as the join
@@ -86,6 +88,74 @@ theorem genFittingSubgroup_eq_fittingSubgroup_of_layer_eq_bot
     (h : layer G = ⊥) : genFittingSubgroup G = fittingSubgroup G := by
   rw [genFittingSubgroup, h, bot_sup_eq]
 
+/-- **Bender's cornerstone — the central base case (the irreducible kernel).** If
+the generalized Fitting subgroup is *central* — its centralizer is everything,
+`C_G(F*(G)) = ⊤`, equivalently `F*(G) ≤ Z(G)` — then `F*(G)` is the whole group.
+
+This is the one genuinely hard step of Bender's theorem that the order-induction
+below cannot remove: it is the assertion that a finite group whose generalized
+Fitting subgroup is central must equal that subgroup (in particular be nilpotent).
+Concretely `F*(G) ≤ Z(G)` forces `E(G) = 1` and `F(G) = Z(G)`, and the content is
+that no *non-nilpotent* group can have its `F*` central — the generalized-Fitting
+form of `C_G(F(G)) ≤ F(G)`. Recorded as an honest `axiom` (Aschbacher, *Finite Group
+Theory* 31.13; Kurzweil-Stellmacher 6.5.8), strictly sharper than the full
+self-centralizing statement, which is now *derived* from it
+(`genFittingSubgroup_self_centralizing`) by induction on `|G|`. -/
+axiom genFittingSubgroup_eq_top_of_centralizer_eq_top (G : Type*) [Group G] [Finite G]
+    (h : Subgroup.centralizer (genFittingSubgroup G : Set G) = ⊤) :
+    genFittingSubgroup G = ⊤
+
+/-- Order-bounded form of Bender's cornerstone, proved by strong induction on `|G|`.
+The induction step: let `C = C_G(F*(G))` (normal in `G`). If `C = ⊤` the central
+base case (`genFittingSubgroup_eq_top_of_centralizer_eq_top`) finishes. Otherwise
+`|C| < |G|`, so the inductive hypothesis applies to `C`; since `C` centralizes
+`F*(G) ⊇ F*(C)` (`genFittingSubgroup_map_subtype_le`), every element of `C`
+centralizes `F*(C)`, i.e. `C_C(F*(C)) = ⊤`, whence `F*(C) = ⊤` by induction, and so
+`C = F*(C)·… ≤ F*(G)` by the same monotonicity. -/
+private theorem bender_aux : ∀ (n : ℕ) (G : Type u) [Group G] [Finite G],
+    Nat.card G ≤ n →
+    Subgroup.centralizer (genFittingSubgroup G : Set G) ≤ genFittingSubgroup G := by
+  intro n
+  induction n with
+  | zero =>
+    intro G _ _ hle
+    exact absurd (Nat.card_pos.trans_le hle) (by simp)
+  | succ m ih =>
+    intro G _ _ hle
+    haveI : (genFittingSubgroup G).Normal := genFittingSubgroup_normal G
+    by_cases hCtop : Subgroup.centralizer (genFittingSubgroup G : Set G) = ⊤
+    · rw [hCtop, top_le_iff]
+      exact genFittingSubgroup_eq_top_of_centralizer_eq_top G hCtop
+    · -- `C` is a proper normal subgroup, so `|C| < |G|`.
+      haveI hCnormal : (Subgroup.centralizer (genFittingSubgroup G : Set G)).Normal :=
+        inferInstance
+      set C := Subgroup.centralizer (genFittingSubgroup G : Set G) with hCdef
+      have hcardlt : Nat.card C < Nat.card G := by
+        refine lt_of_le_of_ne (Nat.card_le_card_of_injective _ C.subtype_injective) ?_
+        intro heq
+        exact hCtop (Subgroup.eq_top_of_card_eq C heq)
+      have hcardC : Nat.card C ≤ m := by omega
+      -- Inductive hypothesis on `↥C`, plus `C_C(F*(C)) = ⊤`.
+      have IHC := ih C hcardC
+      have hCC : Subgroup.centralizer (genFittingSubgroup C : Set C) = ⊤ := by
+        rw [eq_top_iff]
+        intro c _
+        rw [Subgroup.mem_centralizer_iff]
+        intro y hy
+        -- `y` lies in `F*(C)`, so `C.subtype y ∈ F*(G)`; `c ∈ C` centralizes `F*(G)`.
+        have hyG : C.subtype y ∈ genFittingSubgroup G :=
+          genFittingSubgroup_map_subtype_le (Subgroup.mem_map_of_mem _ hy)
+        have hcG : (C.subtype c : G) ∈ C := c.2
+        have hcomm : C.subtype y * C.subtype c = C.subtype c * C.subtype y :=
+          (Subgroup.mem_centralizer_iff.mp hcG) _ hyG
+        exact C.subtype_injective (by simpa [map_mul] using hcomm)
+      rw [hCC, top_le_iff] at IHC
+      -- `F*(C) = ⊤`, so `C ≤ F*(G)` by monotonicity.
+      intro x hx
+      have hxC : (⟨x, hx⟩ : C) ∈ genFittingSubgroup C := IHC ▸ Subgroup.mem_top _
+      have := genFittingSubgroup_map_subtype_le (N := C) (Subgroup.mem_map_of_mem _ hxC)
+      simpa using this
+
 /-- **Bender's theorem — the cornerstone of the theory of the generalized Fitting
 subgroup.** In any finite group, `F*(G)` is *self-centralizing*:
 `C_G(F*(G)) ≤ F*(G)`. Equivalently `C_G(F*(G)) = Z(F*(G))`
@@ -97,14 +167,15 @@ of `G` on `F*(G)` by conjugation is faithful modulo the center, so
 the generalized-Fitting analogue of the elementary fact `C_G(F(G)) ≤ F(G)` for
 *soluble* `G`, extended past solubility by the layer.
 
-Declared as an `axiom`: the proof (Aschbacher, *Finite Group Theory* 31.13; or
-Kurzweil-Stellmacher 6.5.8) rests on `[E(G), F(G)] = 1` and the central-product
-structure of `E(G)` — a chunk of local group theory well beyond this scaffold.
-Following the repository's convention (cf. `Classification.CFSG`, the
-`ProofStrategy` milestones), an honest dependency declaration rather than a
-`sorry`. -/
-axiom genFittingSubgroup_self_centralizing (G : Type*) [Group G] [Finite G] :
-    Subgroup.centralizer (genFittingSubgroup G : Set G) ≤ genFittingSubgroup G
+**Proved** here by strong induction on `|G|` (`bender_aux`), resting only on the
+central base case `genFittingSubgroup_eq_top_of_centralizer_eq_top` and the
+normal-subgroup monotonicity `genFittingSubgroup_map_subtype_le`. The induction
+marches the dependency down to the irreducible kernel: the bare assertion that a
+finite group with central `F*` equals its `F*`. (Aschbacher, *Finite Group Theory*
+31.13; Kurzweil-Stellmacher 6.5.8.) -/
+theorem genFittingSubgroup_self_centralizing (G : Type*) [Group G] [Finite G] :
+    Subgroup.centralizer (genFittingSubgroup G : Set G) ≤ genFittingSubgroup G :=
+  bender_aux (Nat.card G) G le_rfl
 
 /-- **`C_G(F*(G)) = Z(F*(G))`.** The centralizer of the generalized Fitting subgroup
 is exactly its center, realized in `G` as `F*(G) ⊓ C_G(F*(G))`. The `≥` inclusion is

@@ -231,4 +231,40 @@ theorem layer_ne_bot_of_isComponent {K : Subgroup G} (h : IsComponent K) : layer
   have hKbot : K = ⊥ := le_bot_iff.mp (hbot ▸ h.le_layer)
   exact (Subgroup.nontrivial_iff_ne_bot K).mp inferInstance hKbot
 
+/-- **Port glue for the layer-structure step.** If a normal subgroup `M ⊴ G` has, *as a
+group*, a normal subgroup `S` that is simple and non-abelian, then `layer G ≠ ⊥`. The image
+`S↪G` is subnormal (`S ◁ M ◁ G`, via `isSubnormal_map_subtype` and
+`(⊤ : Subgroup M).map M.subtype = M`) and quasisimple (an iso-image of a non-abelian simple
+group), hence a component. This consumes the characteristically-simple structure fact
+(a non-abelian minimal normal subgroup has such an `S`) to discharge the
+`layer = ⊥ ⟹ minimal normals abelian` step of Bender's soluble kernel. -/
+theorem layer_ne_bot_of_normal_simple_factor {M : Subgroup G} [Finite G] (hMnorm : M.Normal)
+    {S : Subgroup (M : Type _)} (hSnorm : S.Normal)
+    (hSsimple : IsSimpleGroup (S : Type _)) (hScenter : Subgroup.center (S : Type _) ≠ ⊤) :
+    layer G ≠ ⊥ := by
+  haveI := hMnorm
+  haveI := hSsimple
+  set e := Subgroup.equivMapOfInjective S M.subtype M.subtype_injective with he
+  -- `S.map M.subtype` is subnormal in `G`: `S ◁ M ◁ G`.
+  have hsn : IsSubnormal (S.map M.subtype) ⊤ := by
+    have htop : (⊤ : Subgroup (M : Type _)).map M.subtype = M := by
+      rw [← MonoidHom.range_eq_map, Subgroup.range_subtype]
+    have h1 := isSubnormal_map_subtype (N := M) (A := S) (B := ⊤) hSnorm.isSubnormal_top
+    rw [htop] at h1
+    exact h1.trans hMnorm.isSubnormal_top
+  -- `S.map M.subtype` is simple and non-abelian (transport along `e`).
+  haveI : IsSimpleGroup (↥(S.map M.subtype)) := MulEquiv.isSimpleGroup e.symm
+  have hcenter : Subgroup.center (↥(S.map M.subtype)) ≠ ⊤ := by
+    intro htop
+    refine hScenter ?_
+    -- `center = ⊤` makes `↥(S.map)` commutative; transport along `e` to `↥S`.
+    have hcomm_map : ∀ x y : ↥(S.map M.subtype), x * y = y * x :=
+      fun x y => (Subgroup.mem_center_iff.mp (htop ▸ Subgroup.mem_top x) y).symm
+    have hcomm : ∀ a b : (S : Type _), a * b = b * a :=
+      fun a b => e.injective (by rw [map_mul, map_mul]; exact hcomm_map (e a) (e b))
+    rw [Subgroup.eq_top_iff']
+    exact fun a => Subgroup.mem_center_iff.mpr fun b => hcomm b a
+  exact layer_ne_bot_of_isComponent
+    (isComponent_of_isSubnormal_of_isSimpleGroup hsn ‹_› hcenter)
+
 end FiniteSimpleGroups

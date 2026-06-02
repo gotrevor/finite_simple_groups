@@ -58,29 +58,27 @@ or (ii) deep theory far beyond an elementary brick. Leave as `axiom`.
 - **Family simplicity** (deep): Lie type `PSL/PSU/PSp/POmega` (`LieType.lean`, 4);
   exceptional `G2/F4/E6/E7/E8/Suzuki/SmallRee/LargeRee/3D4/2E6` (`Exceptional.lean`, 10);
   sporadic `Co1/Co2/Co3` (`Sporadics.lean`, 3).
-- **Bender cornerstone — A THEOREM on ONE sharp, TRUE soluble axiom, 2026-06-02 (`3d381ed`).**
-  `genFittingSubgroup_self_centralizing` (`C_G(F*(G)) ≤ F*(G)`) is no longer an axiom: proved by
-  strong induction on `|G|` (`bender_aux`) on the axiom-free monotonicity bricks
-  `genFittingSubgroup_map_subtype_le` (`F*(N) ≤ F*(G)`). Its central base case is reduced — also
-  axiom-free — via `layer_eq_bot_of_le_center` (a central layer vanishes), so the layer is `⊥`.
-  **The lone remaining axiom in Bender's trail is the soluble Fitting kernel**
-  `fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center` (`layer G = ⊥` + central `F(G)` ⟹
-  `F(G) = ⊤` — the classical `C_G(F(G)) ≤ F(G)` for the component-free case).
-  ⚠️ **SOUNDNESS NOTE (2026-06-02, `3d381ed`):** commit `8042ae5` had *weakened* this axiom's
+- **Bender cornerstone — FULLY AXIOM-FREE, 2026-06-02 (`890f1f4`).**
+  `genFittingSubgroup_self_centralizing` (`C_G(F*(G)) ≤ F*(G)`) is a machine-checked theorem:
+  `#print axioms` = `[propext, Classical.choice, Quot.sound]`, **no custom axioms**. Proved by
+  strong induction on `|G|` (`bender_aux`) on the monotonicity bricks
+  `genFittingSubgroup_map_subtype_le` (`F*(N) ≤ F*(G)`); central base case via
+  `layer_eq_bot_of_le_center` then the solvability machine below. The whole F*/Bender trail
+  (`GeneralizedFitting`, `LayerQuotient`, `PerfectCentralExtension`, `SolubleFittingKernel`,
+  `Subnormal`) has **zero axioms**.
+  ⚠️ **SOUNDNESS NOTE (2026-06-02):** commit `8042ae5` had *weakened* the kernel axiom's
   hypothesis from `layer G = ⊥` to "all minimal normals abelian", which is **false** —
   `SL(2,𝔽₅)` is a counterexample (its only minimal normal is the central `ℤ/2`, abelian, and
   `F(G)=Z(G)`, yet `F(G)≠⊤`; `SL(2,5)` is a component of itself so `layer≠⊥`). Aristotle job
-  `17c03da4` found this counterexample. Reverted to the **true** `layer G = ⊥` form. The matching
-  *solvable* statement (`[IsSolvable G] → F(G)≤Z(G) → F(G)=⊤`) is now a machine-checked **theorem**
-  (`fittingSubgroup_eq_top_of_isSolvable_of_le_center`, `SolubleFittingKernel.lean`, no axioms,
-  ported from Aristotle's proof). Also machine-checked: `fittingSubgroup_quotient_center_eq_bot`
-  (`F(G)≤Z(G) → F(G/Z(G))=⊥`), the solvability induction `isSolvable_aux`, and **Grün's lemma**
-  `center_quotient_center_eq_bot_of_perfect` (`Z(K/Z(K))=⊥` for perfect `K`, three subgroups lemma,
-  `PerfectCentralExtension.lean`). **The lone residual axiom is now `layer_quotient_center_eq_bot`**:
-  a central quotient of a component-free group is component-free. Discharge in progress — Grün +
-  subnormal-pullback bricks (`IsSubnormal.comap_top`, `IsSubnormal.of_characteristic_subgroupOf`)
-  built; only "perfect central extension of quasisimple is quasisimple" + a short assembly remain
-  (Aristotle `9f7b6b74`). The Wielandt full join `IsSubnormal.sup` axiom was **deleted** (`7d2dc13`).
+  `17c03da4` found this; fixed in `3d381ed`. The discharge chain, all machine-checked:
+  `fittingSubgroup_eq_top_of_isSolvable_of_le_center` (solvable Fitting kernel, ported from
+  Aristotle), `fittingSubgroup_quotient_center_eq_bot` (`F(G)≤Z(G) → F(G/Z(G))=⊥`), the
+  solvability induction `isSolvable_aux`, **Grün's lemma** `center_quotient_center_eq_bot_of_perfect`
+  (three subgroups lemma), `perfect_central_ext_quasisimple` (ported), the subnormal-pullback
+  bricks (`IsSubnormal.comap_top`, `IsSubnormal.of_characteristic_subgroupOf`), and the assembly
+  `layer_quotient_center_eq_bot` (a central quotient of a component-free group is
+  component-free).
+  The Wielandt full join `IsSubnormal.sup` axiom was **deleted** (`7d2dc13`).
   The **component-commuting cluster is fully axiom-free**. The in-repo layer-structure lemma
   `center_eq_top_of_isMinimalNormal_of_layer_eq_bot` (no components ⟹ minimal normals abelian,
   `MinimalNormal.lean`) is a true corollary but cannot *replace* the `layer=⊥` hypothesis.

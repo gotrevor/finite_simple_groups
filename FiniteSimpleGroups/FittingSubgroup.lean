@@ -298,6 +298,21 @@ applies directly. -/
 theorem fittingSubgroup_normal (G : Type*) [Group G] : (fittingSubgroup G).Normal :=
   sSup_normal_of_forall_normal (fun _ hK => hK.1)
 
+/-- **`F(G) = G` iff `G` is nilpotent.** A finite group is its own Fitting subgroup
+exactly when it is nilpotent: `(⇐)` a nilpotent `G` is a normal nilpotent subgroup of
+itself, so `⊤ ≤ F(G)`; `(⇒)` if `F(G) = ⊤` then `↥⊤ ≃* G` is nilpotent
+(`fittingSubgroup_isNilpotent`). The basic characterization of the Fitting subgroup,
+which mathlib lacks. -/
+theorem fittingSubgroup_eq_top_iff_isNilpotent (G : Type*) [Group G] [Finite G] :
+    fittingSubgroup G = ⊤ ↔ Group.IsNilpotent G := by
+  constructor
+  · intro h
+    haveI : Group.IsNilpotent (⊤ : Subgroup G) := h ▸ fittingSubgroup_isNilpotent G
+    exact nilpotent_of_mulEquiv Subgroup.topEquiv
+  · intro h
+    refine top_le_iff.mp (normal_nilpotent_le_fittingSubgroup ⊤ inferInstance ?_)
+    exact nilpotent_of_mulEquiv Subgroup.topEquiv.symm
+
 /-- The defining set of `F(G)` — normal nilpotent subgroups — is closed under the
 image of any automorphism: an iso carries a normal subgroup to a normal subgroup
 and a nilpotent subgroup to an isomorphic, hence nilpotent, subgroup. -/

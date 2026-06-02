@@ -85,6 +85,40 @@ Part of the scaffold, absent from mathlib, and provable with reasonable effort.
   over the mixed orders 12,18,20,24,28,30,36,40,42,44,45,48,50,52,54,56.
   **In progress: delegated to Aristotle (job `lt60`).**
 
+## Two debts, and the order-pin (definitional debt)
+
+The scaffold carries two distinct kinds of debt — keep them separate:
+- **Proof debt** — unproven implications. Paid by **bucket-B axioms**. Honest,
+  attributed, deep.
+- **Definitional debt** — `opaque` carriers (undefined objects: the 26 sporadics,
+  the un-constructed Lie-type/exceptional families). The carrier exists in name
+  only; nothing is asserted about its elements.
+
+The **order-pin** chips at *definitional* debt without de-opaquing. `IsClassified.
+sporadic` asserts `Nat.card carrier = order`, anchoring each opaque sporadic to its
+ATLAS order. **This is cheap and safe ONLY for opaque carriers**: a wrong order is
+merely *unfaithful* (the named object isn't the real group), never *contradictory*.
+
+⚠️ **Do NOT extend the order-pin to the Lie-type families.** `PSL`/`PSp` in
+`LieType.lean` are *real mathlib types*, so `Nat.card = order` asserts "my formula =
+the true cardinality" — a wrong formula **contradicts reality** and makes CFSG
+unprovable for genuine instances. The sporadic pin works precisely because it sits
+in the sweet spot (opaque carrier + high-confidence constant), not as a general
+pattern. (`PSU`/`POmega` are opaque, so a pin there would be *safe* but low-value —
+the constants are less certain than the sporadics'.)
+
+The ATLAS orders themselves are **documented guesses** (~85–95% confidence,
+reconstructed from memory, no web in the box). The honest discipline: factored form
++ confidence-tagged docstring + `RFI-ATLAS-sporadic-orders.md` requesting an external
+host/web cross-check. The internal consistency nets added on top — all `decide`-checked
+in `Sporadics.lean` — raise confidence without replacing the external check:
+- `order_injective` — the 26 orders are pairwise distinct (catches collision typos).
+- Mathieu transitivity: `|M₁₂|=12|M₁₁|`, `|M₂₃|=23|M₂₂|`, `|M₂₄|=24|M₂₃|`.
+- `happyFamily_order_dvd_monster` — all 20 Happy-Family orders divide `|M|` (tests
+  the Monster's largest/least-certain value against 20 independent orders).
+- `co1Subquotient_order_dvd_co1` — the 11 `Co₁` subquotients' orders divide `|Co₁|`
+  (tests the second-largest uncertain value). After this, marginal value drops.
+
 ## Where the novel value actually is
 
 Two places, and only two:

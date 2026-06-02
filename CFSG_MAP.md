@@ -60,19 +60,24 @@ or (ii) deep theory far beyond an elementary brick. Leave as `axiom`.
   sporadic `Co1/Co2/Co3` (`Sporadics.lean`, 3).
 - **Bender cornerstone + local theory**: `genFittingSubgroup_self_centralizing`
   (`GeneralizedFitting.lean`), the Wielandt full join `IsSubnormal.sup`
-  (`Wielandt.lean`), `IsComponent.normalizes_of_ne` +
+  (`Wielandt.lean`), `aschbacher_base` +
   `layer_commutator_fittingSubgroup_eq_bot` (`ComponentCommute.lean`, blocked on
   the Wielandt join).
-  - **`commute_of_ne` discharged to a theorem (2026-06-02, `0009c90`).** It now
-    rests on the *sharper* axiom `IsComponent.normalizes_of_ne` ("distinct
-    components normalize one another") — the irreducible core, the one fact that
-    still needs the join / normal-closure `⟨L^M⟩` theory. The commutator collapse
-    `⁅L,M⁆=⊥` on top of it is proven (three-subgroups + perfectness `⁅L,L⁆=L` +
-    the proven `inf_le_center_of_ne`). Empirically confirmed irreducible: `exact?`
-    over the existing subnormal machinery cannot close `normalizes_of_ne`. So #1
-    has *not* outgrown the keystone — `normalizes_of_ne` is the precise next target
-    the Wielandt join unblocks (and a candidate Aristotle hand-off as a bounded
-    classical lemma). Axiom count unchanged (one sharpened, not removed).
+  - **The component-commuting theory, refactored down to one base-case axiom
+    (2026-06-02, `0009c90` → `2acbf06`).** Chain, all machine-checked except the
+    leaf: `aschbacher_base` (axiom — Aschbacher 31.4 *normal* base case: `L`
+    subnormal-quasisimple in `K`, `H ⊴ K` ⟹ `L ≤ H ∨ ⁅L,H⁆=⊥`) → **proven**
+    `IsComponent.subnormal_dichotomy` (the induction on subnormal length lifting it
+    to arbitrary subnormal `H`) → **proven** `commute_of_ne` (3-line corollary,
+    excludes `L ≤ M` via `eq_of_le`). The earlier intermediate axiom
+    `normalizes_of_ne` was dropped; the three-subgroups + perfectness route is no
+    longer needed. Net: the deep debt is now the *minimal normal base case*, the
+    precise target a focused discharge hits. `aschbacher_base` needs the same join /
+    normal-closure `⟨L^H⟩` theory as `IsSubnormal.sup`. Axiom count unchanged
+    throughout (sharpened, not removed). **Aristotle job in flight** on the full
+    commute statement (`ARISTOTLE-JOB-components-commute.md`, project `adf60350`);
+    if it lands, `commute_of_ne` discharges fully and the local-theory cluster
+    collapses onto just `IsSubnormal.sup`.
 
 ### 🟥 C — PIN-LAG (already in mathlib, newer). Delete on bump. **NEVER build.**
 Formalized in mathlib past our v4.29.1 pin. Building our own proof = re-deriving

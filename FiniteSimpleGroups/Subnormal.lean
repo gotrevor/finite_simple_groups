@@ -99,4 +99,32 @@ theorem isSubnormal_top_top : IsSubnormal (⊤ : Subgroup G) ⊤ := IsSubnormal.
 theorem isSubnormal_bot_top : IsSubnormal (⊥ : Subgroup G) ⊤ :=
   (Subgroup.normal_bot).isSubnormal_top
 
+/-- **The preimage of a subnormal subgroup is subnormal.** For a group homomorphism
+`f : G →* G'`, if `B` is subnormal in `D` (in `G'`) then `comap f B` is subnormal in
+`comap f D` (in `G`). Each normal step of the chain `B ◁ ⋯ ◁ D` is carried through `comap`
+using `normal_subgroupOf_iff_le_normalizer` together with `le_normalizer_comap` (the
+preimage of the normalizer sits inside the normalizer of the preimage); this mirrors
+mathlib's `Subgroup.IsSubnormal.comap`. -/
+theorem IsSubnormal.comap {G G' : Type*} [Group G] [Group G'] (f : G →* G')
+    {B D : Subgroup G'} (h : IsSubnormal B D) :
+    IsSubnormal (B.comap f) (D.comap f) := by
+  induction h with
+  | refl => exact IsSubnormal.refl _
+  | tail _ hstep ih =>
+    refine ih.tail ⟨Subgroup.comap_mono hstep.1, ?_⟩
+    rw [Subgroup.normal_subgroupOf_iff_le_normalizer (Subgroup.comap_mono hstep.1)]
+    have hN := hstep.2
+    rw [Subgroup.normal_subgroupOf_iff_le_normalizer hstep.1] at hN
+    exact (Subgroup.comap_mono hN).trans (Subgroup.le_normalizer_comap f)
+
+/-- **The preimage of a subnormal-in-`⊤` subgroup is subnormal in `⊤`.** Specialization of
+`IsSubnormal.comap` with `D = ⊤` (`comap f ⊤ = ⊤`): if `B` is subnormal in `G'` then
+`comap f B` is subnormal in `G`. This is the form used to pull a component of a quotient
+back to the covering group. -/
+theorem IsSubnormal.comap_top {G G' : Type*} [Group G] [Group G'] (f : G →* G')
+    {B : Subgroup G'} (h : IsSubnormal B ⊤) :
+    IsSubnormal (B.comap f) ⊤ := by
+  have := h.comap f
+  rwa [Subgroup.comap_top] at this
+
 end FiniteSimpleGroups

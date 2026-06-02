@@ -206,4 +206,29 @@ theorem layer_eq_bot_of_le_center (h : layer G ≤ Subgroup.center G) : layer G 
     rwa [IsQuasisimple.commutator_eq_top (K : Type _)] at hcomm
   exact absurd hbot top_ne_bot
 
+/-! ### Components from simple subnormal subgroups (the consumer of the layer-structure lemma)
+
+A subnormal non-abelian simple subgroup is a component, so a group with one has a nontrivial
+layer. This is the in-repo glue that turns "`G` has a non-abelian simple subnormal subgroup"
+(what a non-abelian minimal normal subgroup yields, by the characteristically-simple structure
+theorem) into `layer G ≠ ⊥`, discharging the `layer = ⊥ ⟹ minimal normals abelian` step of
+Bender's soluble kernel. -/
+
+/-- **A subnormal non-abelian simple subgroup is a component.** Non-abelian simple ⟹ quasisimple
+(`isQuasisimple_of_isSimpleGroup`), and subnormality is the other half of `IsComponent`. -/
+theorem isComponent_of_isSubnormal_of_isSimpleGroup {S : Subgroup G}
+    (hsn : IsSubnormal S ⊤) (hsimple : IsSimpleGroup (S : Type _))
+    (hna : Subgroup.center (S : Type _) ≠ ⊤) : IsComponent S := by
+  haveI := hsimple
+  exact ⟨hsn, isQuasisimple_of_isSimpleGroup hna⟩
+
+/-- **A component forces a nontrivial layer.** A component is quasisimple, hence nontrivial
+(`IsQuasisimple.nontrivial`), so it is a nontrivial subgroup of `E(G)`. -/
+theorem layer_ne_bot_of_isComponent {K : Subgroup G} (h : IsComponent K) : layer G ≠ ⊥ := by
+  haveI := h.isQuasisimple
+  haveI := IsQuasisimple.nontrivial (K : Type _)
+  intro hbot
+  have hKbot : K = ⊥ := le_bot_iff.mp (hbot ▸ h.le_layer)
+  exact (Subgroup.nontrivial_iff_ne_bot K).mp inferInstance hKbot
+
 end FiniteSimpleGroups

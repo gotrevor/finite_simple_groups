@@ -5,13 +5,17 @@
 `genFittingSubgroup_self_centralizing` was discharged to a THEOREM this lap (commit `4b58cea`)
 resting on exactly one axiom, the soluble kernel below. This job attacks that kernel.
 
-## TWO jobs submitted (the kernel's two halves)
-- **(b) soluble climb** — project `17c03da4-8ea8-464b-bb37-b354239569bb` (`aristotle-bender`):
+## Status: (a) DONE in-repo, only (b) remains
+- **(a) layer-structure — ✅ PROVED IN-REPO** (`MinimalNormal.lean`,
+  `center_eq_top_of_isMinimalNormal_of_layer_eq_bot`, commits up to `8042ae5`). The Aristotle
+  job `be54b396` was therefore **cancelled** (redundant).
+- **(b) soluble climb — still the one remaining axiom**, at Aristotle project
+  `17c03da4-8ea8-464b-bb37-b354239569bb` (`aristotle-bender`):
   `soluble_fitting_kernel` (all min normals abelian + central F(G) ⟹ F(G)=⊤). File
-  `/tmp/aristotle-bender/Target.lean`.
-- **(a) layer-structure** — project `be54b396-d794-4d46-8f5a-5ad9a00d2e0b` (`aristotle-minnormal`):
-  `nonabelian_minNormal_has_simple_normal` (a non-abelian minimal normal subgroup has a normal,
-  simple, non-abelian subgroup). File `/tmp/aristotle-minnormal/Target.lean`.
+  `/tmp/aristotle-bender/Target.lean`. **Ports to the repo axiom
+  `fittingSubgroup_eq_top_of_minNormal_abelian` (`GeneralizedFitting.lean`)** — same shape
+  (hypothesis: every `IsMinimalNormal M` has `center ↥M = ⊤`; `F(G) ≤ Z(G)`; conclude `F(G)=⊤`).
+  When it returns, port + verify in kernel → Bender's cornerstone is axiom-free down to the trio.
 
 **In-repo consumers already built & green this lap** (so porting is near-`exact`):
 - `layer_ne_bot_of_normal_simple_factor` (LayerNormal) consumes (a)'s output → `layer G ≠ ⊥`.

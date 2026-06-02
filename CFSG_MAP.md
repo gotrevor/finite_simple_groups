@@ -58,15 +58,19 @@ or (ii) deep theory far beyond an elementary brick. Leave as `axiom`.
 - **Family simplicity** (deep): Lie type `PSL/PSU/PSp/POmega` (`LieType.lean`, 4);
   exceptional `G2/F4/E6/E7/E8/Suzuki/SmallRee/LargeRee/3D4/2E6` (`Exceptional.lean`, 10);
   sporadic `Co1/Co2/Co3` (`Sporadics.lean`, 3).
-- **Bender cornerstone — DISCHARGED TO A THEOREM 2026-06-02 (`4b58cea`).**
-  `genFittingSubgroup_self_centralizing` (`C_G(F*(G)) ≤ F*(G)`) is no longer an axiom:
-  proved by strong induction on `|G|` (`bender_aux`) on top of the axiom-free monotonicity
-  bricks `genFittingSubgroup_map_subtype_le` (= `F*(N) ≤ F*(G)` for `N ⊴ G`, built from
-  `fittingSubgroup_characteristic`/`fittingSubgroup_map_subtype_le` + `layer_map_subtype_le`).
-  The lone remaining axiom in its trail is the **sharp soluble kernel**
-  `fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center` (no components + central `F(G)` ⟹
-  `F(G) = ⊤`). The Wielandt full join `IsSubnormal.sup` axiom was **deleted** (`7d2dc13`) —
-  the join-free dichotomy made it dead. The **component-commuting cluster is fully axiom-free**.
+- **Bender cornerstone — DISCHARGED TO A THEOREM on ONE pure-soluble axiom, 2026-06-02 (`8042ae5`).**
+  `genFittingSubgroup_self_centralizing` (`C_G(F*(G)) ≤ F*(G)`) is no longer an axiom: proved by
+  strong induction on `|G|` (`bender_aux`) on the axiom-free monotonicity bricks
+  `genFittingSubgroup_map_subtype_le` (`F*(N) ≤ F*(G)`). Its central base case is reduced — also
+  axiom-free — via `layer_eq_bot_of_le_center` and the **fully in-repo layer-structure theory**
+  (`MinimalNormal.lean`: `IsMinimalNormal`, char-simple, distinct-commute, existence, the
+  socle/Fitting argument, and the `|G|`-induction `layer_ne_bot_aux` ⟹
+  `center_eq_top_of_isMinimalNormal_of_layer_eq_bot` = "no components ⟹ minimal normals abelian").
+  **The lone remaining axiom in Bender's trail is the pure soluble climb**
+  `fittingSubgroup_eq_top_of_minNormal_abelian` (all minimal normals abelian + central `F(G)` ⟹
+  `F(G) = ⊤` — the classical `C_G(F(G)) ≤ F(G)` for the abelian-socle case), the target of
+  Aristotle job `17c03da4`. The Wielandt full join `IsSubnormal.sup` axiom was **deleted**
+  (`7d2dc13`). The **component-commuting cluster is fully axiom-free**.
   - **Component-commuting theory: AXIOM-FREE as of 2026-06-02 (`0009c90` →
     `19c57e2`).** The arc: started as the `commute_of_ne` axiom → sharpened to
     `normalizes_of_ne` → sharpened to the *normal base case* `aschbacher_base` (with

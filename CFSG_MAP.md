@@ -59,25 +59,27 @@ or (ii) deep theory far beyond an elementary brick. Leave as `axiom`.
   exceptional `G2/F4/E6/E7/E8/Suzuki/SmallRee/LargeRee/3D4/2E6` (`Exceptional.lean`, 10);
   sporadic `Co1/Co2/Co3` (`Sporadics.lean`, 3).
 - **Bender cornerstone + local theory**: `genFittingSubgroup_self_centralizing`
-  (`GeneralizedFitting.lean`), the Wielandt full join `IsSubnormal.sup`
-  (`Wielandt.lean`), and `aschbacher_base` (`ComponentCommute.lean`) — the *only*
-  axiom left in that file (`commute_of_ne` AND
-  `layer_commutator_fittingSubgroup_eq_bot` are now both theorems on it).
-  - **The component-commuting theory, refactored down to one base-case axiom
-    (2026-06-02, `0009c90` → `2acbf06`).** Chain, all machine-checked except the
-    leaf: `aschbacher_base` (axiom — Aschbacher 31.4 *normal* base case: `L`
-    subnormal-quasisimple in `K`, `H ⊴ K` ⟹ `L ≤ H ∨ ⁅L,H⁆=⊥`) → **proven**
-    `IsComponent.subnormal_dichotomy` (the induction on subnormal length lifting it
-    to arbitrary subnormal `H`) → **proven** `commute_of_ne` (3-line corollary,
-    excludes `L ≤ M` via `eq_of_le`). The earlier intermediate axiom
-    `normalizes_of_ne` was dropped; the three-subgroups + perfectness route is no
-    longer needed. Net: the deep debt is now the *minimal normal base case*, the
-    precise target a focused discharge hits. `aschbacher_base` needs the same join /
-    normal-closure `⟨L^H⟩` theory as `IsSubnormal.sup`. Axiom count unchanged
-    throughout (sharpened, not removed). **Aristotle job in flight** on the full
-    commute statement (`ARISTOTLE-JOB-components-commute.md`, project `adf60350`);
-    if it lands, `commute_of_ne` discharges fully and the local-theory cluster
-    collapses onto just `IsSubnormal.sup`.
+  (`GeneralizedFitting.lean`) and the Wielandt full join `IsSubnormal.sup`
+  (`Wielandt.lean`). The **component-commuting cluster is now fully axiom-free** —
+  `ComponentCommute.lean` declares **no** axioms.
+  - **Component-commuting theory: AXIOM-FREE as of 2026-06-02 (`0009c90` →
+    `19c57e2`).** The arc: started as the `commute_of_ne` axiom → sharpened to
+    `normalizes_of_ne` → sharpened to the *normal base case* `aschbacher_base` (with
+    the subnormal-length induction proven) → **fully discharged.** The base case
+    turned out NOT to need the Wielandt join: `AschbacherDichotomy.lean` proves
+    `IsComponent.subnormal_dichotomy` (Aschbacher 31.4) via a *forward* induction
+    along `H`'s subnormal chain (`centralizing_by_subnormal`: at each step `M ◁ J`,
+    `⁅L, H⊓J⁆ ≤ H⊓M`, propagated by three-subgroups + perfectness), replacing the
+    classical normal-closure `⟨L^H⟩` argument. From it, **both** `commute_of_ne`
+    (exclude `L≤M` via `eq_of_le`) and `layer_commutator_fittingSubgroup_eq_bot`
+    (exclude `L≤F(G)` via nilpotency) are theorems on the standard trio only. The
+    proof was found by **Aristotle** (project `adf60350`, kernel-verified on a
+    self-contained statement) and ported here; original in
+    `aristotle-solution-components-commute.lean`, details in
+    `ARISTOTLE-JOB-components-commute.md`. **The repo's belief that this needed
+    `IsSubnormal.sup` was wrong** — a real lesson: a "needs the deep machinery"
+    label is a hypothesis, not a fact. Net axiom change this session: −2 in this
+    cluster (both `commute` and `layer_commutator` axioms gone).
 
 ### 🟥 C — PIN-LAG (already in mathlib, newer). Delete on bump. **NEVER build.**
 Formalized in mathlib past our v4.29.1 pin. Building our own proof = re-deriving
@@ -171,13 +173,14 @@ or a C (pin-lag, delete it) for a D (brick, build it). This map exists to preven
 exactly that.
 
 ## Counts (2026-06-02, compiler-verified)
-- Top-level `axiom` declarations in the tree: **35** (`rg -c '^axiom ' FiniteSimpleGroups/`).
-  This session discharged `layer_commutator_fittingSubgroup_eq_bot` to a theorem
-  (one fewer than before), and refactored the component-commuting axiom down to
-  `aschbacher_base` (count-neutral). ⚠️ The earlier headline "**44**" counted ~9
-  Bender–Glauberman §1 axioms under `FeitThompson/BGsection1/*` — **that directory is
-  not present in this tree**, so either it was aspirational or those files live
-  elsewhere; treat 35 as the verified current number and recount the buckets.
+- Top-level `axiom` declarations in the tree: **34** (`rg -c '^axiom ' FiniteSimpleGroups/`).
+  This session removed **two** from the component-commuting cluster —
+  `layer_commutator_fittingSubgroup_eq_bot` and (finally) the base case
+  `aschbacher_base` — leaving `ComponentCommute.lean` axiom-free. ⚠️ The earlier
+  headline "**44**" counted ~9 Bender–Glauberman §1 axioms under
+  `FeitThompson/BGsection1/*` — **that directory is not present in this tree**, so
+  either it was aspirational or those files live elsewhere; treat 34 as the verified
+  current number and recount the buckets.
 - `#print axioms CFSG` (the meaningful trail, unchanged this session): the **7
   milestone axioms** (`Feit_Thompson_odd_order`, `aschbacher_dichotomy`,
   `oddType_isClassified`, `evenType_dichotomy`, `componentType_isClassified`,

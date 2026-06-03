@@ -9,7 +9,15 @@ import FiniteSimpleGroups.LieType
 them — perfectness** — from scratch and fully axiom-free:
 
 * `SL2_perfect` : `commutator (SL(2,F)) = ⊤` for any field with `4 ≤ |F|`.
-* `PSL2_perfect` : `commutator (PSL 2 q) = ⊤` for `q` prime with `4 ≤ q`.
+* `PSL2_perfect` : `commutator (PSL 2 q) = ⊤` for `q` prime with `4 ≤ q`
+  (the Iwasawa "perfect" obligation).
+* `PSL2_nontrivial` : `Nontrivial (PSL 2 q)` for every prime `q`
+  (the Iwasawa `Nontrivial` obligation).
+
+Two of the five Iwasawa obligations of `PSL2_isSimpleGroup_of_iwasawa` are thus
+machine-checked here; the remaining three (the projective-line action,
+quasi-preprimitivity, the Iwasawa structure of unipotent subgroups) await the
+`ℙ¹(F_q)` action construction.
 
 Mathlib v4.29.1 has `PSL`/`SL` and the transvection machinery but **no** SL(2)
 perfectness and **no** PSL simplicity, so this is genuine new content, consistent
@@ -240,6 +248,31 @@ theorem PSL2_perfect (q : ℕ) [Fact (Nat.Prime q)] (hq : 4 ≤ q) :
   have hcard : 4 ≤ Fintype.card (ZMod q) := by rw [ZMod.card]; exact hq
   exact perfect_of_surjective (QuotientGroup.mk' _) (QuotientGroup.mk'_surjective _)
     (SL2_perfect hcard)
+
+/-! ### Nontriviality of `PSL(2,q)` -/
+
+/-- `upper 1` is not central in `SL(2,F)`: it fails to commute with `lower 1`
+(their products differ in the `(0,0)` entry, `1 ≠ 2` in any field). -/
+theorem upper_one_notMem_center (F : Type*) [Field F] [DecidableEq F] :
+    upper (1 : F) ∉ Subgroup.center (SpecialLinearGroup (Fin 2) F) := by
+  rw [Subgroup.mem_center_iff]
+  push_neg
+  refine ⟨lower 1, ?_⟩
+  intro heq
+  have h00 : (lower (1 : F) * upper 1).val 0 0 = (upper (1 : F) * lower 1).val 0 0 := by
+    rw [heq]
+  simp [upper_val, lower_val] at h00
+
+/-- **`PSL(2,q)` is nontrivial** for every prime `q` — the Iwasawa
+`Nontrivial` obligation for `PSL_isSimpleGroup` at `n = 2`. (Holds for all
+primes, including the non-simple `q = 2, 3`: `SL(2,q)` is always non-abelian,
+so its quotient by the center is nontrivial.) -/
+theorem PSL2_nontrivial (q : ℕ) [Fact (Nat.Prime q)] : Nontrivial (PSL 2 q) := by
+  unfold PSL Matrix.ProjectiveSpecialLinearGroup
+  refine ⟨QuotientGroup.mk' _ (upper (1 : ZMod q)), 1, ?_⟩
+  intro hh
+  rw [QuotientGroup.mk'_apply, QuotientGroup.eq_one_iff] at hh
+  exact upper_one_notMem_center (ZMod q) hh
 
 end SL2
 end FiniteSimpleGroups

@@ -19,9 +19,12 @@ prime-power class-size lemma).  The classical proof of that lemma needs six ingr
    (`NumberField.Embeddings.pow_eq_one_of_norm_le_one`).
 5. **`-1/p` is not an algebraic integer.**  ✅ easy (`ℤ` integrally closed in `ℚ`); recorded here
    as `not_isIntegral_neg_inv_prime`.
-6. **Scalar ⟹ proper normal subgroup**, contradicting simplicity.  Group/representation theory.
+6. **Scalar ⟹ proper normal subgroup**, contradicting simplicity.  ✅ structural half proved here
+   (`scalarSubgroup`, `scalarSubgroup_normal`, `comm_of_scalarSubgroup_eq_top`).
 
-So after this file the only genuinely missing mathlib infrastructure is (2) and (3).
+So after this file the only genuinely missing mathlib infrastructure is (2) and (3) — the
+central-character / class-sum integrality and column orthogonality.  Ingredients 1, 4, 5, 6 are
+in hand (in-repo or mathlib).
 -/
 
 namespace FiniteSimpleGroups
@@ -110,5 +113,57 @@ theorem not_isIntegral_neg_inv_prime {p : ℕ} (hp : p.Prime) :
   have hle : (p : ℤ) ≤ 1 := Int.le_of_dvd one_pos hp1
   have h2 : 2 ≤ p := hp.two_le
   omega
+
+/-! ### Ingredient 6/6: scalar elements form a normal subgroup
+
+In an irreducible representation of a simple group, the elements acting as a scalar form a
+proper nontrivial normal subgroup once some nontrivial element does — contradicting simplicity.
+These lemmas supply the structural half of that argument (independent of the missing class-sum /
+orthogonality machinery). -/
+
+section ScalarSubgroup
+
+variable {G : Type*} [Group G] [Finite G] {V : Type*} [AddCommGroup V] [Module ℂ V]
+
+/-- The set of group elements acting as a scalar `c • 1 = algebraMap ℂ (End ℂ V) c` in a
+representation `ρ`, as a subgroup of `G`.  `inv_mem` uses that `g⁻¹ = g ^ (orderOf g - 1)` in a
+finite group, so a scalar's inverse is a (power of a) scalar — avoiding any nonvanishing argument. -/
+def scalarSubgroup (ρ : Representation ℂ G V) : Subgroup G where
+  carrier := {g | ∃ c : ℂ, ρ g = algebraMap ℂ (Module.End ℂ V) c}
+  one_mem' := ⟨1, by rw [map_one, map_one]⟩
+  mul_mem' := by
+    rintro a b ⟨ca, ha⟩ ⟨cb, hb⟩
+    exact ⟨ca * cb, by rw [map_mul, ha, hb, map_mul]⟩
+  inv_mem' := by
+    rintro a ⟨c, ha⟩
+    have hinv : a⁻¹ = a ^ (orderOf a - 1) := by
+      have h1 : a * a ^ (orderOf a - 1) = a ^ orderOf a := by
+        rw [← pow_succ', Nat.sub_add_cancel (orderOf_pos a)]
+      rw [pow_orderOf_eq_one] at h1
+      exact inv_eq_of_mul_eq_one_right h1
+    exact ⟨c ^ (orderOf a - 1), by rw [hinv, map_pow, ha, ← map_pow]⟩
+
+/-- The scalar subgroup is normal: a conjugate `ρ(h g h⁻¹) = ρh · (c•1) · ρh⁻¹ = c•1` is still a
+scalar (scalars are central in the endomorphism algebra). -/
+theorem scalarSubgroup_normal (ρ : Representation ℂ G V) : (scalarSubgroup ρ).Normal := by
+  constructor
+  rintro a ⟨c, ha⟩ h
+  refine ⟨c, ?_⟩
+  rw [map_mul, map_mul, ha, ← Algebra.commutes c (ρ h), mul_assoc, ← map_mul,
+    mul_inv_cancel, map_one, mul_one]
+
+/-- If every element acts as a scalar (`scalarSubgroup ρ = ⊤`), the image of `ρ` is abelian; for
+a faithful `ρ` this makes `G` itself abelian.  This is the contradiction in Burnside's argument:
+a nonabelian simple group with a faithful irreducible `ρ` cannot have `scalarSubgroup ρ = ⊤`, yet
+a nontrivial scalar element forces `scalarSubgroup ρ ≠ ⊥`, so by simplicity it would be `⊤`. -/
+theorem comm_of_scalarSubgroup_eq_top (ρ : Representation ℂ G V)
+    (htop : scalarSubgroup ρ = ⊤) (hinj : Function.Injective ρ) (a b : G) :
+    a * b = b * a := by
+  apply hinj
+  obtain ⟨ca, hca⟩ : a ∈ scalarSubgroup ρ := by rw [htop]; exact Subgroup.mem_top a
+  obtain ⟨cb, hcb⟩ : b ∈ scalarSubgroup ρ := by rw [htop]; exact Subgroup.mem_top b
+  rw [map_mul, map_mul, hca, hcb, ← map_mul, ← map_mul, mul_comm]
+
+end ScalarSubgroup
 
 end FiniteSimpleGroups

@@ -821,6 +821,55 @@ theorem norm_trace_matrixHom_le {G : Type*} [Group G] [Finite G] {d : ℕ}
   have h := Representation.norm_character_le (repOfMatrixHom R) g
   rwa [show Module.finrank ℂ (Fin d → ℂ) = d by rw [Module.finrank_pi, Fintype.card_fin]] at h
 
+/-- **`repOfMatrixHom R`'s algebra map factors through a surjective `Ψ`.**  If
+`Ψ : ℂ[G] →ₐ Mₐ(ℂ)` satisfies `Ψ (single g 1) = R g`, then the representation's algebra map
+`(repOfMatrixHom R).asAlgebraHom : ℂ[G] →ₐ End ℂ (Fin d → ℂ)` equals `toLinAlgEquiv' ∘ Ψ`.  (Both
+sides are algebra homs agreeing on the generators `single g 1`.) -/
+theorem repOfMatrixHom_asAlgebraHom_factor {G : Type*} [Group G] {d : ℕ}
+    (R : G →* Matrix (Fin d) (Fin d) ℂ)
+    (Ψ : MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin d) (Fin d) ℂ)
+    (hΨ : ∀ g, Ψ (MonoidAlgebra.single g 1) = R g) :
+    (repOfMatrixHom R).asAlgebraHom
+      = (Matrix.toLinAlgEquiv' (n := Fin d) (R := ℂ)).toAlgHom.comp Ψ := by
+  refine MonoidAlgebra.algHom_ext fun g => ?_
+  rw [AlgHom.comp_apply, Representation.asAlgebraHom_single_one, hΨ]
+  rfl
+
+/-- **Irreducibility criterion (gap 1).**  A matrix representation `R : G →* Mₐ(ℂ)` (`d > 0`) arising
+from a *surjective* algebra hom `Ψ : ℂ[G] →ₐ Mₐ(ℂ)` with `Ψ (single g 1) = R g` is irreducible.
+
+The `ℂ[G]`-action on `(repOfMatrixHom R).asModule` factors as `ℂ[G] →(Ψ)→ Mₐ(ℂ) → End(Fin d → ℂ)`;
+since `Ψ` is onto `Mₐ(ℂ)`, the `ℂ[G]`-invariant subspaces are exactly the `Mₐ(ℂ)`-invariant
+subspaces of the natural module `Fin d → ℂ`, which are only `⊥` and `⊤`
+(`isSimpleModule_natural_matrix`).  Formally: transfer simplicity along the surjection `Ψ`
+(`isSimpleModule_of_ringHom_surjective`).  This discharges gap 1 for any Wedderburn factor, whose
+`Ψ = πᵢ ∘ e` is surjective by `exists_wedderburn_character_decomp`. -/
+theorem isIrreducible_of_surjective_algHom {G : Type*} [Group G] {d : ℕ} (hd : 0 < d)
+    (R : G →* Matrix (Fin d) (Fin d) ℂ)
+    (Ψ : MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin d) (Fin d) ℂ)
+    (hΨsurj : Function.Surjective Ψ)
+    (hΨ : ∀ g, Ψ (MonoidAlgebra.single g 1) = R g) :
+    (repOfMatrixHom R).IsIrreducible := by
+  rw [Representation.irreducible_iff_isSimpleModule_asModule]
+  have hfact := repOfMatrixHom_asAlgebraHom_factor R Ψ hΨ
+  haveI hsurj : RingHomSurjective Ψ.toRingHom := ⟨hΨsurj⟩
+  -- The (identity) `asModuleEquiv : asModule → (Fin d → ℂ)` is `Ψ`-semilinear: the `ℂ[G]`-action
+  -- factors through `Ψ` (`hfact`), so it agrees with the matrix mul-vec action pulled back along `Ψ`.
+  let l : (repOfMatrixHom R).asModule →ₛₗ[Ψ.toRingHom] (Fin d → ℂ) :=
+    { toFun := (repOfMatrixHom R).asModuleEquiv
+      map_add' := fun _ _ => map_add _ _ _
+      map_smul' := fun r m => by
+        show (repOfMatrixHom R).asModuleEquiv (r • m)
+            = Ψ.toRingHom r • (repOfMatrixHom R).asModuleEquiv m
+        rw [Representation.asModuleEquiv_map_smul, hfact]; rfl }
+  have hbij : Function.Bijective l := (repOfMatrixHom R).asModuleEquiv.bijective
+  exact (@LinearMap.isSimpleModule_iff_of_bijective
+      (MonoidAlgebra ℂ G) (Matrix (Fin d) (Fin d) ℂ) _ _
+      ((repOfMatrixHom R).asModule) _
+      (inferInstanceAs (Module (MonoidAlgebra ℂ G) ((repOfMatrixHom R).asModule)))
+      (Fin d → ℂ) _ _ Ψ.toRingHom _ l hbij).mpr
+    (isSimpleModule_natural_matrix hd)
+
 section RegularDecomp
 
 variable {G : Type*} [Group G] [Fintype G]
@@ -844,9 +893,12 @@ where `Rᵢ : G →* Mₐᵢ(ℂ)` is the `i`-th irreducible matrix representati
 and `dᵢ` (`= trace(Rᵢ 1)`) its degree.  With `character_leftRegular_eq` this gives column
 orthogonality `∑ᵢ dᵢ·trace(Rᵢ g) = 0` for `g ≠ 1`. -/
 theorem exists_wedderburn_character_decomp :
-    ∃ (n : ℕ) (d : Fin n → ℕ) (R : ∀ i, G →* Matrix (Fin (d i)) (Fin (d i)) ℂ),
+    ∃ (n : ℕ) (d : Fin n → ℕ) (R : ∀ i, G →* Matrix (Fin (d i)) (Fin (d i)) ℂ)
+      (Ψ : ∀ i, MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin (d i)) (Fin (d i)) ℂ),
       (∀ i, NeZero (d i)) ∧
       (∀ i, R i 1 = 1) ∧
+      (∀ i, Function.Surjective (Ψ i)) ∧
+      (∀ i g, Ψ i (MonoidAlgebra.single g 1) = R i g) ∧
       (∀ g, (Representation.ofMulAction ℂ G G).character g
               = ∑ i, (d i : ℂ) * (R i g).trace) := by
   haveI : NeZero (Nat.card G : ℂ) := ⟨Nat.cast_ne_zero.mpr Nat.card_pos.ne'⟩
@@ -868,7 +920,17 @@ theorem exists_wedderburn_character_decomp :
         show (e (MonoidAlgebra.single (g * h) (1 : ℂ))) i
            = (e (MonoidAlgebra.single g 1)) i * (e (MonoidAlgebra.single h 1)) i
         rw [hmul g h]; rfl }
-  refine ⟨n, d, R, hd, fun i => (R i).map_one, fun g => ?_⟩
+  -- The `i`-th Wedderburn projection `πᵢ ∘ e : ℂ[G] →ₐ Mₐᵢ(ℂ)`, a surjective algebra hom whose
+  -- value at `single g 1` is the matrix `Rᵢ g`.
+  let Ψ : ∀ i, MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin (d i)) (Fin (d i)) ℂ := fun i =>
+    (Pi.evalAlgHom ℂ (fun j => Matrix (Fin (d j)) (Fin (d j)) ℂ) i).comp e.toAlgHom
+  have hΨsurj : ∀ i, Function.Surjective (Ψ i) := fun i x => by
+    obtain ⟨y, hy⟩ := e.surjective (Function.update 0 i x)
+    refine ⟨y, ?_⟩
+    have hval : Ψ i y = (e y) i := rfl
+    rw [hval, hy, Function.update_self]
+  have hΨR : ∀ i g, Ψ i (MonoidAlgebra.single g 1) = R i g := fun i g => rfl
+  refine ⟨n, d, R, Ψ, hd, fun i => (R i).map_one, hΨsurj, hΨR, fun g => ?_⟩
   rw [character_ofMulAction_eq_trace_mulLeft g,
     ← LinearMap.trace_conj' (LinearMap.mulLeft ℂ (MonoidAlgebra.single g (1 : ℂ))) e.toLinearEquiv,
     conj_mulLeft e (MonoidAlgebra.single g 1), trace_mulLeft_pi_matrix d (e (MonoidAlgebra.single g 1))]

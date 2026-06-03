@@ -274,5 +274,42 @@ theorem PSL2_nontrivial (q : ℕ) [Fact (Nat.Prime q)] : Nontrivial (PSL 2 q) :=
   rw [QuotientGroup.mk'_apply, QuotientGroup.eq_one_iff] at hh
   exact upper_one_notMem_center (ZMod q) hh
 
+/-! ### The center of `SL(2,F)` — kernel of `SL → PSL` -/
+
+/-- **The center of `SL(2,F)` is `{1, -1}`.** A central element commutes with all
+transvections, hence is a scalar matrix `c·I` (`mem_range_scalar_iff_commute_…`);
+`det = c² = 1` forces `c = ±1`. This pins the kernel `Z` of `SL(2,q) ↠ PSL(2,q)`,
+the groundwork for the Iwasawa `FaithfulSMul` obligation (the `ℙ¹` action of
+`SL(2,q)` has kernel exactly `Z`, so `PSL(2,q)` acts faithfully). -/
+theorem center_SL2 (F : Type*) [Field F] [DecidableEq F]
+    (g : SpecialLinearGroup (Fin 2) F) :
+    g ∈ Subgroup.center (SpecialLinearGroup (Fin 2) F) ↔ g = 1 ∨ g = -1 := by
+  constructor
+  · intro hg
+    rw [Subgroup.mem_center_iff] at hg
+    have hcomm : ∀ t : Matrix.TransvectionStruct (Fin 2) F, Commute t.toMatrix g.val := by
+      intro t
+      have hSL := hg ⟨t.toMatrix, t.det⟩
+      have h2 : t.toMatrix * g.val = g.val * t.toMatrix := by
+        have := congrArg (fun x : SpecialLinearGroup (Fin 2) F => x.val) hSL
+        simpa [SpecialLinearGroup.coe_mul] using this
+      exact h2
+    rw [← Matrix.mem_range_scalar_iff_commute_transvectionStruct] at hcomm
+    obtain ⟨c, hc⟩ := hcomm
+    have hval : g.val = !![c, 0; 0, c] := by
+      rw [← hc]; ext i j; fin_cases i <;> fin_cases j <;> simp [Matrix.scalar_apply]
+    have hdet : c * c = 1 := by
+      have h := g.2; rw [hval] at h; simpa [Matrix.det_fin_two_of] using h
+    rcases mul_self_eq_one_iff.mp hdet with h1 | h1
+    · left; apply Subtype.ext
+      rw [hval, h1]; ext i j; fin_cases i <;> fin_cases j <;>
+        simp [SpecialLinearGroup.coe_one, Matrix.one_apply]
+    · right; apply Subtype.ext
+      rw [hval, h1]; ext i j; fin_cases i <;> fin_cases j <;>
+        simp [SpecialLinearGroup.coe_neg, SpecialLinearGroup.coe_one, Matrix.one_apply]
+  · rintro (rfl | rfl)
+    · exact Subgroup.one_mem _
+    · rw [Subgroup.mem_center_iff]; intro h; rw [mul_neg_one, neg_one_mul]
+
 end SL2
 end FiniteSimpleGroups

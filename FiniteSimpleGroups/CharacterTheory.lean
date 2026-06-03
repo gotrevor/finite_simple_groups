@@ -1031,20 +1031,189 @@ section RegularDecomp
 
 variable {G : Type*} [Group G] [Fintype G]
 
-/-- **Gap 3 (disclosed axiom — being discharged): unique trivial Wedderburn factor.**  For the
-Artin–Wedderburn iso `e : ℂ[G] ≃ₐ ∏ᵢ Mᵢ(ℂ)` of a finite group, there is *exactly one* factor `i₀`
-on which every group element acts as the identity matrix — the trivial representation.
+/-! #### Gap 3: the trivial representation is the unique 1-dim Wedderburn factor.
 
-Existence: the augmentation `ℂ[G] →ₐ ℂ` (a nonzero 1-dim rep) factors through the projection to a
-1-dimensional factor (matrix factors are simple rings).  Uniqueness: two such factors give equal
-algebra homs `ℂ[G] → Mᵢ` (both send `single g 1 ↦ 1`), forcing the projections — hence the indices —
-equal.  This is the `T = 1` input to the Burnside endgame (`burnside_final_contradiction`'s `+1`).
+For the Artin–Wedderburn iso `e : ℂ[G] ≃ₐ ∏ᵢ Mᵢ(ℂ)`, exactly one factor `i₀` is the trivial
+representation (`∀ g, (e (single g 1))ᵢ₀ = 1`).  **Existence is now machine-checked** (the
+augmentation `ℂ[G] →ₐ ℂ` is a sum of orthogonal central idempotents `c i = f(Pi.single i 1)`, exactly
+one of which is `1`; ported from Aristotle job `a3e3d823`).  Uniqueness remains a disclosed axiom. -/
 
-Existence is out at Aristotle (job `a3e3d823`, `exists_trivial_factor`); the uniqueness half is the
-`MonoidAlgebra.algHom_ext` argument.  Recorded as a disclosed axiom pending those proofs. -/
-axiom exists_unique_trivial_factor {G : Type*} [Group G] [Fintype G] {n : ℕ} (d : Fin n → ℕ)
+/-- In `ℂ`, an idempotent is `0` or `1`. -/
+private lemma idem_complex {c : ℂ} (h : c * c = c) : c = 0 ∨ c = 1 :=
+  or_iff_not_imp_left.mpr fun h' => mul_left_cancel₀ h' <| by linear_combination h
+
+/-- Orthogonal idempotents in `ℂ` summing to `1`: exactly one equals `1`. -/
+private lemma exists_idem_one {n : ℕ} {c : Fin n → ℂ}
+    (hidem : ∀ i, c i * c i = c i) (hortho : ∀ i j, i ≠ j → c i * c j = 0)
+    (hsum : ∑ i, c i = 1) :
+    ∃ i₀, c i₀ = 1 ∧ ∀ j, j ≠ i₀ → c j = 0 := by
+  have h_one : ∃ i₀, c i₀ = 1 := by
+    by_contra h_contra; push_neg at h_contra
+    exact absurd ( hsum ▸ Finset.sum_eq_zero fun i _ ↦
+      Or.resolve_right ( idem_complex ( hidem i ) ) ( h_contra i ) ) ( by norm_num )
+  exact ⟨ h_one.choose, h_one.choose_spec,
+    fun j hj => by simpa [ h_one.choose_spec ] using hortho _ _ hj.symm ⟩
+
+/-- `Pi.single i 1` is idempotent in a product of monoids. -/
+private lemma pi_single_one_idem {ι : Type*} [DecidableEq ι]
+    {α : ι → Type*} [∀ i, MulZeroOneClass (α i)] (i : ι) :
+    (Pi.single i (1 : α i)) * (Pi.single i 1) = Pi.single i 1 := by
+  ext j; by_cases h : j = i <;> simp +decide [*]; aesop
+
+/-- `Pi.single i 1 * Pi.single j 1 = 0` for `i ≠ j`. -/
+private lemma pi_single_one_ortho {ι : Type*} [DecidableEq ι]
+    {α : ι → Type*} [∀ i, MulZeroOneClass (α i)] {i j : ι} (hij : i ≠ j) :
+    (Pi.single i (1 : α i)) * (Pi.single j (1 : α j)) = 0 := by
+  ext k; by_cases h : k = i <;> by_cases h' : k = j <;> simp_all +decide
+
+/-- `∑ i, Pi.single i 1 = 1` in a finite product. -/
+private lemma sum_pi_single_one {n : ℕ}
+    {α : Fin n → Type*} [∀ i, AddCommMonoid (α i)] [∀ i, One (α i)] :
+    ∑ i : Fin n, (Pi.single i (1 : α i)) = (fun _ => 1) := by
+  convert Finset.univ_sum_single ( fun i => 1 : ∀ i : Fin n, α i )
+
+/-- An algebra hom on a product that sends `Pi.single j 1 ↦ 0` also sends `Pi.single j m ↦ 0`. -/
+private lemma f_pi_single_zero_of_one_zero {n : ℕ} {d : Fin n → ℕ}
+    (f : (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ) →ₐ[ℂ] ℂ)
+    {j : Fin n} (hj : f (Pi.single j 1) = 0)
+    (m : Matrix (Fin (d j)) (Fin (d j)) ℂ) :
+    f (Pi.single j m) = 0 := by
+  convert congr_arg ( f ) ( show Pi.single j m = Pi.single j 1 * Pi.single j m from ?_ ) using 1
+  · rw [ map_mul, hj, MulZeroClass.zero_mul ]
+  · ext i; by_cases hi : i = j <;> aesop
+
+/-- For an algebra hom `f` on a product killing all factors except `i₀`,
+`f x = f (Pi.single i₀ (x i₀))`. -/
+private lemma f_eq_f_pi_single {n : ℕ} {d : Fin n → ℕ}
+    (f : (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ) →ₐ[ℂ] ℂ)
+    (i₀ : Fin n) (hzero : ∀ j, j ≠ i₀ → f (Pi.single j 1) = 0)
+    (x : ∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ) :
+    f x = f (Pi.single i₀ (x i₀)) := by
+  have : x = ∑ j, Pi.single j (x j) := by ext i; simp +decide
+  conv_lhs => rw [ this, map_sum ]
+  rw [ Finset.sum_eq_single i₀ ]
+  · exact fun j _ hj => f_pi_single_zero_of_one_zero f ( hzero j hj ) _
+  · exact fun h => False.elim <| h <| Finset.mem_univ i₀
+
+/-- There is no algebra hom `Matrix (Fin n) (Fin n) ℂ →ₐ[ℂ] ℂ` unless `n = 1` (matrix-unit
+argument: `f(Eᵢᵢ) = f(Eⱼⱼ)` by commutativity yet `f(Eᵢᵢ)² = 0`, forcing `f(Eᵢᵢ) = 0`, but `∑ Eᵢᵢ = 1`). -/
+private lemma algHom_matrix_dim_one {n : ℕ}
+    (f : Matrix (Fin n) (Fin n) ℂ →ₐ[ℂ] ℂ) : n = 1 := by
+  rcases n with ( _ | _ | n ) <;> simp_all +decide
+  · exact absurd ( f.map_one ) ( by
+      erw [ show ( 1 : Matrix ( Fin 0 ) ( Fin 0 ) ℂ ) = 0 by ext i; fin_cases i ] ; norm_num )
+  · have h_idempotent : ∀ i : Fin (n + 2),
+        f (Matrix.of (fun a b => if a = i ∧ b = i then 1 else 0)) = 0 := by
+      intro i
+      have h_comm : f (Matrix.of (fun a b => if a = i ∧ b = i then 1 else 0))
+          = f (Matrix.of (fun a b => if a = (i + 1) ∧ b = (i + 1) then 1 else 0)) := by
+        have h_comm : f (Matrix.of (fun a b => if a = i ∧ b = i + 1 then 1 else 0)
+            * Matrix.of (fun a b => if a = i + 1 ∧ b = i then 1 else 0))
+            = f (Matrix.of (fun a b => if a = i + 1 ∧ b = i then 1 else 0)
+            * Matrix.of (fun a b => if a = i ∧ b = i + 1 then 1 else 0)) := by
+          grind +splitIndPred
+        convert h_comm using 2 <;> ext a b <;> simp +decide [ Matrix.mul_apply ]
+        · rw [ Finset.sum_eq_single ( i + 1 ) ] <;> aesop
+        · rw [ Finset.sum_eq_single i ] <;> aesop
+      have h_ortho : f (Matrix.of (fun a b => if a = i ∧ b = i then 1 else 0))
+          * f (Matrix.of (fun a b => if a = (i + 1) ∧ b = (i + 1) then 1 else 0)) = 0 := by
+        rw [ ← map_mul ]; convert f.map_zero
+        ext a b; simp +decide [ Matrix.mul_apply ]; aesop
+      aesop
+    have h_sum : f (Matrix.of (fun a b => if a = b then 1 else 0)) = 0 := by
+      convert Finset.sum_eq_zero fun i _ => h_idempotent i using 1
+      rw [ ← map_sum ]; congr! 1
+      ext i j; simp +decide [ Matrix.sum_apply ]
+      split_ifs <;> simp_all +decide [Finset.filter_and]
+      any_goals exact Finset.univ
+      · rw [ Finset.card_filter ] ; aesop
+      · rw [ Finset.card_eq_zero.mpr ] <;> aesop
+    exact absurd h_sum ( by
+      erw [ show ( of fun a b => if a = b then 1 else 0
+        : Matrix ( Fin ( n + 2 ) ) ( Fin ( n + 2 ) ) ℂ ) = 1 from by ext i j; aesop ] ; simp +decide )
+
+/-- The unique algebra hom `Matrix (Fin 1) (Fin 1) ℂ →ₐ[ℂ] ℂ` extracts the `(0,0)` entry. -/
+private lemma algHom_matrix_one_entry (f : Matrix (Fin 1) (Fin 1) ℂ →ₐ[ℂ] ℂ)
+    (m : Matrix (Fin 1) (Fin 1) ℂ) : f m = m 0 0 := by
+  rw [ show m = ( m 0 0 ) • 1 from ?_ ]
+  · simp +decide [ Algebra.smul_def ]
+  · ext i j; fin_cases i; fin_cases j; simp +decide
+
+/-- Restrict an algebra hom on a product to a single matrix factor via `Pi.single`. -/
+private noncomputable def restrictAlgHom {n : ℕ} {d : Fin n → ℕ}
+    (f : (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ) →ₐ[ℂ] ℂ) (i₀ : Fin n)
+    (hone : f (Pi.single i₀ 1) = 1) :
+    Matrix (Fin (d i₀)) (Fin (d i₀)) ℂ →ₐ[ℂ] ℂ where
+  toFun m := f (Pi.single i₀ m)
+  map_one' := hone
+  map_mul' x y := by rw [ ← map_mul ]; congr with i; by_cases hi : i = i₀ <;> aesop
+  map_zero' := by convert f.map_zero; ext; simp [Pi.single]
+  map_add' x y := by
+    have h_add : f (Pi.single i₀ (x + y)) = f (Pi.single i₀ x + Pi.single i₀ y) := by
+      congr with i; by_cases hi : i = i₀ <;> aesop
+    convert f.map_add ( Pi.single i₀ x ) ( Pi.single i₀ y ) using 1
+  commutes' r := by
+    by_cases hr : r = 0 <;> simp_all +decide [ Algebra.algebraMap_eq_smul_one, Pi.single_smul ]
+
+/-- A `1×1` matrix equals `1` iff its only entry is `1`. -/
+private lemma matrix_fin_one_eq_one_iff (m : Matrix (Fin 1) (Fin 1) ℂ) :
+    m = 1 ↔ m 0 0 = 1 :=
+  ⟨ fun h => by simpa using congr_fun ( congr_fun h 0 ) 0,
+    fun h => by ext i j; fin_cases i; fin_cases j; exact h ⟩
+
+/-- If `f m = 1` for an algebra hom `Matrix (Fin n) (Fin n) ℂ →ₐ ℂ`, then `m = 1`. -/
+private lemma algHom_matrix_maps_one {n : ℕ}
+    (f : Matrix (Fin n) (Fin n) ℂ →ₐ[ℂ] ℂ)
+    (m : Matrix (Fin n) (Fin n) ℂ) (hfm : f m = 1) : m = 1 := by
+  have hn : n = 1 := algHom_matrix_dim_one f
+  subst hn
+  exact (matrix_fin_one_eq_one_iff m).mpr (by rw [ ← hfm, algHom_matrix_one_entry ])
+
+/-- **Existence of a trivial Wedderburn factor (gap 3, existence half — machine-checked).**  Ported
+from Aristotle job `a3e3d823`: the transported augmentation `f = augHom ∘ e.symm : ∏ᵢ Mᵢ(ℂ) →ₐ ℂ`
+has the orthogonal central idempotents `c i = f(Pi.single i 1)` summing to `1`, so exactly one `i₀`
+has `c i₀ = 1` and the rest `0`; for that `i₀`, `f x = f(Pi.single i₀ (x i₀))`, and with
+`f(e(single g 1)) = augHom(single g 1) = 1` this forces `(e (single g 1))ᵢ₀ = 1` for all `g`. -/
+theorem exists_trivial_factor
+    {G : Type*} [Group G] [Fintype G] {n : ℕ} (d : Fin n → ℕ)
     (e : MonoidAlgebra ℂ G ≃ₐ[ℂ] (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)) :
-    ∃! i₀ : Fin n, ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) i₀ = 1
+    ∃ i₀ : Fin n, ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) i₀ = 1 := by
+  set f : (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ) →ₐ[ℂ] ℂ := (augHom G).comp e.symm.toAlgHom
+  set c : Fin n → ℂ := fun i => f (Pi.single i 1)
+  have hc_idem : ∀ i, c i * c i = c i := fun i => by rw [ ← map_mul, pi_single_one_idem ]
+  have hc_ortho : ∀ i j, i ≠ j → c i * c j = 0 := fun i j hij => by
+    rw [ ← map_mul, pi_single_one_ortho hij, map_zero ]
+  have hc_sum : ∑ i, c i = 1 := by
+    rw [ ← map_sum, sum_pi_single_one ]; convert f.map_one using 1
+  obtain ⟨i₀, hi₀_one, hi₀_zero⟩ := exists_idem_one hc_idem hc_ortho hc_sum
+  refine ⟨i₀, fun g => ?_⟩
+  have h_g_hom : f (Pi.single i₀ ((e (MonoidAlgebra.single g 1)) i₀)) = 1 := by
+    have h1 : f (Pi.single i₀ ((e (MonoidAlgebra.single g 1)) i₀))
+        = f (e (MonoidAlgebra.single g 1)) :=
+      (f_eq_f_pi_single f i₀ (fun j hj => hi₀_zero j hj) (e (MonoidAlgebra.single g 1))).symm
+    rw [h1]
+    show (augHom G) (e.symm (e (MonoidAlgebra.single g 1))) = 1
+    rw [e.symm_apply_apply, augHom_single]
+  -- `f (Pi.single i₀ M) = (restrictAlgHom f i₀) M` is an algebra hom `Mₐᵢ₀ →ₐ ℂ`; sending `M ↦ 1`
+  -- forces (via the matrix-unit argument) `M = 1`.  Here `M = (e (single g 1))ᵢ₀`.
+  exact algHom_matrix_maps_one (restrictAlgHom f i₀ hi₀_one) _ h_g_hom
+
+/-- **Gap 3 uniqueness (disclosed axiom — pending).**  Two trivial Wedderburn factors coincide: the
+trivial representation occurs at a *single* index.  (Standard: distinct Wedderburn factors are
+non-isomorphic simple modules, so the trivial module appears once.)  Combined with the proved
+`exists_trivial_factor` this yields `exists_unique_trivial_factor`. -/
+axiom trivial_factor_unique {G : Type*} [Group G] [Fintype G] {n : ℕ} (d : Fin n → ℕ)
+    (e : MonoidAlgebra ℂ G ≃ₐ[ℂ] (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)) (i j : Fin n)
+    (hi : ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) i = 1)
+    (hj : ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) j = 1) : i = j
+
+/-- **Unique trivial Wedderburn factor (gap 3).**  Existence (`exists_trivial_factor`, machine-checked)
++ uniqueness (`trivial_factor_unique`, disclosed axiom). -/
+theorem exists_unique_trivial_factor {G : Type*} [Group G] [Fintype G] {n : ℕ} (d : Fin n → ℕ)
+    (e : MonoidAlgebra ℂ G ≃ₐ[ℂ] (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)) :
+    ∃! i₀ : Fin n, ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) i₀ = 1 := by
+  obtain ⟨i₀, hi₀⟩ := exists_trivial_factor d e
+  exact ⟨i₀, hi₀, fun j hj => trivial_factor_unique d e j i₀ hj hi₀⟩
 
 /-- The left-regular character `χ_reg(g)` is the trace of left-multiplication by `single g 1` on
 `ℂ[G]`.  (`Representation.ofMulAction` on the group acting on itself is left multiplication.) -/

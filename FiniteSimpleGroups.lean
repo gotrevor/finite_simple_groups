@@ -1,4 +1,5 @@
 import FiniteSimpleGroups.Basic
+import FiniteSimpleGroups.Burnside
 import FiniteSimpleGroups.Classification
 import FiniteSimpleGroups.Cyclic
 import FiniteSimpleGroups.Alternating

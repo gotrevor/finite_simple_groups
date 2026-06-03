@@ -1,6 +1,7 @@
 import Mathlib
 import FiniteSimpleGroups.Basic
 import FiniteSimpleGroups.Classification
+import FiniteSimpleGroups.Burnside
 
 /-!
 # The CFSG proof strategy — as a *deductive skeleton*
@@ -52,16 +53,12 @@ of v4.29.1 (mathlib has Burnside's *transfer* theorem and Burnside's orbit
 *lemma*, but not `p^a q^b` solvability — that needs character theory mathlib
 doesn't yet carry). So this stays a genuine axiom, not a quick discharge. -/
 
-/-- **Character-theoretic core of Burnside's `p^a q^b` theorem.** A finite *simple* group
-all of whose prime divisors lie in `{p, q}` is solvable — equivalently, the only such
-simple groups are cyclic of prime order. This is the genuinely hard half (Burnside 1904),
-proved by the vanishing of suitable character values: it needs the algebraic-integrality of
-characters and the class-sum eigenvalue argument, which mathlib v4.29.1 does not yet carry.
-Recorded as an honest `axiom`; the *reduction* of the full theorem to this case is the
-machine-checked `Burnside_paqb` below. -/
-axiom burnside_simple (G : Type*) [Group G] [Finite G] (p q : ℕ)
-    (hpq : ∀ r : ℕ, r.Prime → r ∣ Nat.card G → r = p ∨ r = q)
-    (hsimple : IsSimpleGroup G) : IsSolvable G
+/-! **Character-theoretic core of Burnside's `p^a q^b` theorem.**  `burnside_simple` — a finite
+*simple* group all of whose prime divisors lie in `{p, q}` is solvable — is no longer an axiom
+here.  It is proved in `FiniteSimpleGroups.Burnside` by the classical Sylow / centre reduction
+to the single sharp axiom `isSimpleGroup_centralizer_index_not_primePow` (a simple group has no
+conjugacy class of prime-power size `> 1`), which is the one irreducibly character-theoretic
+ingredient.  See that file. -/
 
 /-- Order-bounded reduction of Burnside to the simple case, by strong induction on `|G|`.
 A proper nontrivial normal subgroup `N` splits `G` into the strictly smaller `N` and `G/N`,

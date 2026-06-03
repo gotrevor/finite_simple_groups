@@ -1,3 +1,15 @@
+# Online requests — ✅ ALL RESOLVED (archived 2026-06-03, host session)
+
+> **This is the renamed/retired `ON-LINE-REQUEST.md`** (renamed to clear Trevor's 📚 badge
+> per the Fulfiller protocol below). All asks below are answered:
+> - **Burnside `pᵃqᵇ`** → `ON-LINE-FINDINGS-2026-06-03-burnside-paqb.md` (sole gap = (3) column
+>   orthogonality; mathlib has the Wedderburn–Artin backbone; Coq mathcomp is the port ref).
+> - **Bender cornerstone** → `ON-LINE-FINDINGS-2026-06-02-bender-base-case.md`.
+> The box recreates a fresh `ON-LINE-REQUEST.md` (re-adding the protocol header) for its next
+> open-web ask. Original content preserved below for the audit trail.
+
+---
+
 # Online requests (open-web lookups the air-gapped box can't do)
 
 The lean-yolo-box has no general internet (only Anthropic + Aristotle). Items below

@@ -445,4 +445,56 @@ theorem character_leftRegular_eq (g : G) :
 
 end RegularCharacter
 
+/-! ### Toward the scalar step: equality case of the triangle inequality
+
+After Burnside's vanishing lemma (`burnside_vanishing_core`, out at Aristotle) gives
+`χ(g) = 0 ∨ ‖χ(g)‖ = χ(1)`, the scalar case `‖χ(g)‖ = χ(1)` must be converted to "`g` acts as a
+scalar".  Since `χ(g)` is the sum of the `χ(1)` eigenvalues of `ρ g` (all roots of unity, modulus
+`1`), `‖χ(g)‖ = χ(1)` is exactly the equality case of the triangle inequality, forcing all
+eigenvalues equal — whence `ρ g` (diagonalizable, as it has finite order) is a scalar.  This lemma
+is the analytic equality-case half. -/
+
+/-- **Equality case of the triangle inequality for unit vectors.**  If `card ι` complex numbers of
+modulus `1` sum to something of modulus `card ι`, they are all equal. -/
+theorem eq_of_norm_sum_eq_card {ι : Type*} [Fintype ι] (ζ : ι → ℂ)
+    (h1 : ∀ i, ‖ζ i‖ = 1) (hsum : ‖∑ k, ζ k‖ = Fintype.card ι) (i j : ι) :
+    ζ i = ζ j := by
+  classical
+  set S := ∑ k, ζ k with hS
+  have hcard_pos : 0 < Fintype.card ι := Fintype.card_pos_iff.mpr ⟨i⟩
+  have hSnorm_pos : 0 < ‖S‖ := by rw [hsum]; exact_mod_cast hcard_pos
+  have hSne : S ≠ 0 := by intro h; rw [h, norm_zero] at hSnorm_pos; exact lt_irrefl _ hSnorm_pos
+  have hconjne : (starRingEnd ℂ) S ≠ 0 := by simpa using hSne
+  have hnorm : ∀ k, ‖(starRingEnd ℂ) S * ζ k‖ = ‖S‖ := by
+    intro k; rw [norm_mul, RCLike.norm_conj, h1 k, mul_one]
+  have hre_le : ∀ k, ((starRingEnd ℂ) S * ζ k).re ≤ ‖S‖ := by
+    intro k
+    calc ((starRingEnd ℂ) S * ζ k).re ≤ ‖(starRingEnd ℂ) S * ζ k‖ := Complex.re_le_norm _
+      _ = ‖S‖ := hnorm k
+  have hre_sum : ∑ k, ((starRingEnd ℂ) S * ζ k).re = ‖S‖ * ‖S‖ := by
+    have h0 : (starRingEnd ℂ) S * S = ((Complex.normSq S : ℝ) : ℂ) := by
+      rw [mul_comm]; exact Complex.mul_conj S
+    rw [← Complex.re_sum, ← Finset.mul_sum, ← hS, h0, Complex.ofReal_re,
+      Complex.normSq_eq_norm_sq]
+    ring
+  have hbound_sum : ∑ _k : ι, ‖S‖ = ‖S‖ * ‖S‖ := by
+    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, hsum]
+  have heq_each : ∀ k ∈ Finset.univ, ((starRingEnd ℂ) S * ζ k).re = ‖S‖ := by
+    have hsum_eq : ∑ k, ((starRingEnd ℂ) S * ζ k).re = ∑ _k : ι, ‖S‖ := by
+      rw [hre_sum, hbound_sum]
+    exact (Finset.sum_eq_sum_iff_of_le (fun k _ => hre_le k)).mp hsum_eq
+  have hval : ∀ k, (starRingEnd ℂ) S * ζ k = (‖S‖ : ℂ) := by
+    intro k
+    have hre : ((starRingEnd ℂ) S * ζ k).re = ‖S‖ := heq_each k (Finset.mem_univ k)
+    have hnsq : ((starRingEnd ℂ) S * ζ k).re * ((starRingEnd ℂ) S * ζ k).re
+        + ((starRingEnd ℂ) S * ζ k).im * ((starRingEnd ℂ) S * ζ k).im = ‖S‖ * ‖S‖ := by
+      rw [← Complex.normSq_apply, ← Complex.sq_norm, hnorm k, pow_two]
+    rw [hre] at hnsq
+    have him : ((starRingEnd ℂ) S * ζ k).im * ((starRingEnd ℂ) S * ζ k).im = 0 := by linarith
+    apply Complex.ext
+    · rw [hre, Complex.ofReal_re]
+    · rw [Complex.ofReal_im]; exact mul_self_eq_zero.mp him
+  have : (starRingEnd ℂ) S * ζ i = (starRingEnd ℂ) S * ζ j := by rw [hval i, hval j]
+  exact mul_left_cancel₀ hconjne this
+
 end FiniteSimpleGroups

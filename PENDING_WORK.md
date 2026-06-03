@@ -128,9 +128,47 @@ Representation level when it returns.
   the repo only machine-checks how they *compose* into `IsClassified`.  Attack = port a Coq/Isabelle
   proof (Feit–Thompson exists in Coq) — multi-year, out of scope for a lap.
 - **Family simplicity**: `alternatingGroup_isSimple` (`Alternating.lean` — bucket C, delete when the
-  mathlib pin passes PR #36524; do NOT re-derive on the shared tree), `PSL/PSU/PSp/POmega`
-  (`LieType.lean`), the 10 exceptionals (`Exceptional.lean`), `Co1/Co2/Co3` (`Sporadics.lean`).
-  Deep; intended.
+  mathlib pin passes PR #36524; do NOT re-derive on the shared tree), `PSU/PSp/POmega` and the
+  `PSL n q` axiom for `n ≥ 3` (`LieType.lean`), the 10 exceptionals (`Exceptional.lean`),
+  `Co1/Co2/Co3` (`Sporadics.lean`).  Deep; intended.  **NB:** `PSL_isSimpleGroup` *for `n = 2`* is
+  NOT in this bucket — it is the ACTIVE tractable thread, see §D.
+
+## D. ACTIVE THREAD — `PSL(2,q)` simplicity via Iwasawa (2026-06-03)
+
+`PSL_isSimpleGroup` for `n = 2` is being discharged through
+`PSL2_isSimpleGroup_of_iwasawa` (`PSLIwasawa.lean`), which reduces it to **five
+Iwasawa obligations**.  mathlib v4.29.1 has the `PSL`/`SL` defs + transvection
+machinery but NO SL(2)/PSL simplicity, so this is genuine new content (consistent
+with the "one rule").  Progress (all in `FiniteSimpleGroups/SL2.lean`, `#print
+axioms`-clean — `[propext, Classical.choice, Quot.sound]`):
+
+- ✅ **perfect** `commutator (PSL 2 q) = ⊤` — `PSL2_perfect` (q prime ≥ 4), from
+  `SL2_perfect` (transvections generate SL(2,F); each is a commutator via
+  `⁅diag(a,a⁻¹), upper s⁆ = upper((a²-1)s)`) descended to the quotient.
+- ✅ **nontrivial** `Nontrivial (PSL 2 q)` — `PSL2_nontrivial` (all primes q;
+  SL(2,q) non-abelian ⇒ quotient by center nontrivial).
+- ✅ **faithfulness groundwork** — `center_SL2`: `center (SL(2,F)) = {±1}`, the
+  kernel of `SL ↠ PSL`.
+
+**Remaining 3 obligations — all need the `ℙ¹(F_q)` action (the keystone):**
+1. `MulAction (PSL 2 q) ℙ¹` — construct via mathlib's
+   `MulAction G (ℙ K V)` (`Mathlib/LinearAlgebra/Projectivization/Action.lean`,
+   needs `DistribMulAction (SL 2 F) (Fin 2 → F)` + `SMulCommClass`), then DESCEND
+   to PSL (the center `{±1}` acts trivially on lines — use `center_SL2`).  Attack:
+   (a) build the SL(2,F)-action on `Fin 2 → F` (matrix·vector, via `toLin'`/`toGL`);
+   (b) get the `ℙ¹` action from the mathlib instance; (c) show scalars fix every
+   line ⇒ center ≤ action-kernel ⇒ the action factors through `PSL = SL/center`.
+2. `FaithfulSMul (PSL 2 q) ℙ¹` — kernel of the SL-action on `ℙ¹` is exactly the
+   scalars = center (`center_SL2`), so PSL acts faithfully.
+3. `IsQuasiPreprimitive (PSL 2 q) ℙ¹` — PSL(2,q) is 2-transitive on `ℙ¹` (q+1
+   points) ⇒ primitive ⇒ quasi-preprimitive.  mathlib: `IsPreprimitive` from
+   2-transitivity.
+4. `IwasawaStructure (PSL 2 q) ℙ¹` — `T(point)` = image of the unipotent radical
+   (the `upper`/`lower` transvection subgroup fixing that point), abelian (`≅ F⁺`),
+   conjugation-equivariant, generating (`transvections_generate`, already proven).
+
+**Aristotle:** `card_SL2` (`|SL(2,q)| = q(q²-1)`, job `28df03ca`) grinding — useful
+for `|PSL(2,q)|` and the order tables; not on the critical path for simplicity.
 
 ## C. Soundness-audit TODO (cheap, valuable — flagged 2026-06-03)
 

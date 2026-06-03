@@ -40,6 +40,15 @@ Take `α = ℙ¹(F_q)` (the projective line), `M = PSL 2 q` acting by Möbius ma
 | `IwasawaStructure` | `T(line)` = unipotent radical fixing that point (an abelian `F_q⁺`), conjugation-equivariant, generating | `Subgroup`, `MulAut.conj`, `iSup` |
 | `FaithfulSMul` | only the identity fixes every point of `ℙ¹` | faithfulness of the projective action |
 
+**Status (2026-06-03):** two of the five obligations are machine-checked in
+`FiniteSimpleGroups/SL2.lean` (`#print axioms`-clean):
+- `commutator (PSL 2 q) = ⊤` — `SL2.PSL2_perfect` (q prime ≥ 4).
+- `Nontrivial (PSL 2 q)` — `SL2.PSL2_nontrivial` (all primes q).
+plus `SL2.center_SL2` (`center (SL 2 q) = {±1}`), the kernel of `SL ↠ PSL`, which
+is the groundwork for `FaithfulSMul`. The remaining three obligations
+(`MulAction`, `IsQuasiPreprimitive`, `IwasawaStructure`) all hinge on building
+the `ℙ¹(F_q)` action and descending it to `PSL = SL/center`; see `PENDING_WORK §D`.
+
 `q` is taken prime (so `ZMod q` is the field `F_q`); prime-power `q` needs
 `GaloisField p k` in place of `ZMod q` (the same caveat flagged in `LieType`).
 -/

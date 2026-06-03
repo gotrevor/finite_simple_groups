@@ -754,6 +754,14 @@ theorem trace_matrixHom_isIntegral {G : Type*} [Group G] [Finite G] {d : ℕ}
   rw [← repOfMatrixHom_character R g]
   exact Representation.character_isIntegral (repOfMatrixHom R) g
 
+/-- Each Wedderburn-factor character is bounded by its degree: `‖trace(Rᵢ g)‖ ≤ dᵢ` (ingredient
+`norm_character_le` via `repOfMatrixHom`).  This is the closed-unit-disc input to Kronecker. -/
+theorem norm_trace_matrixHom_le {G : Type*} [Group G] [Finite G] {d : ℕ}
+    (R : G →* Matrix (Fin d) (Fin d) ℂ) (g : G) : ‖(R g).trace‖ ≤ (d : ℝ) := by
+  rw [← repOfMatrixHom_character R g]
+  have h := Representation.norm_character_le (repOfMatrixHom R) g
+  rwa [show Module.finrank ℂ (Fin d → ℂ) = d by rw [Module.finrank_pi, Fintype.card_fin]] at h
+
 section RegularDecomp
 
 variable {G : Type*} [Group G] [Fintype G]

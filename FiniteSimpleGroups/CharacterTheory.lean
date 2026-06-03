@@ -86,4 +86,23 @@ theorem Representation.character_isIntegral {G : Type*} [Group G] [Finite G]
   refine trace_isIntegral_of_pow_eq_one (orderOf_pos g) _ ?_
   rw [LinearMap.toMatrix_pow, ← map_pow, pow_orderOf_eq_one, map_one, LinearMap.toMatrix_one]
 
+/-- **`-1/p` is not an algebraic integer** for a prime `p` (ingredient 5/6).  A rational that is
+integral over `ℤ` is an integer (`ℤ` is integrally closed in `ℚ`), and `-1/p ∉ ℤ` for `p ≥ 2`.
+This is what — against the column-orthogonality relation `1 + ∑_{χ≠1} χ(1)χ(g)/p = 0` rewritten
+as `-1/p = ∑_{χ≠1} (χ(1)/p)χ(g)` — forces some nontrivial irreducible `χ` with `p ∤ χ(1)` and
+`χ(g) ≠ 0`. -/
+theorem not_isIntegral_neg_inv_prime {p : ℕ} (hp : p.Prime) :
+    ¬ IsIntegral ℤ (-(p : ℚ)⁻¹) := by
+  rw [IsIntegrallyClosed.isIntegral_iff]
+  rintro ⟨m, hm⟩
+  have hp0 : (p : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr hp.pos.ne'
+  have hm' : (m : ℚ) = -(p : ℚ)⁻¹ := by exact_mod_cast hm
+  have hmp : (m : ℚ) * p = -1 := by rw [hm', neg_mul, inv_mul_cancel₀ hp0]
+  have hmZ : m * (p : ℤ) = -1 := by exact_mod_cast hmp
+  have hdvd : (p : ℤ) ∣ -1 := ⟨m, by rw [mul_comm]; exact hmZ.symm⟩
+  have hp1 : (p : ℤ) ∣ 1 := (Int.dvd_neg).mp hdvd
+  have hle : (p : ℤ) ≤ 1 := Int.le_of_dvd one_pos hp1
+  have h2 : 2 ≤ p := hp.two_le
+  omega
+
 end FiniteSimpleGroups

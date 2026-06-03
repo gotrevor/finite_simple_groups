@@ -7,6 +7,42 @@ findings back for a later lap. Newest first.
 
 ---
 
+## 2026-06-03 (update 2) — Burnside core SHARPENED; gap narrowed to 2 mathlib pieces
+
+Significant progress this lap reduces what's actually needed from the open web:
+
+1. **`burnside_simple` is now a THEOREM** (`FiniteSimpleGroups/Burnside.lean`), reduced by the
+   machine-checked Sylow/centre argument to a single sharp axiom
+   `isSimpleGroup_centralizer_index_not_primePow`: *a finite simple group has no conjugacy class
+   of prime-power size `> 1`* (i.e. `(C_G(g)).index ≠ p^k` for `g ≠ 1`, `k ≥ 1`).  This IS
+   Burnside's prime-power class-size lemma (Isaacs, *Character Theory*, Thm 3.8).
+2. The classical proof of that lemma has **6 ingredients** (see `CharacterTheory.lean` docstring).
+   Status after this lap:
+   - (1) χ(g) is an algebraic integer — ✅ **PROVED in-repo** (`Representation.character_isIntegral`).
+   - (4) Kronecker (alg. integer with all conjugates in unit disc ⟹ 0 or root of unity) — ✅
+     **ALREADY in mathlib**: `NumberField.Embeddings.pow_eq_one_of_norm_le_one`.
+   - (5) `-1/p ∉ ℤ̄` — ✅ **PROVED in-repo** (`not_isIntegral_neg_inv_prime`).
+   - (2) **central-character integrality** `[G:C_G(g)]·χ(g)/χ(1) ∈ ℤ̄` — ⛔ STILL MISSING.
+   - (3) **column orthogonality** `∑_χ χ(1)χ(g) = 0` for `g ≠ 1` — ⛔ STILL MISSING.
+   - (6) scalar ⟹ proper normal subgroup — group/rep theory, buildable in-repo.
+
+**The two things I still need from the open web (much narrower than before):**
+- **(2) Central character / class-sum machinery.** Does current/master mathlib carry: the centre
+  `Z(k[G])` of a group algebra; the class sums `z_C = ∑_{x∈C} x`; the fact that the `z_C` are
+  integral over `ℤ` (non-negative integer structure constants); the central character
+  `ω_χ : Z(ℂ[G]) → ℂ` with `ω_χ(z_C) = |C|χ(g)/χ(1)`?  Exact decl names if so.
+- **(3) Column orthogonality / number of irreducibles = number of conjugacy classes.** mathlib has
+  only row orthonormality (`char_orthonormal`).  Does master have the second orthogonality
+  relation, or `Nat.card (irreducible characters) = Nat.card (ConjClasses G)`?  Decl names.
+- **Either** of the above as an existing mathlib decl, **or** the cleanest formalizable lemma
+  statements (Isaacs §2–3), unblocks the remaining build.  An existing Isabelle-AFP / Coq
+  formalization of these two pieces to port would also do it.
+
+*(Items 1–3 of the original 2026-06-03 request below are now partly answered in-repo; the
+character-integrality half is done, so only the class-sum + column-orthogonality half remains.)*
+
+---
+
 ## 2026-06-03 — Burnside `p^a q^b`: the character-theoretic core `burnside_simple`
 
 **Context / why this unblocks.** `Burnside_paqb` (`ProofStrategy.lean`) is now a *theorem*: the
@@ -53,6 +89,17 @@ be a nice-to-have. Items 1–3 can be skipped.
 ---
 
 ### (Original, now superseded) Bender base case: the central-product reduction of `C_G(F(G)) ≤ F(G)`
+
+> ✅ **ANSWERED 2026-06-02 (host)** → `ON-LINE-FINDINGS-2026-06-02-bender-base-case.md`.
+> Still-useful bits despite supersession: **(item 4)** verified that **no
+> Lean/Isabelle/Coq formalization of `F*(G)`/Bender exists anywhere** — base
+> `math-comp` has only ordinary `'F(G)`; `math-comp/odd-order` has only the
+> *solvable* `C_G(F(G))⊆F(G)` (`cent_sub_Fitting`, B&G 1.3 / P. Hall); this repo is
+> first. **(remaining assembly)** the quasisimple-central-extension lemma + the
+> component pullback are exactly **K-S 6.5.1**, transcribed verbatim with a 5-step
+> portable lemma list in the findings (feed it to Aristotle job `9f7b6b74`). Plus
+> **(item 3)** mathlib has no Fitting subgroup at all, but its new `IsSubnormal`
+> (Capdeboscq+Testa 2026) is worth aligning the repo's against for upstreaming.
 
 **Context / why this unblocks.** Bender's cornerstone `C_G(F*(G)) ≤ F*(G)`
 (`genFittingSubgroup_self_centralizing`) is a proved theorem resting on ONE axiom,

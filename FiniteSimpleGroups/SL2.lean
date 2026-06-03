@@ -14,10 +14,14 @@ them — perfectness** — from scratch and fully axiom-free:
 * `PSL2_nontrivial` : `Nontrivial (PSL 2 q)` for every prime `q`
   (the Iwasawa `Nontrivial` obligation).
 
-Two of the five Iwasawa obligations of `PSL2_isSimpleGroup_of_iwasawa` are thus
-machine-checked here; the remaining three (the projective-line action,
-quasi-preprimitivity, the Iwasawa structure of unipotent subgroups) await the
-`ℙ¹(F_q)` action construction.
+* `psl1Action` : `MulAction (PSL 2 q) ℙ¹(F_q)` (the Iwasawa `MulAction`
+  obligation), built from the linear `SL(2,F)` action on `Fin 2 → F` descended
+  through the center (which fixes every line, `center_smul_eq`).
+
+Three of the five Iwasawa obligations of `PSL2_isSimpleGroup_of_iwasawa` are thus
+machine-checked here (perfect, nontrivial, the `ℙ¹` action); the remaining two
+(`FaithfulSMul` and `IsQuasiPreprimitive`/the unipotent `IwasawaStructure`) build
+on the `ℙ¹` action and `center_SL2`. See `PENDING_WORK §D`.
 
 Mathlib v4.29.1 has `PSL`/`SL` and the transvection machinery but **no** SL(2)
 perfectness and **no** PSL simplicity, so this is genuine new content, consistent
@@ -349,9 +353,49 @@ instance : SMulCommClass (SpecialLinearGroup (Fin 2) F) F (Fin 2 → F) where
 /-- **`SL(2,F)` acts on the projective line `ℙ¹(F)`** (via the mathlib
 projective-space action instance, fed by the linear `mulVec` action above). The
 quotient action of `PSL(2,q)` is obtained by descending through the center
-(`PENDING_WORK §D`). -/
+(below). -/
 example : MulAction (SpecialLinearGroup (Fin 2) F) (Projectivization F (Fin 2 → F)) :=
   inferInstance
+
+/-! ### Descent to `PSL(2,q)` acting on `ℙ¹(F_q)` — the Iwasawa `MulAction` obligation -/
+
+/-- The projective line `ℙ¹(F_q)`. -/
+abbrev P1 (q : ℕ) [Fact (Nat.Prime q)] : Type :=
+  Projectivization (ZMod q) (Fin 2 → ZMod q)
+
+/-- The center of `SL(2,q)` acts trivially on `ℙ¹`: the scalars `±1` fix every
+line (`−v` and `v` span the same line). -/
+theorem center_smul_eq (q : ℕ) [Fact (Nat.Prime q)]
+    {z : SpecialLinearGroup (Fin 2) (ZMod q)}
+    (hz : z ∈ Subgroup.center (SpecialLinearGroup (Fin 2) (ZMod q))) (x : P1 q) :
+    z • x = x := by
+  rcases (center_SL2 (ZMod q) z).mp hz with rfl | rfl
+  · exact one_smul _ x
+  · induction x using Projectivization.ind with
+    | h v hv =>
+      rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff]
+      refine ⟨-1, ?_⟩
+      show (-1 : (ZMod q)ˣ) • v = (-1 : SpecialLinearGroup (Fin 2) (ZMod q)) • v
+      rw [smul_vec_def]
+      simp [Matrix.neg_mulVec, Units.neg_smul]
+
+/-- The center of `SL(2,q)` lies in the kernel of the permutation action on `ℙ¹`. -/
+theorem center_le_ker (q : ℕ) [Fact (Nat.Prime q)] :
+    Subgroup.center (SpecialLinearGroup (Fin 2) (ZMod q)) ≤
+      (MulAction.toPermHom (SpecialLinearGroup (Fin 2) (ZMod q)) (P1 q)).ker := by
+  intro z hz
+  rw [MonoidHom.mem_ker]
+  ext x
+  simpa using center_smul_eq q hz x
+
+/-- **`PSL(2,q)` acts on `ℙ¹(F_q)`** — the Iwasawa `MulAction` obligation,
+obtained by descending the `SL(2,q)` action through the center (which acts
+trivially, `center_smul_eq`). -/
+noncomputable instance psl1Action (q : ℕ) [Fact (Nat.Prime q)] : MulAction (PSL 2 q) (P1 q) :=
+  MulAction.compHom (P1 q)
+    (QuotientGroup.lift (Subgroup.center _)
+      (MulAction.toPermHom (SpecialLinearGroup (Fin 2) (ZMod q)) (P1 q))
+      (center_le_ker q))
 
 end SL2
 end FiniteSimpleGroups

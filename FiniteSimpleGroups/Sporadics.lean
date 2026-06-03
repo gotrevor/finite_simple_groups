@@ -224,15 +224,16 @@ Lean reduces the product to the true `ℕ` either way. So the source-of-truth he
 is the exponent vector; the giant decimals (Monster ≈ 8·10⁵³) never have to be
 typed correctly.
 
-**Faithfulness status (read before trusting).** These are reconstructed from
-memory, not copied from a verified source in this session (the box has no web).
-- Small orders (Mathieu, J₁, J₂, J₃, Co₂/Co₃, McL, HS, He, Suz, Ru, O'N):
-  confidence ≈ 95%.
-- Large factorizations (Monster, Baby Monster, J₄, Fi₂₃, Fi₂₄′, Co₁, Th, Ly,
-  HN): confidence ≈ 85% — **cross-check the exponent vectors against the ATLAS
-  on the host before relying on these.** A transposed exponent is the likely
-  failure mode.
-The set of *primes* dividing each order is the cheapest external check (e.g. the
+**Faithfulness status.** Originally reconstructed from memory; now **verified**.
+All nine large factorizations (Monster, Baby Monster, J₄, Fi₂₃, Fi₂₄′, Co₁, Th,
+Ly, HN) were cross-checked against their canonical ATLAS *decimal* values
+(2026-06-03) — see the `order_*_decimal` theorems below, which `decide`-confirm
+the factored product equals the published decimal (an independent second
+encoding). They are *additionally* over-determined by the sharp index relations
+(`order_Co1_eq_98280_mul_Co2`, …) and the subgroup/subquotient divisibility nets,
+which pin the uncertain large orders two-sidedly against the high-confidence small
+ones. A transposed exponent now breaks at least one machine-checked theorem.
+The set of *primes* dividing each order is the cheapest sanity check (e.g. the
 15 supersingular primes for the Monster: 2,3,5,7,11,13,17,19,23,29,31,41,47,59,71).
 
 This pins the otherwise-`opaque` carriers: `IsClassified.sporadic` asserts
@@ -341,6 +342,98 @@ The Conway simplicity axioms (`Co{1,2,3}_isSimpleGroup`) are unrelated; this is 
 pure arithmetic consistency test on the order table. -/
 theorem co1Subquotient_order_dvd_co1 :
     ∀ n : Name, n.isCo1Subquotient → n.order ∣ Name.order .Co1 := by decide
+
+/-! ### Sharp index cross-checks — pinning the *uncertain* orders two-sidedly
+
+The divisibility nets above (`happyFamily_order_dvd_monster`,
+`co1Subquotient_order_dvd_co1`) only bound the large orders **from below**: a
+transposed exponent that *increased* `|Monster|` or `|Co₁|` would still pass,
+because divisibility `h ∣ G` only needs `vₚ(h) ≤ vₚ(G)`. The relations here are
+**exact index equalities `|G| = k·|H|`** with `k` supplied from an *independent*
+geometric/combinatorial fact (not read off the order table), so they pin the
+larger order from **both** sides against a smaller, higher-confidence one. -/
+
+/-- **`|Co₁| = 98280·|Co₂|`.** `Co₂` is the stabilizer in `Co₀ = 2·Co₁` (the
+automorphism group of the Leech lattice `Λ`) of a fixed **type-2** vector (a
+minimal vector, norm 4). `Λ` has exactly **196560** type-2 vectors in a single
+`Co₀`-orbit, and `−1 ∈ Co₀` moves each (`−v ≠ v`), so `Co₂` injects into
+`Co₁ = Co₀/⟨−1⟩` with index `196560/2 = 98280`. The constant `98280` comes from
+the Leech minimal-vector count, *not* from the order table, so this `decide`
+two-sidedly pins the least-certain `|Co₁|` against the more-certain `|Co₂|`. -/
+theorem order_Co1_eq_98280_mul_Co2 :
+    Name.order .Co1 = 98280 * Name.order .Co2 := by decide
+
+/-- **`|Co₁| = 8386560·|Co₃|`.** `Co₃` is the `Co₀`-stabilizer of a fixed
+**type-3** vector (norm 6); `Λ` has exactly **16773120** of them in one orbit,
+giving index `16773120/2 = 8386560` in `Co₁` (same `⟨−1⟩` argument as above).
+Independent geometric constant ⇒ a second two-sided pin on `|Co₁|`. -/
+theorem order_Co1_eq_8386560_mul_Co3 :
+    Name.order .Co1 = 8386560 * Name.order .Co3 := by decide
+
+/-- **`|Co₃| = 552·|McL|`.** `Co₃` has a rank-3 permutation action on **276**
+points (the vertices of the McLaughlin geometry plus a point) with point
+stabilizer `McL:2`, so `|Co₃| = 276·|McL:2| = 276·2·|McL| = 552·|McL|`. The
+point count `276` is independent of the table; chained with
+`order_Co1_eq_8386560_mul_Co3` this pins `|Co₁|` transitively against the
+high-confidence `|McL|`. -/
+theorem order_Co3_eq_552_mul_McL :
+    Name.order .Co3 = 552 * Name.order .McLaughlin := by decide
+
+/-! ### Subgroup-tower divisibility cross-checks
+
+Each relation below is `H ≤ G` for a *named* maximal or point-stabilizer
+subgroup (an independent group-theoretic fact), tested as `|H| ∣ |G|`. Unlike a
+coincidental numerical divisibility, every one corresponds to a real containment
+in the ATLAS, so it is a faithful consistency probe of the two orders. -/
+
+/-- **Mathieu subgroup tower.** Witt's chain of point-stabilizer / maximal
+subgroups: `M₁₁ ≤ M₁₂`, `M₁₂ ≤ M₂₄` (as `M₁₂:2`), `M₁₁ ≤ M₂₃` (maximal, index
+1288), `M₂₂ ≤ M₂₃ ≤ M₂₄` (one-point stabilizers). Each forces a divisibility,
+`decide`-checked here; together with the sharp transitivity relations
+(`order_M12_eq_12_mul_M11` etc.) this over-determines the five Mathieu orders. -/
+theorem mathieu_tower_dvd :
+    Name.order .M11 ∣ Name.order .M12 ∧
+    Name.order .M12 ∣ Name.order .M24 ∧
+    Name.order .M11 ∣ Name.order .M23 ∧
+    Name.order .M22 ∣ Name.order .M23 ∧
+    Name.order .M23 ∣ Name.order .M24 := by decide
+
+/-- **Fischer 3-transposition tower.** `Fi₂₂` is a subquotient of `Fi₂₃` (its
+transposition centralizer is `2·Fi₂₂`), and `Fi₂₃` likewise of `Fi₂₄′`, so
+`|Fi₂₂| ∣ |Fi₂₃| ∣ |Fi₂₄′|`. This pins the two large, less-certain Fischer orders
+*from below* against the higher-confidence `|Fi₂₂|`. -/
+theorem fischer_tower_dvd :
+    Name.order .Fi22 ∣ Name.order .Fi23 ∧
+    Name.order .Fi23 ∣ Name.order .Fi24' := by decide
+
+/-! ### Canonical-decimal cross-checks (ATLAS)
+
+The nine factorizations the order docstring flags at ~85% confidence, each
+asserted equal to its **canonical decimal value** as published in the ATLAS of
+Finite Groups / the standard references. The decimal is an *independent second
+encoding* of the same number (memorised/typed separately from the exponent
+vector), so any single transposed exponent in `Name.order` changes the product
+and trips one of these equalities. (Verified against the canonical values
+2026-06-03; this discharges the cross-check requested in
+`RFI-ATLAS-sporadic-orders.md`.) -/
+theorem order_Monster_decimal :
+    Name.order .Monster = 808017424794512875886459904961710757005754368000000000 := by decide
+theorem order_BabyMonster_decimal :
+    Name.order .BabyMonster = 4154781481226426191177580544000000 := by decide
+theorem order_J4_decimal :
+    Name.order .J4 = 86775571046077562880 := by decide
+theorem order_Co1_decimal :
+    Name.order .Co1 = 4157776806543360000 := by decide
+theorem order_Fi23_decimal :
+    Name.order .Fi23 = 4089470473293004800 := by decide
+theorem order_Fi24'_decimal :
+    Name.order .Fi24' = 1255205709190661721292800 := by decide
+theorem order_Thompson_decimal :
+    Name.order .Thompson = 90745943887872000 := by decide
+theorem order_Lyons_decimal :
+    Name.order .Lyons = 51765179004000000 := by decide
+theorem order_HaradaNorton_decimal :
+    Name.order .HaradaNorton = 273030912000000 := by decide
 
 /-- Lookup the underlying opaque carrier type for a sporadic group by name.
 

@@ -1210,23 +1210,6 @@ theorem exists_trivial_factor
   -- forces (via the matrix-unit argument) `M = 1`.  Here `M = (e (single g 1))ᵢ₀`.
   exact algHom_matrix_maps_one (restrictAlgHom f i₀ hi₀_one) _ h_g_hom
 
-/-- **Gap 3 uniqueness (disclosed axiom — pending).**  Two trivial Wedderburn factors coincide: the
-trivial representation occurs at a *single* index.  (Standard: distinct Wedderburn factors are
-non-isomorphic simple modules, so the trivial module appears once.)  Combined with the proved
-`exists_trivial_factor` this yields `exists_unique_trivial_factor`. -/
-axiom trivial_factor_unique {G : Type*} [Group G] [Fintype G] {n : ℕ} (d : Fin n → ℕ)
-    (e : MonoidAlgebra ℂ G ≃ₐ[ℂ] (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)) (i j : Fin n)
-    (hi : ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) i = 1)
-    (hj : ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) j = 1) : i = j
-
-/-- **Unique trivial Wedderburn factor (gap 3).**  Existence (`exists_trivial_factor`, machine-checked)
-+ uniqueness (`trivial_factor_unique`, disclosed axiom). -/
-theorem exists_unique_trivial_factor {G : Type*} [Group G] [Fintype G] {n : ℕ} (d : Fin n → ℕ)
-    (e : MonoidAlgebra ℂ G ≃ₐ[ℂ] (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)) :
-    ∃! i₀ : Fin n, ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) i₀ = 1 := by
-  obtain ⟨i₀, hi₀⟩ := exists_trivial_factor d e
-  exact ⟨i₀, hi₀, fun j hj => trivial_factor_unique d e j i₀ hj hi₀⟩
-
 /-- The left-regular character `χ_reg(g)` is the trace of left-multiplication by `single g 1` on
 `ℂ[G]`.  (`Representation.ofMulAction` on the group acting on itself is left multiplication.) -/
 theorem character_ofMulAction_eq_trace_mulLeft {G : Type*} [Group G] (g : G) :
@@ -1239,6 +1222,113 @@ theorem character_ofMulAction_eq_trace_mulLeft {G : Type*} [Group G] (g : G) :
   rw [Representation.ofMulAction_single]
   show MonoidAlgebra.single (g • a) b = MonoidAlgebra.single g 1 * MonoidAlgebra.single a b
   rw [MonoidAlgebra.single_mul_single, one_mul, smul_eq_mul]
+
+/-- **Uniqueness of the trivial Wedderburn factor (gap 3 — machine-checked).**  Two trivial factors
+coincide.  Argument (averaging idempotent): `w = |G|⁻¹·∑_g single g 1` is idempotent, so each
+component `(e w)ₖ` is an idempotent matrix with nonnegative-integer trace `rₖ` (rank,
+`matrix_idempotent_trace_natCast`).  The weighted traces sum to `1`:
+`∑ₖ dₖ·trace((e w)ₖ) = trace(mulLeft w) = |G|⁻¹·∑_g χ_reg(g) = |G|⁻¹·|G| = 1`.  Each trivial factor
+`k` has `(e w)ₖ = 1`, so `dₖ·rₖ = dₖ² ≥ 1`; with all terms `≥ 0`, two trivial factors would force
+the sum `≥ 2`.  Hence the trivial factor is unique. -/
+theorem trivial_factor_unique {G : Type*} [Group G] [Fintype G] {n : ℕ} (d : Fin n → ℕ)
+    (hd : ∀ k, 0 < d k)
+    (e : MonoidAlgebra ℂ G ≃ₐ[ℂ] (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)) (i j : Fin n)
+    (hi : ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) i = 1)
+    (hj : ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) j = 1) : i = j := by
+  classical
+  have hNpos : 0 < Fintype.card G := Fintype.card_pos
+  have hN : (Fintype.card G : ℂ) ≠ 0 := by exact_mod_cast hNpos.ne'
+  set t : MonoidAlgebra ℂ G := ∑ g : G, MonoidAlgebra.single g (1 : ℂ) with htdef
+  set w : MonoidAlgebra ℂ G := (Fintype.card G : ℂ)⁻¹ • t with hwdef
+  -- `t * t = |G| • t` (left multiplication permutes the group).
+  have hreindex : ∀ g : G, ∑ h : G, MonoidAlgebra.single (g * h) (1 : ℂ) = t := fun g => by
+    rw [htdef]; exact Equiv.sum_comp (Equiv.mulLeft g) (fun k => MonoidAlgebra.single k (1 : ℂ))
+  have ht_sq : t * t = (Fintype.card G : ℂ) • t := by
+    conv_lhs => rw [htdef]
+    rw [Finset.sum_mul_sum]
+    simp only [MonoidAlgebra.single_mul_single, mul_one]
+    rw [Finset.sum_congr rfl (fun g _ => hreindex g), Finset.sum_const, Finset.card_univ,
+      ← Nat.cast_smul_eq_nsmul ℂ]
+  -- `w` is idempotent, hence so is `e w` and each of its components.
+  have hw_idem : w * w = w := by
+    rw [hwdef, smul_mul_assoc, mul_smul_comm, ht_sq, smul_smul, smul_smul]
+    congr 1
+    field_simp
+  have hew_idem : ∀ k, (e w) k * (e w) k = (e w) k := by
+    intro k
+    have h : e (w * w) = e w * e w := map_mul e w w
+    rw [hw_idem] at h
+    have h2 := (congrFun h k).symm
+    rwa [Pi.mul_apply] at h2
+  -- `(e w)ₖ = |G|⁻¹ • ∑_g (e (single g 1))ₖ`.
+  have hewk : ∀ k, (e w) k = (Fintype.card G : ℂ)⁻¹ • ∑ g : G, (e (MonoidAlgebra.single g (1:ℂ))) k :=
+    fun k => by rw [hwdef, map_smul, Pi.smul_apply, htdef, map_sum, Finset.sum_apply]
+  -- Per-`g` regular-character decomposition.
+  have hdecg : ∀ g : G, (Representation.ofMulAction ℂ G G).character g
+      = ∑ k, (d k : ℂ) * ((e (MonoidAlgebra.single g (1:ℂ))) k).trace := fun g => by
+    rw [character_ofMulAction_eq_trace_mulLeft g,
+      ← LinearMap.trace_conj' (LinearMap.mulLeft ℂ (MonoidAlgebra.single g (1:ℂ))) e.toLinearEquiv,
+      conj_mulLeft e (MonoidAlgebra.single g 1),
+      trace_mulLeft_pi_matrix d (e (MonoidAlgebra.single g 1))]
+  -- Weighted-trace identity: `∑ₖ dₖ · trace((e w)ₖ) = 1`.
+  have htrace_id : ∑ k, (d k : ℂ) * ((e w) k).trace = 1 := by
+    calc ∑ k, (d k : ℂ) * ((e w) k).trace
+        = ∑ k, ∑ g : G, (Fintype.card G : ℂ)⁻¹
+            * ((d k : ℂ) * ((e (MonoidAlgebra.single g (1:ℂ))) k).trace) := by
+          refine Finset.sum_congr rfl fun k _ => ?_
+          rw [hewk k, Matrix.trace_smul, Matrix.trace_sum, smul_eq_mul, Finset.mul_sum,
+            Finset.mul_sum]
+          exact Finset.sum_congr rfl fun g _ => by ring
+      _ = ∑ g : G, ∑ k, (Fintype.card G : ℂ)⁻¹
+            * ((d k : ℂ) * ((e (MonoidAlgebra.single g (1:ℂ))) k).trace) := Finset.sum_comm
+      _ = ∑ g : G, (Fintype.card G : ℂ)⁻¹
+            * (Representation.ofMulAction ℂ G G).character g := by
+          refine Finset.sum_congr rfl fun g _ => ?_
+          rw [← Finset.mul_sum, ← hdecg g]
+      _ = (Fintype.card G : ℂ)⁻¹ * ∑ g : G, (Representation.ofMulAction ℂ G G).character g :=
+          (Finset.mul_sum _ _ _).symm
+      _ = (Fintype.card G : ℂ)⁻¹ * (Fintype.card G : ℂ) := by
+          rw [Finset.sum_congr rfl fun g _ => character_leftRegular_eq g,
+            Finset.sum_ite_eq' Finset.univ (1 : G), if_pos (Finset.mem_univ _)]
+      _ = 1 := inv_mul_cancel₀ hN
+  -- Each `trace((e w)ₖ)` is a nat-cast `rₖ`, so the summand is `(dₖ * rₖ : ℕ)` cast to `ℂ`.
+  choose r hr using fun k => matrix_idempotent_trace_natCast (e w k) (hew_idem k)
+  have hsumnat : ∑ k, d k * r k = 1 := by
+    have hc : ((∑ k, d k * r k : ℕ) : ℂ) = ((1 : ℕ) : ℂ) := by
+      push_cast
+      rw [← htrace_id]
+      exact Finset.sum_congr rfl fun k _ => by rw [hr k]
+    exact_mod_cast hc
+  -- A trivial factor `k` has `(e w)ₖ = 1`, so `r k = d k`, so `d k * r k ≥ 1`.
+  have htriv_term : ∀ k, (∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) k = 1) → 1 ≤ d k * r k := by
+    intro k hk
+    have hewk1 : (e w) k = 1 := by
+      rw [hewk k]
+      simp only [hk, Finset.sum_const, Finset.card_univ, ← Nat.cast_smul_eq_nsmul ℂ, smul_smul,
+        inv_mul_cancel₀ hN, one_smul]
+    have hrk : (d k : ℂ) = (r k : ℂ) := by
+      rw [← hr k, hewk1, Matrix.trace_one, Fintype.card_fin]
+    have hdr : d k = r k := by exact_mod_cast hrk
+    calc 1 ≤ d k := hd k
+      _ ≤ d k * r k := Nat.le_mul_of_pos_right _ (by rw [← hdr]; exact hd k)
+  -- If `i ≠ j` were both trivial, the sum would be `≥ 2`, contradicting `∑ = 1`.
+  by_contra hij
+  have hge : 2 ≤ ∑ k, d k * r k := by
+    calc 2 = 1 + 1 := rfl
+      _ ≤ d i * r i + d j * r j := Nat.add_le_add (htriv_term i hi) (htriv_term j hj)
+      _ = ∑ k ∈ ({i, j} : Finset (Fin n)), d k * r k :=
+          (Finset.sum_pair (f := fun k => d k * r k) hij).symm
+      _ ≤ ∑ k, d k * r k := Finset.sum_le_sum_of_subset (Finset.subset_univ _)
+  omega
+
+/-- **Unique trivial Wedderburn factor (gap 3 — fully machine-checked).**  Existence
+(`exists_trivial_factor`) + uniqueness (`trivial_factor_unique`). -/
+theorem exists_unique_trivial_factor {G : Type*} [Group G] [Fintype G] {n : ℕ} (d : Fin n → ℕ)
+    (hd : ∀ k, 0 < d k)
+    (e : MonoidAlgebra ℂ G ≃ₐ[ℂ] (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)) :
+    ∃! i₀ : Fin n, ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) i₀ = 1 := by
+  obtain ⟨i₀, hi₀⟩ := exists_trivial_factor d e
+  exact ⟨i₀, hi₀, fun j hj => trivial_factor_unique d hd e j i₀ hj hi₀⟩
 
 /-- **Regular-character decomposition (ingredient 3, Route B).**  Via Artin–Wedderburn
 `ℂ[G] ≃ₐ ∏ᵢ Mₐᵢ(ℂ)`, the left-regular character decomposes as `χ_reg(g) = ∑ᵢ dᵢ · trace(Rᵢ g)`
@@ -1286,7 +1376,8 @@ theorem exists_wedderburn_character_decomp :
     have hval : Ψ i y = (e y) i := rfl
     rw [hval, hy, Function.update_self]
   have hΨR : ∀ i g, Ψ i (MonoidAlgebra.single g 1) = R i g := fun i g => rfl
-  obtain ⟨i₀, hi₀, huniq⟩ := exists_unique_trivial_factor d e
+  obtain ⟨i₀, hi₀, huniq⟩ :=
+    exists_unique_trivial_factor d (fun k => Nat.pos_of_ne_zero (hd k).out) e
   refine ⟨n, d, R, Ψ, i₀, hd, fun i => (R i).map_one, hΨsurj, hΨR, hi₀, huniq, fun g => ?_⟩
   rw [character_ofMulAction_eq_trace_mulLeft g,
     ← LinearMap.trace_conj' (LinearMap.mulLeft ℂ (MonoidAlgebra.single g (1 : ℂ))) e.toLinearEquiv,

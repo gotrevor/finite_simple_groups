@@ -318,4 +318,14 @@ theorem genFittingSubgroup_ne_bot (G : Type*) [Group G] [Finite G] [Nontrivial G
   rw [hc] at hbender
   exact absurd (top_le_iff.mp hbender) bot_ne_top
 
+/-- **The B-theorem reduction setup: `F(G) = 1 ⟹ E(G) ≠ 1`** (for nontrivial `G`). Once the
+Fitting subgroup vanishes, `F*(G) = E(G)` (`genFittingSubgroup_eq_layer_of_fittingSubgroup_eq_bot`),
+and `F*(G) ≠ ⊥` (`genFittingSubgroup_ne_bot`) forces the layer — a non-trivial central product
+of quasisimple components — to be non-trivial. This is exactly the situation the Component
+Theorem analyzes. -/
+theorem layer_ne_bot_of_fittingSubgroup_eq_bot (G : Type*) [Group G] [Finite G] [Nontrivial G]
+    (h : fittingSubgroup G = ⊥) : layer G ≠ ⊥ := by
+  have hne := genFittingSubgroup_ne_bot G
+  rwa [genFittingSubgroup_eq_layer_of_fittingSubgroup_eq_bot h] at hne
+
 end FiniteSimpleGroups

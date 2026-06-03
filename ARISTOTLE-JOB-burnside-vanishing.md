@@ -1,5 +1,15 @@
 # Aristotle jobs: Burnside analytic lemmas
 
+> ## ✅ BURNSIDE COMPLETE (2026-06-03) — all jobs done/superseded; thread closed.
+> `Burnside_paqb` is fully machine-checked, `#print axioms` = `[propext, Classical.choice,
+> Quot.sound]`.  Aristotle jobs used + ported: `8451c8e2` (vanishing core), `eed8a149`
+> (`trace_mulLeft_pi_matrix`), `dc41262f` (matrix-module simple), `e66a25d1` (scalar bridge),
+> `a3e3d823` (gap-3 existence).  Jobs **superseded** (solved locally, do NOT port):
+> `fe2dc954`/`09bdf796` (gap-1 criterion/End — replaced by `isIrreducible_of_surjective_algHom`),
+> `3f459e3a` "gap3u" (uniqueness — replaced by the local `trivial_factor_unique`
+> averaging-idempotent proof).  No new jobs needed: the remaining repo axioms are all
+> `PENDING_WORK §B` deep/intended-permanent.
+
 ## Job 1 — Burnside vanishing lemma ✅ DONE + PORTED (2026-06-03)
 
 **Project UUID `8451c8e2-8ef8-4dd8-a832-d2128920ceb6`** (`aristotle-vanish`).

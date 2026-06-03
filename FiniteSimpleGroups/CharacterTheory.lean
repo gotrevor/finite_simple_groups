@@ -1031,6 +1031,18 @@ section RegularDecomp
 
 variable {G : Type*} [Group G] [Fintype G]
 
+/-- **The trace of a complex idempotent matrix is a nonnegative integer** (its rank): `toLin' M` is
+a projection onto its range, so `trace = finrank (range)` (`LinearMap.IsProj.trace`). -/
+theorem matrix_idempotent_trace_natCast {d : ℕ} (M : Matrix (Fin d) (Fin d) ℂ) (hM : M * M = M) :
+    ∃ r : ℕ, M.trace = (r : ℂ) := by
+  have hf : Matrix.toLin' M ∘ₗ Matrix.toLin' M = Matrix.toLin' M := by
+    rw [← Matrix.toLin'_mul, hM]
+  have hproj : LinearMap.IsProj (LinearMap.range (Matrix.toLin' M)) (Matrix.toLin' M) :=
+    { map_mem := fun x => LinearMap.mem_range_self _ x
+      map_id := fun x hx => by obtain ⟨y, rfl⟩ := hx; rw [← LinearMap.comp_apply, hf] }
+  exact ⟨Module.finrank ℂ (LinearMap.range (Matrix.toLin' M)), by
+    rw [← Matrix.trace_toLin'_eq M, hproj.trace]⟩
+
 /-! #### Gap 3: the trivial representation is the unique 1-dim Wedderburn factor.
 
 For the Artin–Wedderburn iso `e : ℂ[G] ≃ₐ ∏ᵢ Mᵢ(ℂ)`, exactly one factor `i₀` is the trivial

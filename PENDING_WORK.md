@@ -25,28 +25,41 @@ Done this far (all in `CharacterTheory.lean`, `#print axioms`-clean):
 - (6) `not_isScalar_of_isSimpleGroup_of_nonabelian` — a nontrivial scalar element in a faithful rep
   of a nonabelian simple group is impossible.  Plus `Representation.norm_character_le` (`‖χ(g)‖ ≤ χ(1)`).
 
-**Ingredient 3 — column orthogonality `∑_χ χ(1)χ(g) = 0` (g ≠ 1).**  THE remaining gap; needs the
-irreducible characters to form a *complete* class-function basis (= `#irreducibles = #ConjClasses`),
-which mathlib lacks (only orthonormality `char_orthonormal`).  Three attack paths:
-1. **Port from elsewhere** (cheapest if it exists).  Check master mathlib / Isabelle-AFP / Coq
-   mathcomp for column orthogonality or completeness of characters.  See `ON-LINE-REQUEST.md`
-   (2026-06-03 update 3) for the exact ask.
-2. **Regular-representation route (in-repo).**  Build `χ_reg(g) = |G|·[g=1]` (character of
-   `leftRegular ℂ G = ofMulAction ℂ G G`; trace of a permutation rep = fixed-point count — concrete,
-   reusable, farmable), then the decomposition `χ_reg = ∑_χ χ(1)·χ` over the finite family of
-   irreducibles ⇒ column orthogonality.  The hard sub-piece is the *finite family of irreducibles*
-   with multiplicity = dimension (needs Artin–Wedderburn / semisimple-module enumeration; mathlib
-   has Maschke `IsSemisimpleRing ℂ[G]` but not the Fintype of simple factors).
-3. **Class-function inner-product space (in-repo).**  Class functions form a `ℂ`-vector space of
-   dim `#ConjClasses`; irreducible characters are orthonormal (`char_orthonormal`) hence linearly
-   independent; show they *span* (= count them) ⇒ basis ⇒ second orthogonality.  Same hard sub-piece
-   (`#irreducibles = #ConjClasses`).
+Also DONE (analytic side, this lap):
+- **Vanishing lemma** `burnside_vanishing_core` — `∑ ζ_i = 0 ∨ ‖∑ ζ_i‖ = d` for `d` roots of unity
+  with `(∑ζ_i)/d` integral.  Discharged by Aristotle (`8451c8e2`), verified, ported (`c10fa8f`).
+- **Equality case** `eq_of_norm_sum_eq_card` — `d` unit-modulus numbers summing to modulus `d` are
+  all equal (the analytic half of "`‖χ(g)‖ = χ(1)` ⇒ `ρ g` scalar").
+- **Regular character** `character_leftRegular_eq` (`χ_reg(g) = |G|·[g=1]`) and
+  `sum_character_leftRegular_mul` (`∑_g χ_reg(g)·f(g) = |G|·f(1)`) — Route-B bricks for (3).
+
+**Ingredient 3 — column orthogonality `∑_χ χ(1)χ(g) = 0` (g ≠ 1).**  THE remaining gap.  Answered
+by the host: see `ON-LINE-FINDINGS-2026-06-03-burnside-paqb.md`.  Key facts from there:
+- mathlib has **no** column orthogonality (v4.29.1 = master), BUT it **has the Wedderburn–Artin
+  backbone**: `IsSemisimpleRing.exists_algEquiv_pi_matrix_of_isAlgClosed`
+  (`RingTheory/SimpleModule/IsAlgClosed.lean`) gives `ℂ[G] ≃ₐ[ℂ] ∏ᵢ Matrix (Fin dᵢ) (Fin dᵢ) ℂ`
+  (with `ℂ[G]` semisimple via Maschke).  So the finite family of irreducibles + `∑dᵢ²=|G|` is
+  derivable, not from-scratch.
+- **Coq mathcomp `integral_char.v`** fully formalizes Burnside `pᵃqᵇ` (Isaacs Ch.2–3) — the
+  decl-for-decl port blueprint; `second_orthogonality_relation` + `NirrE` (`#Irr=#classes`) are the
+  relevant decls.  No Lean/Isabelle equivalent — this repo would be the first in Lean.
+
+**Recommended: Route B (regular character).**  Build only `χ_reg = ∑_{χ∈Irr} χ(1)·χ` (sub-lemma 2;
+sub-lemma 1 `χ_reg(g)=|G|·[g=1]` and the inner-product `sum_character_leftRegular_mul` are DONE).
+Remaining work: (a) the **finite family `Irr(G)`** of irreducibles (index a complete duplicate-free
+set — the one shared sticking point; use the Wedderburn `∏Mᵢ` factors as the index), and (b) the
+semisimple decomposition "character of a rep = `∑ (multiplicity)·(irreducible char)`" with
+multiplicity `= ⟨χ_reg,χ⟩ = χ(1)` (have `char_orthonormal` for the inner product).
+Route A (full second orthogonality) is also now tractable; its one gap is "`{classSum C}` is a basis
+of `Z(ℂ[G])`" (have `classSum`, `classSum_central`).
 
 After ingredient 3: assemble the sharp axiom from
-`-1/p = ∑_{χ≠1}(χ(1)/p)χ(g)` (column orthogonality at `1` vs `g`) + `not_isIntegral_neg_inv_prime`
-⇒ ∃ nontrivial χ, `p∤χ(1)`, `χ(g)≠0` ⇒ (vanishing lemma) `g` scalar in χ ⇒
-`not_isScalar_of_isSimpleGroup_of_nonabelian` ⇒ `False`.  The vanishing lemma
-(`burnside_vanishing_core`) is OUT at Aristotle (`8451c8e2`); port + verify when it returns.
+`0 = χ_reg(g) = ∑_χ χ(1)χ(g) = 1 + p·θ` with `θ ∈ ℤ̄` ⇒ `θ = -1/p ∈ ℤ̄`, contradicting
+`not_isIntegral_neg_inv_prime`.  (For each nontrivial χ: if `p∤χ(1)` then `χ(g)/χ(1) ∈ ℤ̄`
+(ingredient 2 + gcd) of modulus ≤ 1 ⇒ (vanishing lemma) `χ(g)=0` or `g` scalar ⇒
+`not_isScalar_of_isSimpleGroup_of_nonabelian`; so the `p∤χ(1)` terms vanish.)  The scalar step
+`‖χ(g)‖=χ(1) ⇒ ρ g scalar` is OUT at Aristotle (`e66a25d1`, matrix form); port + wrap to the
+Representation level when it returns.
 
 ## B. Deep / intended-permanent (do NOT spend a lap trying to "crack")
 

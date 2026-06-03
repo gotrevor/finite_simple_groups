@@ -747,6 +747,13 @@ theorem repOfMatrixHom_character {G : Type*} [Group G] {d : ℕ}
   rw [show (Matrix.toLinAlgEquiv' (R g) : (Fin d → ℂ) →ₗ[ℂ] (Fin d → ℂ)) = (R g).toLin' from rfl]
   exact Matrix.trace_toLin'_eq (R g)
 
+/-- Each Wedderburn-factor trace `trace(Rᵢ g)` is an algebraic integer (ingredient 1 applied to
+`repOfMatrixHom Rᵢ`). -/
+theorem trace_matrixHom_isIntegral {G : Type*} [Group G] [Finite G] {d : ℕ}
+    (R : G →* Matrix (Fin d) (Fin d) ℂ) (g : G) : IsIntegral ℤ (R g).trace := by
+  rw [← repOfMatrixHom_character R g]
+  exact Representation.character_isIntegral (repOfMatrixHom R) g
+
 section RegularDecomp
 
 variable {G : Type*} [Group G] [Fintype G]

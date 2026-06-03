@@ -850,4 +850,40 @@ theorem exists_wedderburn_character_decomp :
 
 end RegularDecomp
 
+/-- **Burnside endgame, arithmetic core.**  Given complex numbers `aᵢ` summing to `0`, with one
+distinguished index `i₀` where `a_{i₀} = 1` (the trivial character's contribution) and every other
+`aᵢ = p·θᵢ` for an algebraic integer `θᵢ`, derive `False`.  Indeed `0 = 1 + p·(∑_{i≠i₀} θᵢ)` makes
+`Θ = ∑ θᵢ = -1/p` an algebraic integer, contradicting `not_isIntegral_neg_inv_prime`.
+
+This is the final assembly of Burnside's class-size lemma: instantiate `aᵢ = dᵢ·χᵢ(g)` from
+`exists_wedderburn_character_decomp` (so `∑ aᵢ = χ_reg(g) = 0` for `g ≠ 1`), `i₀` = the unique
+trivial factor (gap 3, `T = 1`), and for nontrivial factors split on `p ∣ dᵢ`: if `p ∤ dᵢ` then
+`χᵢ(g) = 0` (gap 1 irreducibility + gap 2 scalar bridge ⇒ vanishing, so `aᵢ = 0 = p·0`); if `p ∣ dᵢ`
+then `aᵢ = dᵢχᵢ(g) = p·((dᵢ/p)χᵢ(g))` with `(dᵢ/p)χᵢ(g) ∈ ℤ̄`. -/
+theorem burnside_final_contradiction {ι : Type*} [Fintype ι]
+    (a : ι → ℂ) (p : ℕ) (hp : p.Prime)
+    (i₀ : ι) (ha0 : a i₀ = 1)
+    (θ : ι → ℂ) (hθ : ∀ i, i ≠ i₀ → a i = (p : ℂ) * θ i)
+    (hθint : ∀ i, i ≠ i₀ → IsIntegral ℤ (θ i))
+    (hsum : ∑ i, a i = 0) : False := by
+  classical
+  set Θ : ℂ := ∑ i ∈ Finset.univ.erase i₀, θ i with hΘ
+  have hΘint : IsIntegral ℤ Θ := by
+    rw [hΘ]
+    exact IsIntegral.sum _ fun i hi => hθint i (Finset.mem_erase.mp hi).1
+  have hsum2 : (p : ℂ) * Θ + 1 = 0 := by
+    rw [← hsum, ← Finset.sum_erase_add Finset.univ a (Finset.mem_univ i₀), ha0, hΘ,
+      Finset.mul_sum]
+    congr 1
+    exact (Finset.sum_congr rfl fun i hi => hθ i (Finset.mem_erase.mp hi).1).symm
+  have hp0 : (p : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hp.pos.ne'
+  have hΘval : Θ = -(p : ℂ)⁻¹ := by field_simp; linear_combination hsum2
+  have hcast : Θ = algebraMap ℚ ℂ (-(p : ℚ)⁻¹) := by rw [hΘval]; push_cast; ring
+  have hQ : IsIntegral ℤ (-(p : ℚ)⁻¹) := by
+    have h := hΘint
+    rw [hcast] at h
+    exact (isIntegral_algHom_iff (IsScalarTower.toAlgHom ℤ ℚ ℂ)
+      (algebraMap ℚ ℂ).injective).mp (by simpa using h)
+  exact not_isIntegral_neg_inv_prime hp hQ
+
 end FiniteSimpleGroups

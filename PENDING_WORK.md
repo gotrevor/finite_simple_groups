@@ -7,37 +7,46 @@ attack paths.  Updated 2026-06-03.
 
 ### `isSimpleGroup_centralizer_index_not_primePow` (`Burnside.lean`)
 *Burnside's prime-power class-size lemma: a finite simple group has no conjugacy class of
-prime-power size `> 1`.*  This is the sole residual axiom of `burnside_simple` after this lap's
-machine-checked Sylow/centre reduction.  Six classical ingredients; 1, 4, 5 are DONE (in-repo or
-mathlib), so the residual is ingredients **2 + 3 + 6**.
+prime-power size `> 1`.*  Sole residual axiom of `burnside_simple` after the Sylow/centre
+reduction.  Six classical ingredients; **1, 2, 4, 5, 6 are DONE** (in-repo or mathlib).  The sole
+remaining gap is **ingredient 3 (column orthogonality)**, plus the analytic vanishing lemma (out at
+Aristotle) and the final assembly.
 
-Three attack paths:
-1. **Build the class-sum / central-character machinery in-repo** (ingredient 2).  Define
-   `Z(ℂ[G])` and the class sums `z_C ∈ MonoidAlgebra ℂ G`; prove they are integral over `ℤ`
-   (the `ℤ`-subalgebra they generate is finite over `ℤ` because `z_C z_D = ∑ a_{CDE} z_E` with
-   `a ∈ ℤ_{≥0}`); define `ω_χ` via Schur (`ρ(z_C)` is a scalar for irreducible `ρ`) and read off
-   `ω_χ(z_C) = |C|χ(g)/χ(1)`.  → `[G:C_G(g)]·χ(g)/χ(1)` integral.  (Aristotle-farmable in pieces.)
-2. **Build column orthogonality in-repo** (ingredient 3).  mathlib has row orthonormality
-   (`char_orthonormal`) and the irreducible decomposition (`FDRep`, Maschke).  Derive
-   `#{irreducibles} = #(ConjClasses G)` (class functions basis), then the second orthogonality
-   relation `∑_χ χ(1)χ(g) = 0` for `g ≠ 1`.  Then assemble: `-1/p = ∑_{χ≠1}(χ(1)/p)χ(g)`; if all
-   nonzero terms had `p | χ(1)` the RHS would be integral (ingredient 1), contradicting
-   `not_isIntegral_neg_inv_prime` — so some `χ` has `p ∤ χ(1)`, `χ(g) ≠ 0`, hence (Lemma A,
-   `burnside_vanishing_core`) `g` acts as a scalar in `χ`.
-3. **Ingredient 6 (in-repo, independent of 2/3):** the set `{h : ρ_χ(h) is a scalar}` is a normal
-   subgroup `N`; for a faithful nontrivial irreducible `χ` of a simple group, `N` proper (else `χ`
-   abelian image) and nontrivial (contains the scalar `g`) — contradiction with simplicity.  This
-   is pure group/rep theory and can be formalized now to de-risk the assembly.
+Done this far (all in `CharacterTheory.lean`, `#print axioms`-clean):
+- (1) `Representation.character_isIntegral` — χ(g) algebraic integer.
+- (2) `centralizerIndex_char_isIntegral` — `[G:C_G(g)]·χ(g)/χ(1) ∈ ℤ̄`.  Built via class sums in
+  `ℂ[G]` + Schur, using that **`ℤ[G]` is module-finite over `ℤ`** (every element integral over `ℤ`)
+  — the textbook structure-constant argument was unnecessary.  Supporting: `classSum`,
+  `classSum_isIntegral`, `classSum_central`, `trace_asAlgebraHom_classSum`,
+  `exists_scalar_isIntegral_of_central`, and the `filter_isConj_card_eq_index` bridge
+  (class size = centralizer index).
+- (4) Kronecker — mathlib `NumberField.Embeddings.pow_eq_one_of_norm_le_one`.
+- (5) `not_isIntegral_neg_inv_prime` — `-1/p ∉ ℤ̄`.
+- (6) `not_isScalar_of_isSimpleGroup_of_nonabelian` — a nontrivial scalar element in a faithful rep
+  of a nonabelian simple group is impossible.  Plus `Representation.norm_character_le` (`‖χ(g)‖ ≤ χ(1)`).
 
-Supporting bricks already in `CharacterTheory.lean`: `trace_isIntegral_of_pow_eq_one`,
-`Representation.character_isIntegral`, `not_isIntegral_neg_inv_prime`.  Lemma A
-(`burnside_vanishing_core`) is OUT at Aristotle (`8451c8e2`); when it returns, port + verify.
+**Ingredient 3 — column orthogonality `∑_χ χ(1)χ(g) = 0` (g ≠ 1).**  THE remaining gap; needs the
+irreducible characters to form a *complete* class-function basis (= `#irreducibles = #ConjClasses`),
+which mathlib lacks (only orthonormality `char_orthonormal`).  Three attack paths:
+1. **Port from elsewhere** (cheapest if it exists).  Check master mathlib / Isabelle-AFP / Coq
+   mathcomp for column orthogonality or completeness of characters.  See `ON-LINE-REQUEST.md`
+   (2026-06-03 update 3) for the exact ask.
+2. **Regular-representation route (in-repo).**  Build `χ_reg(g) = |G|·[g=1]` (character of
+   `leftRegular ℂ G = ofMulAction ℂ G G`; trace of a permutation rep = fixed-point count — concrete,
+   reusable, farmable), then the decomposition `χ_reg = ∑_χ χ(1)·χ` over the finite family of
+   irreducibles ⇒ column orthogonality.  The hard sub-piece is the *finite family of irreducibles*
+   with multiplicity = dimension (needs Artin–Wedderburn / semisimple-module enumeration; mathlib
+   has Maschke `IsSemisimpleRing ℂ[G]` but not the Fintype of simple factors).
+3. **Class-function inner-product space (in-repo).**  Class functions form a `ℂ`-vector space of
+   dim `#ConjClasses`; irreducible characters are orthonormal (`char_orthonormal`) hence linearly
+   independent; show they *span* (= count them) ⇒ basis ⇒ second orthogonality.  Same hard sub-piece
+   (`#irreducibles = #ConjClasses`).
 
-Next concrete sub-brick to build/farm: **eigenvalue structure** — `χ(g)` is a sum of exactly
-`χ(1)` roots of unity (the eigenvalues of `ρ g`), needed to bound `‖χ(g)‖ ≤ χ(1)` and to feed
-`burnside_vanishing_core`.  (Have: trace = sum of charpoly roots, roots are roots of unity.
-Missing: the multiset has card `= finrank` and elements are roots of unity, packaged for the ζ
-form.)
+After ingredient 3: assemble the sharp axiom from
+`-1/p = ∑_{χ≠1}(χ(1)/p)χ(g)` (column orthogonality at `1` vs `g`) + `not_isIntegral_neg_inv_prime`
+⇒ ∃ nontrivial χ, `p∤χ(1)`, `χ(g)≠0` ⇒ (vanishing lemma) `g` scalar in χ ⇒
+`not_isScalar_of_isSimpleGroup_of_nonabelian` ⇒ `False`.  The vanishing lemma
+(`burnside_vanishing_core`) is OUT at Aristotle (`8451c8e2`); port + verify when it returns.
 
 ## B. Deep / intended-permanent (do NOT spend a lap trying to "crack")
 

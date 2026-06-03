@@ -28,37 +28,34 @@ namespace FiniteSimpleGroups
 
 open Matrix Polynomial
 
-/-- **The trace of a finite-order complex matrix is an algebraic integer.**
-If `M : Matrix (Fin d) (Fin d) ℂ` satisfies `M ^ n = 1` with `n ≥ 1`, then `Matrix.trace M`
-is integral over `ℤ`.
+/-- **Eigenvalue structure of a finite-order complex matrix.**  If `M ^ n = 1`, the roots of the
+characteristic polynomial of `M` (its eigenvalues, with multiplicity) form a multiset of size
+exactly `d` (`= dim`), each of which is an `n`-th root of unity.
 
-Proof: `M` satisfies the separable polynomial `X ^ n - 1` over `ℂ`, so its characteristic
-polynomial splits with roots in the spectrum of `M`; each spectral value `r` satisfies
-`r ^ n = 1` (spectral mapping: `r ^ n ∈ spectrum (M ^ n) = spectrum 1 = {1}`), hence is integral
-over `ℤ` (a root of the monic integer polynomial `X ^ n - 1`).  The trace is the sum of these
-roots, and a finite sum of algebraic integers is an algebraic integer. -/
-theorem trace_isIntegral_of_pow_eq_one
-    {d n : ℕ} (hn : 1 ≤ n) (M : Matrix (Fin d) (Fin d) ℂ)
-    (hM : M ^ n = 1) : IsIntegral ℤ (Matrix.trace M) := by
-  rcases Nat.eq_zero_or_pos d with hd | hd
-  · subst hd
-    simp only [Matrix.trace, Matrix.diag, Fintype.sum_empty]
-    exact isIntegral_zero
-  · haveI : Nonempty (Fin d) := ⟨⟨0, hd⟩⟩
-    haveI : Nontrivial (Matrix (Fin d) (Fin d) ℂ) := inferInstance
-    -- the spectrum of `1` is `{1}`
-    have hone : ∀ x : ℂ, x ∈ spectrum ℂ (1 : Matrix (Fin d) (Fin d) ℂ) → x = 1 := by
-      intro x hx
-      rw [spectrum.mem_iff] at hx
-      by_contra hxne
-      apply hx
-      have he : algebraMap ℂ (Matrix (Fin d) (Fin d) ℂ) x - 1
-          = algebraMap ℂ _ (x - 1) := by rw [map_sub, map_one]
-      rw [he]
-      exact (algebraMap ℂ _).isUnit_map (isUnit_iff_ne_zero.mpr (sub_ne_zero.mpr hxne))
-    -- each root of the characteristic polynomial is an `n`-th root of unity, hence integral
-    have hroot : ∀ r ∈ (Matrix.charpoly M).roots, IsIntegral ℤ r := by
-      intro r hr
+Via the spectral mapping theorem: a root `r` of `charpoly M` lies in `spectrum ℂ M`, so
+`r ^ n = eval r (X^n) ∈ spectrum ℂ (M ^ n) = spectrum ℂ 1 = {1}`.  The card is `d` because over
+the algebraically closed field `ℂ` the (monic, degree-`d`) characteristic polynomial splits. -/
+theorem charpoly_roots_pow_eq_one {d n : ℕ} (M : Matrix (Fin d) (Fin d) ℂ)
+    (hM : M ^ n = 1) :
+    (Matrix.charpoly M).roots.card = d ∧ ∀ r ∈ (Matrix.charpoly M).roots, r ^ n = 1 := by
+  refine ⟨?_, ?_⟩
+  · rw [Polynomial.splits_iff_card_roots.mp (IsAlgClosed.splits _),
+        Matrix.charpoly_natDegree_eq_dim, Fintype.card_fin]
+  · intro r hr
+    rcases Nat.eq_zero_or_pos d with hd | hd
+    · subst hd; simp [Matrix.charpoly] at hr
+    · haveI : Nonempty (Fin d) := ⟨⟨0, hd⟩⟩
+      haveI : Nontrivial (Matrix (Fin d) (Fin d) ℂ) := inferInstance
+      -- the spectrum of `1` is `{1}`
+      have hone : ∀ x : ℂ, x ∈ spectrum ℂ (1 : Matrix (Fin d) (Fin d) ℂ) → x = 1 := by
+        intro x hx
+        rw [spectrum.mem_iff] at hx
+        by_contra hxne
+        apply hx
+        have he : algebraMap ℂ (Matrix (Fin d) (Fin d) ℂ) x - 1
+            = algebraMap ℂ _ (x - 1) := by rw [map_sub, map_one]
+        rw [he]
+        exact (algebraMap ℂ _).isUnit_map (isUnit_iff_ne_zero.mpr (sub_ne_zero.mpr hxne))
       have hr_spec : r ∈ spectrum ℂ M := by
         rw [Matrix.mem_spectrum_iff_isRoot_charpoly]
         exact (Polynomial.mem_roots (M.charpoly_monic.ne_zero)).mp hr
@@ -66,12 +63,21 @@ theorem trace_isIntegral_of_pow_eq_one
       have hin : eval r ((X : ℂ[X]) ^ n) ∈ spectrum ℂ (aeval M ((X : ℂ[X]) ^ n)) :=
         hmap ⟨r, hr_spec, rfl⟩
       rw [map_pow, aeval_X, hM, eval_pow, eval_X] at hin
-      have hrn : r ^ n = 1 := hone _ hin
-      refine ⟨X ^ n - C 1, ?_, ?_⟩
-      · exact monic_X_pow_sub_C 1 (by omega)
-      · rw [eval₂_sub, eval₂_pow, eval₂_X, eval₂_C, map_one, hrn, sub_self]
-    rw [Matrix.trace_eq_sum_roots_charpoly]
-    exact (integralClosure ℤ ℂ).multiset_sum_mem hroot
+      exact hone _ hin
+
+/-- **The trace of a finite-order complex matrix is an algebraic integer.**
+If `M : Matrix (Fin d) (Fin d) ℂ` satisfies `M ^ n = 1` with `n ≥ 1`, then `Matrix.trace M`
+is integral over `ℤ`: the trace is the sum of the eigenvalues
+(`charpoly_roots_pow_eq_one`), each an `n`-th root of unity, hence a root of the monic integer
+polynomial `X ^ n - 1`; a finite sum of algebraic integers is an algebraic integer. -/
+theorem trace_isIntegral_of_pow_eq_one
+    {d n : ℕ} (hn : 1 ≤ n) (M : Matrix (Fin d) (Fin d) ℂ)
+    (hM : M ^ n = 1) : IsIntegral ℤ (Matrix.trace M) := by
+  rw [Matrix.trace_eq_sum_roots_charpoly]
+  refine (integralClosure ℤ ℂ).multiset_sum_mem (fun r hr => ?_)
+  have hrn : r ^ n = 1 := (charpoly_roots_pow_eq_one M hM).2 r hr
+  refine ⟨X ^ n - C 1, monic_X_pow_sub_C 1 (by omega), ?_⟩
+  rw [eval₂_sub, eval₂_pow, eval₂_X, eval₂_C, map_one, hrn, sub_self]
 
 /-- **Character values of a finite group are algebraic integers.**
 For a finite group `G` and a finite-dimensional complex representation `ρ`, every character

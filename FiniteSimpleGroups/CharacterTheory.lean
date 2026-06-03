@@ -713,6 +713,20 @@ theorem conj_mulLeft {A B : Type*} [Ring A] [Ring B] [Algebra ℂ A] [Algebra �
   congr 1
   exact e.apply_symm_apply y
 
+/-- **A nontrivial homomorphism out of a simple group is injective.**  Its kernel is a proper
+normal subgroup, hence `⊥` by simplicity.  Applied to a nontrivial Wedderburn-factor representation
+`Rᵢ : G →* Mₐᵢ(ℂ)` of a simple `G`, this gives the faithfulness that ingredient 6
+(`not_isScalar_of_isSimpleGroup_of_nonabelian`) consumes. -/
+theorem injective_of_isSimpleGroup_of_exists_ne {G H : Type*} [Group G] [IsSimpleGroup G]
+    [Monoid H] (φ : G →* H) (hφ : ∃ g, φ g ≠ 1) : Function.Injective φ := by
+  rw [← MonoidHom.ker_eq_bot_iff]
+  rcases IsSimpleGroup.eq_bot_or_eq_top_of_normal φ.ker φ.normal_ker with h | h
+  · exact h
+  · exfalso
+    obtain ⟨g, hg⟩ := hφ
+    have hmem : g ∈ φ.ker := by rw [h]; exact Subgroup.mem_top g
+    exact hg (MonoidHom.mem_ker.mp hmem)
+
 section RegularDecomp
 
 variable {G : Type*} [Group G] [Fintype G]

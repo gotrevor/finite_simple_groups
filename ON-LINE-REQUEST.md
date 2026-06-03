@@ -7,6 +7,35 @@ findings back for a later lap. Newest first.
 
 ---
 
+## 2026-06-03 — Burnside `p^a q^b`: the character-theoretic core `burnside_simple`
+
+**Context / why this unblocks.** `Burnside_paqb` (`ProofStrategy.lean`) is now a *theorem*: the
+group-theoretic reduction to the simple case is machine-checked (`burnside_aux`). The lone
+residual is the axiom `burnside_simple`: *a finite **simple** group whose prime divisors lie in
+`{p, q}` is solvable* (equivalently, the only such simple groups are cyclic of prime order). This
+is the genuinely hard half (Burnside 1904) and needs character theory **mathlib v4.29.1 lacks**:
+`RepresentationTheory/Character.lean` has orthogonality (`char_orthonormal`) but **no** algebraic-
+integrality of character values, no central-character / class-sum machinery.
+
+**What I need from the open web.**
+1. **Does a newer mathlib** (current/master) carry: character values are algebraic integers; the
+   central character `ω_χ` integrality; the lemma "if `gcd(|g^G|, χ(1)) = 1` then `χ(g) = 0` or
+   `|χ(g)| = χ(1)`"; or even Burnside `p^a q^b` itself? If so, give the exact declaration names —
+   we may be able to bump (carefully, NOT on the shared tree) or port.
+2. **Is there an existing Lean/Isabelle/Coq formalization** of Burnside's `p^a q^b` theorem to
+   port? (e.g. an Isabelle AFP entry, a Lean PR, the Coq character-theory libraries.)
+3. **The cleanest textbook proof** of the simple-case core, broken into formalizable lemmas
+   (Isaacs *Character Theory* 3.8 / Serre *Linear Representations* §6, or James–Liebeck) —
+   specifically the chain: χ(g) algebraic integer → `ω_χ(class sum)` algebraic integer →
+   `(|g^G|/χ(1))·χ(g)` algebraic integer → with `gcd=1`, `χ(g)/χ(1)` algebraic integer of
+   absolute value ≤ 1 → `χ(g)=0` or central → a simple group has no class of prime-power size > 1
+   → no non-abelian simple group of order `p^a q^b`.
+
+The deliverable that unblocks: either the exact mathlib decls to port, or the formalizable lemma
+chain so a future lap can build the (substantial) character-integrality infrastructure.
+
+---
+
 ## 2026-06-02 — Bender base case — ✅ IN-REPO PATH FOUND (this request is now LOW PRIORITY)
 
 **Update (later same day):** the gap below was *cracked in-repo*, no open-web input needed.

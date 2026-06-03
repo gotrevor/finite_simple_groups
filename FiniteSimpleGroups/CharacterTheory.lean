@@ -339,6 +339,44 @@ theorem classSize_char_isIntegral (ρ : Representation ℂ G V) [FiniteDimension
       / ρ.character 1 = c := (div_eq_iff hne).mpr htr2.symm
   rw [heq]; exact hcint
 
+/-- The conjugacy-class size of `g` equals the centralizer index `[G : C_G(g)]`
+(orbit–stabilizer for the conjugation action of `ConjAct G`). -/
+theorem filter_isConj_card_eq_index (g : G) :
+    (Finset.univ.filter (fun x => IsConj g x)).card
+      = (Subgroup.centralizer ({g} : Set G)).index := by
+  have hset : (Finset.univ.filter (fun x => IsConj g x))
+      = (MulAction.orbit (ConjAct G) g).toFinset := by
+    ext x
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Set.mem_toFinset,
+      ConjAct.mem_orbit_conjAct]
+    exact isConj_comm
+  rw [hset, Set.toFinset_card]
+  have hpos : 0 < Fintype.card (Subgroup.centralizer ({g} : Set G)) := Fintype.card_pos
+  have hstab : Fintype.card (MulAction.stabilizer (ConjAct G) g)
+      = Fintype.card (Subgroup.centralizer ({g} : Set G)) := by
+    rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card,
+      ← Subgroup.nat_card_centralizer_nat_card_stabilizer]
+  have hcardConj : Fintype.card (ConjAct G) = Fintype.card G := rfl
+  have hcard_orbit : Fintype.card (MulAction.orbit (ConjAct G) g)
+      * Fintype.card (Subgroup.centralizer ({g} : Set G)) = Fintype.card G := by
+    rw [← hstab, MulAction.card_orbit_mul_card_stabilizer_eq_card_group, hcardConj]
+  have hidx2 : (Subgroup.centralizer ({g} : Set G)).index
+      * Fintype.card (Subgroup.centralizer ({g} : Set G)) = Fintype.card G := by
+    have h := Subgroup.card_mul_index (Subgroup.centralizer ({g} : Set G))
+    rw [Nat.card_eq_fintype_card, Nat.card_eq_fintype_card] at h
+    rw [mul_comm]; exact h
+  exact Nat.eq_of_mul_eq_mul_right hpos (by rw [hcard_orbit, hidx2])
+
+/-- **Central character integrality, in Burnside's form.** For a finite group, an irreducible
+complex representation `ρ`, and `g : G`, the number `[G : C_G(g)]·χ(g)/χ(1)` is an algebraic
+integer — exactly the input needed for Burnside's prime-power class-size lemma. -/
+theorem centralizerIndex_char_isIntegral (ρ : Representation ℂ G V) [FiniteDimensional ℂ V]
+    [ρ.IsIrreducible] [Nontrivial V] (g : G) :
+    IsIntegral ℤ (((Subgroup.centralizer ({g} : Set G)).index : ℂ)
+      * ρ.character g / ρ.character 1) := by
+  have h := classSize_char_isIntegral ρ g
+  rwa [filter_isConj_card_eq_index] at h
+
 end CentralCharacter
 
 end FiniteSimpleGroups

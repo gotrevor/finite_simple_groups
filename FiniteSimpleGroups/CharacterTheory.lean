@@ -443,6 +443,16 @@ theorem character_leftRegular_eq (g : G) :
   rw [Finset.sum_congr rfl (fun x _ => key x), Finset.sum_const, Finset.card_univ, nsmul_eq_mul,
     mul_ite, mul_one, mul_zero]
 
+/-- Since `χ_reg` is supported at the identity, `∑ g, χ_reg(g)·f(g) = |G|·f(1)` for any
+`f : G → ℂ`.  Taking `f(g) = χ(g⁻¹)` (or `conj χ(g)`) computes the multiplicity of an irreducible
+`χ` in the regular representation as `⟨χ_reg, χ⟩ = χ(1)` — the second half of the regular-character
+decomposition `χ_reg = ∑_χ χ(1)·χ` (ingredient 3, Route B). -/
+theorem sum_character_leftRegular_mul (f : G → ℂ) :
+    ∑ g, (Representation.ofMulAction ℂ G G).character g * f g = (Fintype.card G : ℂ) * f 1 := by
+  simp only [character_leftRegular_eq, ite_mul, zero_mul]
+  rw [Finset.sum_ite_eq' Finset.univ 1 (fun g => (Fintype.card G : ℂ) * f g)]
+  simp
+
 end RegularCharacter
 
 /-! ### Toward the scalar step: equality case of the triangle inequality

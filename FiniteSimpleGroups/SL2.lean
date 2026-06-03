@@ -311,5 +311,47 @@ theorem center_SL2 (F : Type*) [Field F] [DecidableEq F]
     · exact Subgroup.one_mem _
     · rw [Subgroup.mem_center_iff]; intro h; rw [mul_neg_one, neg_one_mul]
 
+/-! ### The action of `SL(2,F)` on the projective line `ℙ¹(F)`
+
+The remaining three Iwasawa obligations (`MulAction`, `IsQuasiPreprimitive`,
+`IwasawaStructure`) all need the action of `PSL(2,q)` on `ℙ¹(F_q)`. The
+foundation is the linear action of `SL(2,F)` on `Fin 2 → F` by `mulVec`, which
+(being linear and commuting with scalars) lifts via mathlib's
+`MulAction G (ℙ K V)` instance (`LinearAlgebra/Projectivization/Action.lean`) to
+an action on `ℙ¹(F) = Projectivization F (Fin 2 → F)`. The descent to
+`PSL = SL/center` (the center `{±1}` fixes every line — `center_SL2`) is the next
+step; see `PENDING_WORK §D`. -/
+
+/-- `SL(2,F)` acts on the vector space `Fin 2 → F` by matrix-vector product. -/
+instance : SMul (SpecialLinearGroup (Fin 2) F) (Fin 2 → F) where
+  smul g v := g.val.mulVec v
+
+@[simp] theorem smul_vec_def (g : SpecialLinearGroup (Fin 2) F) (v : Fin 2 → F) :
+    g • v = g.val.mulVec v := rfl
+
+instance : MulAction (SpecialLinearGroup (Fin 2) F) (Fin 2 → F) where
+  one_smul v := by show (1 : SpecialLinearGroup (Fin 2) F).val.mulVec v = v; simp
+  mul_smul g h v := by
+    change (g.val * h.val).mulVec v = g.val.mulVec (h.val.mulVec v)
+    rw [← Matrix.mulVec_mulVec]
+
+instance : DistribMulAction (SpecialLinearGroup (Fin 2) F) (Fin 2 → F) where
+  smul_zero g := by show g.val.mulVec 0 = 0; simp
+  smul_add g v w := by
+    show g.val.mulVec (v + w) = g.val.mulVec v + g.val.mulVec w
+    simp [Matrix.mulVec_add]
+
+instance : SMulCommClass (SpecialLinearGroup (Fin 2) F) F (Fin 2 → F) where
+  smul_comm g c v := by
+    show g.val.mulVec (c • v) = c • g.val.mulVec v
+    simp [Matrix.mulVec_smul]
+
+/-- **`SL(2,F)` acts on the projective line `ℙ¹(F)`** (via the mathlib
+projective-space action instance, fed by the linear `mulVec` action above). The
+quotient action of `PSL(2,q)` is obtained by descending through the center
+(`PENDING_WORK §D`). -/
+example : MulAction (SpecialLinearGroup (Fin 2) F) (Projectivization F (Fin 2 → F)) :=
+  inferInstance
+
 end SL2
 end FiniteSimpleGroups

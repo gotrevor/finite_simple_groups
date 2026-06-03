@@ -52,11 +52,75 @@ of v4.29.1 (mathlib has Burnside's *transfer* theorem and Burnside's orbit
 *lemma*, but not `p^a q^b` solvability — that needs character theory mathlib
 doesn't yet carry). So this stays a genuine axiom, not a quick discharge. -/
 
-/-- **Burnside's theorem (1904).** A finite group whose order has at most two
-distinct prime divisors is solvable. -/
-axiom Burnside_paqb (G : Type*) [Group G] [Finite G]
+/-- **Character-theoretic core of Burnside's `p^a q^b` theorem.** A finite *simple* group
+all of whose prime divisors lie in `{p, q}` is solvable — equivalently, the only such
+simple groups are cyclic of prime order. This is the genuinely hard half (Burnside 1904),
+proved by the vanishing of suitable character values: it needs the algebraic-integrality of
+characters and the class-sum eigenvalue argument, which mathlib v4.29.1 does not yet carry.
+Recorded as an honest `axiom`; the *reduction* of the full theorem to this case is the
+machine-checked `Burnside_paqb` below. -/
+axiom burnside_simple (G : Type*) [Group G] [Finite G] (p q : ℕ)
+    (hpq : ∀ r : ℕ, r.Prime → r ∣ Nat.card G → r = p ∨ r = q)
+    (hsimple : IsSimpleGroup G) : IsSolvable G
+
+/-- Order-bounded reduction of Burnside to the simple case, by strong induction on `|G|`.
+A proper nontrivial normal subgroup `N` splits `G` into the strictly smaller `N` and `G/N`,
+both with prime divisors in `{p, q}` (divisibility), hence solvable by induction, so `G` is
+solvable; otherwise `G` is trivial or simple (`burnside_simple`). -/
+private theorem burnside_aux (p q : ℕ) : ∀ (n : ℕ) (G : Type u) [Group G] [Finite G],
+    Nat.card G ≤ n → (∀ r : ℕ, r.Prime → r ∣ Nat.card G → r = p ∨ r = q) → IsSolvable G := by
+  intro n
+  induction n with
+  | zero => intro G _ _ hle _; exact absurd (Nat.card_pos.trans_le hle) (by simp)
+  | succ m ih =>
+    intro G _ _ hle hpq
+    rcases subsingleton_or_nontrivial G with _ | hnt
+    · infer_instance
+    · by_cases hsimple : IsSimpleGroup G
+      · exact burnside_simple G p q hpq hsimple
+      · obtain ⟨N, hNnorm, hNbot, hNtop⟩ : ∃ N : Subgroup G, N.Normal ∧ N ≠ ⊥ ∧ N ≠ ⊤ := by
+          by_contra hcon
+          push_neg at hcon
+          exact hsimple ⟨fun N hN => or_iff_not_imp_left.mpr (hcon N hN)⟩
+        haveI := hNnorm
+        have hNdvd : Nat.card N ∣ Nat.card G := Subgroup.card_subgroup_dvd_card N
+        have hQdvd : Nat.card (G ⧸ N) ∣ Nat.card G :=
+          Subgroup.card_dvd_of_surjective (QuotientGroup.mk' N) (QuotientGroup.mk'_surjective N)
+        have hmul : Nat.card G = Nat.card (G ⧸ N) * Nat.card N :=
+          Subgroup.card_eq_card_quotient_mul_card_subgroup N
+        have hN2 : 2 ≤ Nat.card N := N.one_lt_card_iff_ne_bot.mpr hNbot
+        have hQ2 : 2 ≤ Nat.card (G ⧸ N) := by
+          have hpos : 1 ≤ Nat.card (G ⧸ N) := Nat.card_pos
+          have hne1 : Nat.card (G ⧸ N) ≠ 1 := by
+            rw [show Nat.card (G ⧸ N) = N.index from rfl, Ne, Subgroup.index_eq_one]
+            exact hNtop
+          omega
+        have hNlt : Nat.card N < Nat.card G := by
+          rw [hmul]; calc Nat.card N < 2 * Nat.card N := by omega
+            _ ≤ Nat.card (G ⧸ N) * Nat.card N := by
+              exact Nat.mul_le_mul_right _ hQ2
+        have hQlt : Nat.card (G ⧸ N) < Nat.card G := by
+          rw [hmul]; calc Nat.card (G ⧸ N) < Nat.card (G ⧸ N) * 2 := by omega
+            _ ≤ Nat.card (G ⧸ N) * Nat.card N := Nat.mul_le_mul_left _ hN2
+        haveI : IsSolvable N :=
+          ih N (by omega) (fun r hr hrd => hpq r hr (hrd.trans hNdvd))
+        haveI : IsSolvable (G ⧸ N) :=
+          ih (G ⧸ N) (by omega) (fun r hr hrd => hpq r hr (hrd.trans hQdvd))
+        exact solvable_of_ker_le_range N.subtype (QuotientGroup.mk' N)
+          (le_of_eq (by rw [QuotientGroup.ker_mk', Subgroup.range_subtype]))
+
+/-- **Burnside's theorem (1904).** A finite group whose order has at most two distinct prime
+divisors is solvable. **Proved** here by reducing (machine-checked, `burnside_aux`) to the
+simple case, which is the lone residual axiom `burnside_simple` (the character-theoretic
+half). -/
+theorem Burnside_paqb (G : Type*) [Group G] [Finite G]
     (p q : ℕ) (hp : p.Prime) (hq : q.Prime) (a b : ℕ)
-    (h_card : Nat.card G = p ^ a * q ^ b) : IsSolvable G
+    (h_card : Nat.card G = p ^ a * q ^ b) : IsSolvable G := by
+  refine burnside_aux p q (Nat.card G) G le_rfl (fun r hr hrd => ?_)
+  rw [h_card] at hrd
+  rcases (Nat.Prime.dvd_mul hr).mp hrd with h | h
+  · exact Or.inl ((Nat.prime_dvd_prime_iff_eq hr hp).mp (hr.dvd_of_dvd_pow h))
+  · exact Or.inr ((Nat.prime_dvd_prime_iff_eq hr hq).mp (hr.dvd_of_dvd_pow h))
 
 /-! ### Milestone 1: The Feit–Thompson Odd Order Theorem (1962) -/
 

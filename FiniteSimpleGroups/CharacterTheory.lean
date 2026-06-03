@@ -497,4 +497,83 @@ theorem eq_of_norm_sum_eq_card {ι : Type*} [Fintype ι] (ζ : ι → ℂ)
   have : (starRingEnd ℂ) S * ζ i = (starRingEnd ℂ) S * ζ j := by rw [hval i, hval j]
   exact mul_left_cancel₀ hconjne this
 
+/-- **Burnside's vanishing lemma (analytic core).**  If `s = ∑ i, ζ i` is a sum of `d ≥ 1` roots of
+unity in `ℂ`, and `s / d` is an algebraic integer, then either `s = 0` or `‖s‖ = d`.
+
+With `d = χ(1)` the degree and `ζ i` the eigenvalues of `ρ g` (roots of unity), `s = χ(g)` and the
+hypothesis `IsIntegral ℤ (χ(g)/χ(1))` (from ingredient 2 + a gcd argument) forces `χ(g) = 0` or
+`‖χ(g)‖ = χ(1)`.
+
+Proof (number field + Kronecker): the `ζ i` generate a number field `K`; `β = s/d ∈ K` is integral
+over `ℤ`; every embedding `K →+* ℂ` sends `β` to an average of roots of unity, of norm `≤ 1`; by
+Kronecker (`NumberField.Embeddings.pow_eq_one_of_norm_le_one`) `β = 0` or `β` is a root of unity
+(`‖β‖ = 1`), giving `s = 0` or `‖s‖ = d`.
+
+Discharged by Aristotle (Harmonic) job `8451c8e2`, then re-verified in this kernel and confirmed
+`#print axioms`-clean (`[propext, Classical.choice, Quot.sound]`). -/
+theorem burnside_vanishing_core {d : ℕ} (hd : 1 ≤ d) (ζ : Fin d → ℂ)
+    (hζ : ∀ i, ∃ k : ℕ, 1 ≤ k ∧ ζ i ^ k = 1)
+    (hint : IsIntegral ℤ ((∑ i, ζ i) / d)) :
+    (∑ i, ζ i) = 0 ∨ ‖∑ i, ζ i‖ = d := by
+  set s := ∑ i, ζ i with hs_def
+  set β := s / (d : ℂ) with hβ_def
+  have hd_pos : (0 : ℝ) < d := Nat.cast_pos.mpr (by omega)
+  have hd_ne : (d : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+  have norm_of_pow_eq_one : ∀ (z : ℂ) (k : ℕ), 1 ≤ k → z ^ k = 1 → ‖z‖ = 1 := by
+    intro z k hk hz
+    have h1 : ‖z‖ ^ k = 1 := by rw [← norm_pow, hz, norm_one]
+    rcases lt_trichotomy ‖z‖ 1 with h | h | h
+    · exact absurd (pow_lt_one₀ (norm_nonneg z) h (show k ≠ 0 by omega)) (by linarith)
+    · exact h
+    · exact absurd (one_lt_pow₀ h (show k ≠ 0 by omega)) (by linarith)
+  have hζ_norm : ∀ i, ‖ζ i‖ = 1 := by
+    intro i; obtain ⟨k, hk, hz⟩ := hζ i; exact norm_of_pow_eq_one _ k hk hz
+  set K := IntermediateField.adjoin ℚ (Set.range ζ)
+  have halg : ∀ x ∈ Set.range ζ, IsIntegral ℚ x := by
+    rintro x ⟨i, rfl⟩; obtain ⟨k, hk, hz⟩ := hζ i
+    exact (show IsIntegral ℤ (ζ i) from
+      ⟨Polynomial.X ^ k - 1,
+       (Polynomial.monic_X_pow k).sub_of_left
+         (by rw [Polynomial.degree_one, Polynomial.degree_X_pow]; exact_mod_cast by omega),
+       by simp [hz]⟩).tower_top
+  haveI : FiniteDimensional ℚ K := IntermediateField.finiteDimensional_adjoin halg
+  haveI : NumberField K :=
+    { to_charZero := inferInstance, to_finiteDimensional := inferInstance }
+  have hmem : ∀ i, ζ i ∈ K := fun i =>
+    IntermediateField.subset_adjoin ℚ (Set.range ζ) (Set.mem_range_self i)
+  set ζ_K : Fin d → K := fun i => ⟨ζ i, hmem i⟩
+  set β_K : K := (∑ i, ζ_K i) / (d : K)
+  have hζ_val : ∀ i, K.val (ζ_K i) = ζ i := fun _ => rfl
+  have hβ_map : K.val β_K = β := by
+    simp only [β_K, map_div₀, map_sum, map_natCast, hζ_val]; exact hβ_def.symm
+  have hint_K : IsIntegral ℤ β_K := by
+    have h : IsIntegral ℤ (IsScalarTower.toAlgHom ℤ K ℂ β_K) := by
+      show IsIntegral ℤ (K.val β_K); rwa [hβ_map]
+    exact (isIntegral_algHom_iff (IsScalarTower.toAlgHom ℤ K ℂ)
+      (IsScalarTower.toAlgHom ℤ K ℂ).injective).mp h
+  have hembed : ∀ φ : K →+* ℂ, ‖φ β_K‖ ≤ 1 := by
+    intro φ
+    have hφ_β : φ β_K = (∑ i, φ (ζ_K i)) / (d : ℂ) := by
+      simp [β_K, map_sum, map_div₀, map_natCast]
+    have hφ_norm : ∀ i, ‖φ (ζ_K i)‖ = 1 := by
+      intro i; obtain ⟨k, hk, hz⟩ := hζ i
+      have hζK_pow : (ζ_K i) ^ k = 1 := Subtype.ext (by simp [ζ_K, hz])
+      exact norm_of_pow_eq_one _ k hk (by rw [← map_pow, hζK_pow, map_one])
+    rw [hφ_β, norm_div, Complex.norm_natCast, div_le_one hd_pos]
+    calc ‖∑ i, φ (ζ_K i)‖ ≤ ∑ i, ‖φ (ζ_K i)‖ := norm_sum_le _ _
+      _ = ∑ _i : Fin d, (1 : ℝ) := by congr 1; ext i; exact hφ_norm i
+      _ = d := by simp
+  by_cases hβ0 : β_K = 0
+  · left
+    have : β = 0 := by rw [← hβ_map]; simp [hβ0]
+    rwa [hβ_def, div_eq_zero_iff, or_iff_left hd_ne] at this
+  · right
+    obtain ⟨n, hn, hpow⟩ := NumberField.Embeddings.pow_eq_one_of_norm_le_one K ℂ hβ0 hint_K hembed
+    have hβ_pow : β ^ n = 1 := by
+      have := congr_arg K.val hpow
+      simp only [map_pow, map_one, hβ_map] at this; exact this
+    have hβ_norm : ‖β‖ = 1 := norm_of_pow_eq_one _ n (by omega) hβ_pow
+    have hsβ : s = (d : ℂ) * β := by rw [hβ_def, mul_div_cancel₀ s hd_ne]
+    rw [hsβ, norm_mul, Complex.norm_natCast, hβ_norm, mul_one]
+
 end FiniteSimpleGroups

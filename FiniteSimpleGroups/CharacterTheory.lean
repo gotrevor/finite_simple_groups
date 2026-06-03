@@ -734,6 +734,38 @@ theorem matrix_scalar_of_pow_eq_one_of_norm_trace_eq {d n : ℕ} (hn : 1 ≤ n)
     rw [ Matrix.charpoly_monic ] ; norm_num;
   exact ⟨ ζ, matrix_scalar_of_charpoly_eq_pow hn M hM ζ h_charpoly ⟩
 
+set_option maxHeartbeats 800000 in
+/-- **Vanishing-or-scalar dichotomy for a finite-order matrix.**  For `M ^ n = 1` (`d, n ≥ 1`) with
+`trace M / d` an algebraic integer, either `trace M = 0` or `M` is a scalar `ζ • 1`.
+
+This packages the Burnside analytic core for one Wedderburn factor: the eigenvalues (charpoly roots)
+are `n`-th roots of unity summing to `trace M`, so `burnside_vanishing_core` gives `trace M = 0` or
+`‖trace M‖ = d`, and in the latter case `matrix_scalar_of_pow_eq_one_of_norm_trace_eq` makes `M`
+scalar. -/
+theorem matrix_trace_zero_or_scalar {d n : ℕ} (hd : 1 ≤ d) (hn : 1 ≤ n)
+    (M : Matrix (Fin d) (Fin d) ℂ) (hM : M ^ n = 1)
+    (hint : IsIntegral ℤ (M.trace / (d : ℂ))) :
+    M.trace = 0 ∨ ∃ ζ : ℂ, M = ζ • (1 : Matrix (Fin d) (Fin d) ℂ) := by
+  have h_splits : M.charpoly.Splits := IsAlgClosed.splits _
+  obtain ⟨r, hr⟩ : ∃ r : Fin d → ℂ, M.charpoly.roots = Multiset.ofList (List.ofFn r) := by
+    have h_roots_card : Multiset.card M.charpoly.roots = d := by
+      rw [ Polynomial.splits_iff_card_roots ] at h_splits ; aesop;
+    rcases m : M.charpoly.roots with ⟨ ⟩ ; simp_all +decide [ List.ofFn_eq_map ];
+    use fun i => ‹List ℂ›[i]!;
+    convert List.Perm.of_eq _;
+    refine' List.ext_get _ _ <;> aesop;
+  have h_sum_r : ∑ i, r i = M.trace := by
+    rw [ Matrix.trace_eq_sum_roots_charpoly ]; norm_num [ hr, List.sum_ofFn ]
+  have h_root_unity : ∀ i, ∃ k : ℕ, 1 ≤ k ∧ r i ^ k = 1 := by
+    intro i
+    refine ⟨n, hn, root_charpoly_pow_eq_one M hM (r i) ?_⟩
+    rw [hr]; simp [List.mem_ofFn]
+  have hvan := burnside_vanishing_core hd r h_root_unity (by rw [h_sum_r]; exact hint)
+  rw [h_sum_r] at hvan
+  rcases hvan with h0 | hnorm
+  · exact Or.inl h0
+  · exact Or.inr (matrix_scalar_of_pow_eq_one_of_norm_trace_eq hn M hM hnorm)
+
 /-! ### Regular-character decomposition via Artin–Wedderburn (ingredient 3, Route B)
 
 `ℂ[G]` is semisimple (Maschke), finite-dimensional, over the algebraically closed field `ℂ`, so
@@ -964,6 +996,21 @@ section RegularDecomp
 
 variable {G : Type*} [Group G] [Fintype G]
 
+/-- **Gap 3 (disclosed axiom — being discharged): unique trivial Wedderburn factor.**  For the
+Artin–Wedderburn iso `e : ℂ[G] ≃ₐ ∏ᵢ Mᵢ(ℂ)` of a finite group, there is *exactly one* factor `i₀`
+on which every group element acts as the identity matrix — the trivial representation.
+
+Existence: the augmentation `ℂ[G] →ₐ ℂ` (a nonzero 1-dim rep) factors through the projection to a
+1-dimensional factor (matrix factors are simple rings).  Uniqueness: two such factors give equal
+algebra homs `ℂ[G] → Mᵢ` (both send `single g 1 ↦ 1`), forcing the projections — hence the indices —
+equal.  This is the `T = 1` input to the Burnside endgame (`burnside_final_contradiction`'s `+1`).
+
+Existence is out at Aristotle (job `a3e3d823`, `exists_trivial_factor`); the uniqueness half is the
+`MonoidAlgebra.algHom_ext` argument.  Recorded as a disclosed axiom pending those proofs. -/
+axiom exists_unique_trivial_factor {G : Type*} [Group G] [Fintype G] {n : ℕ} (d : Fin n → ℕ)
+    (e : MonoidAlgebra ℂ G ≃ₐ[ℂ] (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)) :
+    ∃! i₀ : Fin n, ∀ g : G, (e (MonoidAlgebra.single g (1 : ℂ))) i₀ = 1
+
 /-- The left-regular character `χ_reg(g)` is the trace of left-multiplication by `single g 1` on
 `ℂ[G]`.  (`Representation.ofMulAction` on the group acting on itself is left multiplication.) -/
 theorem character_ofMulAction_eq_trace_mulLeft {G : Type*} [Group G] (g : G) :
@@ -984,11 +1031,14 @@ and `dᵢ` (`= trace(Rᵢ 1)`) its degree.  With `character_leftRegular_eq` this
 orthogonality `∑ᵢ dᵢ·trace(Rᵢ g) = 0` for `g ≠ 1`. -/
 theorem exists_wedderburn_character_decomp :
     ∃ (n : ℕ) (d : Fin n → ℕ) (R : ∀ i, G →* Matrix (Fin (d i)) (Fin (d i)) ℂ)
-      (Ψ : ∀ i, MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin (d i)) (Fin (d i)) ℂ),
+      (Ψ : ∀ i, MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin (d i)) (Fin (d i)) ℂ)
+      (i₀ : Fin n),
       (∀ i, NeZero (d i)) ∧
       (∀ i, R i 1 = 1) ∧
       (∀ i, Function.Surjective (Ψ i)) ∧
       (∀ i g, Ψ i (MonoidAlgebra.single g 1) = R i g) ∧
+      (∀ g, R i₀ g = 1) ∧
+      (∀ i, (∀ g, R i g = 1) → i = i₀) ∧
       (∀ g, (Representation.ofMulAction ℂ G G).character g
               = ∑ i, (d i : ℂ) * (R i g).trace) := by
   haveI : NeZero (Nat.card G : ℂ) := ⟨Nat.cast_ne_zero.mpr Nat.card_pos.ne'⟩
@@ -1020,7 +1070,8 @@ theorem exists_wedderburn_character_decomp :
     have hval : Ψ i y = (e y) i := rfl
     rw [hval, hy, Function.update_self]
   have hΨR : ∀ i g, Ψ i (MonoidAlgebra.single g 1) = R i g := fun i g => rfl
-  refine ⟨n, d, R, Ψ, hd, fun i => (R i).map_one, hΨsurj, hΨR, fun g => ?_⟩
+  obtain ⟨i₀, hi₀, huniq⟩ := exists_unique_trivial_factor d e
+  refine ⟨n, d, R, Ψ, i₀, hd, fun i => (R i).map_one, hΨsurj, hΨR, hi₀, huniq, fun g => ?_⟩
   rw [character_ofMulAction_eq_trace_mulLeft g,
     ← LinearMap.trace_conj' (LinearMap.mulLeft ℂ (MonoidAlgebra.single g (1 : ℂ))) e.toLinearEquiv,
     conj_mulLeft e (MonoidAlgebra.single g 1), trace_mulLeft_pi_matrix d (e (MonoidAlgebra.single g 1))]

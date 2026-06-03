@@ -435,6 +435,29 @@ theorem order_Lyons_decimal :
 theorem order_HaradaNorton_decimal :
     Name.order .HaradaNorton = 273030912000000 := by decide
 
+/-! ### Prime-spectrum cross-checks
+
+The set of primes dividing an order is an *independent* probe (it depends only on
+which exponents are nonzero, not their sizes), and for the Monster it is one of
+the most celebrated facts in the subject. -/
+
+/-- **Ogg's supersingular primes.** The primes dividing `|Monster|` are *exactly*
+the 15 **supersingular primes** `{2,3,5,7,11,13,17,19,23,29,31,41,47,59,71}` — A.
+Ogg's 1975 observation, a seed of monstrous moonshine. Verified here over all
+primes `< 72` (so the top prime `71` is pinned and the gaps `37,43,53,61,67` are
+confirmed absent). An exponent error that switched a prime on or off would break
+this. -/
+theorem monster_supersingular_spectrum :
+    (Finset.range 72).filter (fun p => p.Prime ∧ p ∣ Name.order .Monster) =
+      ({2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 41, 47, 59, 71} : Finset ℕ) := by decide
+
+/-- **Baby Monster prime spectrum.** The primes dividing `|B|` are exactly
+`{2,3,5,7,11,13,17,19,23,31,47}` (checked over all primes `< 50`; note `29,37,41,43`
+are absent — `B`, unlike `M`, is not divisible by `29` or `41`). -/
+theorem babyMonster_prime_spectrum :
+    (Finset.range 50).filter (fun p => p.Prime ∧ p ∣ Name.order .BabyMonster) =
+      ({2, 3, 5, 7, 11, 13, 17, 19, 23, 31, 47} : Finset ℕ) := by decide
+
 /-- Lookup the underlying opaque carrier type for a sporadic group by name.
 
 Used by `Classification.IsClassified.sporadic` to quantify over sporadics

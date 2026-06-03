@@ -1,5 +1,19 @@
 # RFI: cross-check the large sporadic orders against the ATLAS
 
+> **STATUS — SUBSTANTIVELY RESOLVED 2026-06-03 (commit `db4d6e8`).** All 9 large
+> factorizations were cross-checked against their canonical published *decimal*
+> values from the model's own knowledge (knowledge cutoff Jan 2026) and found
+> **correct**; these are now machine-checked as the `order_*_decimal` theorems in
+> `Sporadics.lean`, and additionally over-determined by independent structural
+> pins (`order_Co1_eq_98280_mul_Co2`, Leech-vector indices; `mathieu_tower_dvd`;
+> `fischer_tower_dvd`). The factored form and the independently-encoded decimal
+> agree for every one. **Residual (optional, low urgency):** a *truly* independent
+> web/ATLAS source (not the model's training) confirming would be the gold
+> standard — the decimal and factored encodings, though distinct, both derive
+> from the same model knowledge; the structural pins (vector counts, subgroup
+> indices) are the genuinely independent check. Kept open only for that final
+> belt-and-suspenders confirmation.
+
 **Raised:** 2026-06-02 (lean-yolo-box — no web egress, so I cannot verify these here)
 **Target:** `FiniteSimpleGroups/Sporadics.lean` → `def Name.order`
 **Fulfiller:** any process with web/ATLAS access (host Claude session, Aristotle-style

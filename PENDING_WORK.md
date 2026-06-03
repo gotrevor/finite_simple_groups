@@ -150,22 +150,33 @@ axioms`-clean — `[propext, Classical.choice, Quot.sound]`):
 - ✅ **faithfulness groundwork** — `center_SL2`: `center (SL(2,F)) = {±1}`, the
   kernel of `SL ↠ PSL`.
 
-**Remaining 3 obligations — all need the `ℙ¹(F_q)` action (the keystone):**
-1. `MulAction (PSL 2 q) ℙ¹` — construct via mathlib's
-   `MulAction G (ℙ K V)` (`Mathlib/LinearAlgebra/Projectivization/Action.lean`,
-   needs `DistribMulAction (SL 2 F) (Fin 2 → F)` + `SMulCommClass`), then DESCEND
-   to PSL (the center `{±1}` acts trivially on lines — use `center_SL2`).  Attack:
-   (a) build the SL(2,F)-action on `Fin 2 → F` (matrix·vector, via `toLin'`/`toGL`);
-   (b) get the `ℙ¹` action from the mathlib instance; (c) show scalars fix every
-   line ⇒ center ≤ action-kernel ⇒ the action factors through `PSL = SL/center`.
-2. `FaithfulSMul (PSL 2 q) ℙ¹` — kernel of the SL-action on `ℙ¹` is exactly the
-   scalars = center (`center_SL2`), so PSL acts faithfully.
-3. `IsQuasiPreprimitive (PSL 2 q) ℙ¹` — PSL(2,q) is 2-transitive on `ℙ¹` (q+1
-   points) ⇒ primitive ⇒ quasi-preprimitive.  mathlib: `IsPreprimitive` from
-   2-transitivity.
-4. `IwasawaStructure (PSL 2 q) ℙ¹` — `T(point)` = image of the unipotent radical
-   (the `upper`/`lower` transvection subgroup fixing that point), abelian (`≅ F⁺`),
-   conjugation-equivariant, generating (`transvections_generate`, already proven).
+3. ✅ **`MulAction (PSL 2 q) ℙ¹`** — `SL2.psl1Action` (DONE 2026-06-03).  Built the
+   SL(2,F) action on `Fin 2 → F` (mulVec; `DistribMulAction` + `SMulCommClass`),
+   got `MulAction (SL 2 F) (ℙ¹)` from mathlib's instance, then DESCENDED to PSL via
+   `QuotientGroup.lift (toPermHom) (center_le_ker)` + `MulAction.compHom`
+   (`center_smul_eq`: scalars fix every line).
+
+**Remaining 2 obligations (all build on `psl1Action` + `center_SL2`):**
+1. `FaithfulSMul (PSL 2 q) ℙ¹` — reduces to `ker (toPermHom (SL 2 q) ℙ¹) ≤ center`
+   (the reverse of `center_le_ker`; combined ⇒ `ker = center` ⇒ the lifted hom
+   `PSL →* Perm ℙ¹` is injective ⇒ faithful, since `Perm` acts faithfully).
+   **Math content** = "g fixes every line ⇒ g scalar": for g in the kernel,
+   `g • [v] = [v]` ⇒ `g.mulVec v` is parallel to v ⇒ `¬ LinearIndependent ![v, g•v]`
+   for all v ⇒ **`LinearMap.exists_eq_smul_id_of_forall_notLinearIndependent`**
+   (`Mathlib/LinearAlgebra/Center.lean`, needs `[IsDomain]`+`[Free]`, both hold)
+   gives `toLin' g = a • 1`, i.e. g scalar; `det = a² = 1 ⇒ a = ±1 ⇒ g ∈ center`.
+   Plumbing: `QuotientGroup.lift` injective from `ker ≤ N` (look for
+   `lift_injective`/`kerLift_injective`); `compHom` faithful from lifted injective.
+2. `IsQuasiPreprimitive (PSL 2 q) ℙ¹` + `IwasawaStructure (PSL 2 q) ℙ¹` (the two
+   that `PSL2_isSimpleGroup_of_iwasawa` still needs after `MulAction`/perfect):
+   - QuasiPreprimitive: PSL(2,q) is 2-transitive on `ℙ¹` (q+1 points) ⇒ primitive
+     ⇒ quasi-preprimitive (mathlib `IsPreprimitive` from 2-transitivity).  HARD:
+     needs the 2-transitivity proof (any ordered pair of distinct lines maps to
+     `([e₁],[e₂])`).
+   - IwasawaStructure: `T(point)` = image in PSL of the unipotent subgroup fixing
+     that line (the `upper`/`lower` transvection subgroup `≅ F⁺`, abelian),
+     conjugation-equivariant, with `iSup T = ⊤` (`transvections_generate`, PROVEN).
+     HARD: the conjugation-equivariance + generation bookkeeping.
 
 **Aristotle:** `card_SL2` (`|SL(2,q)| = q(q²-1)`, job `28df03ca`) grinding — useful
 for `|PSL(2,q)|` and the order tables; not on the critical path for simplicity.

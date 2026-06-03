@@ -300,4 +300,22 @@ theorem centralizer_genFittingSubgroup_eq_center (G : Type*) [Group G] [Finite G
       = genFittingSubgroup G ⊓ Subgroup.centralizer (genFittingSubgroup G : Set G) :=
   (le_inf (genFittingSubgroup_self_centralizing G) le_rfl).antisymm inf_le_right
 
+/-- **`F*(G) ≠ 1` for nontrivial `G`.** A basic but load-bearing consequence of Bender's
+cornerstone: were `F*(G) = ⊥`, everything would centralize it (`C_G(⊥) = ⊤`), so by
+self-centralizing `⊤ ≤ F*(G) = ⊥`, forcing `G` trivial. Thus the action of `G` on the
+non-trivial `F*(G)` always has something to control. -/
+theorem genFittingSubgroup_ne_bot (G : Type*) [Group G] [Finite G] [Nontrivial G] :
+    genFittingSubgroup G ≠ ⊥ := by
+  intro h
+  have hbender := genFittingSubgroup_self_centralizing G
+  rw [h, Subgroup.coe_bot] at hbender
+  have hc : Subgroup.centralizer ({1} : Set G) = ⊤ := by
+    rw [eq_top_iff]
+    intro g _
+    rw [Subgroup.mem_centralizer_iff]
+    intro m hm
+    rw [Set.mem_singleton_iff.mp hm]; simp
+  rw [hc] at hbender
+  exact absurd (top_le_iff.mp hbender) bot_ne_top
+
 end FiniteSimpleGroups

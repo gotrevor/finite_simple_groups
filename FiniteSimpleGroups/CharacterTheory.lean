@@ -727,6 +727,26 @@ theorem injective_of_isSimpleGroup_of_exists_ne {G H : Type*} [Group G] [IsSimpl
     have hmem : g ∈ φ.ker := by rw [h]; exact Subgroup.mem_top g
     exact hg (MonoidHom.mem_ker.mp hmem)
 
+/-- The `Representation ℂ G (Fin d → ℂ)` underlying a matrix homomorphism `R : G →* Mₐ(ℂ)`, via the
+algebra equivalence `Matrix.toLinAlgEquiv' : Mₐ(ℂ) ≃ₐ End ℂ (Fin d → ℂ)`.  Lets the Wedderburn-factor
+maps `Rᵢ` be fed to the `Representation`-level ingredients (2 and 6) of Burnside's lemma. -/
+def repOfMatrixHom {G : Type*} [Group G] {d : ℕ}
+    (R : G →* Matrix (Fin d) (Fin d) ℂ) : Representation ℂ G (Fin d → ℂ) where
+  toFun := fun g => Matrix.toLinAlgEquiv' (R g)
+  map_one' := by rw [R.map_one, map_one]
+  map_mul' := fun g h => by rw [R.map_mul, map_mul]
+
+/-- The character of `repOfMatrixHom R` at `g` is the matrix trace `trace (R g)` — so the Wedderburn
+decomposition `χ_reg(g) = ∑ᵢ dᵢ·trace(Rᵢ g)` is literally `∑ᵢ dᵢ·χᵢ(g)` for the irreducible
+characters `χᵢ = (repOfMatrixHom Rᵢ).character`. -/
+theorem repOfMatrixHom_character {G : Type*} [Group G] {d : ℕ}
+    (R : G →* Matrix (Fin d) (Fin d) ℂ) (g : G) :
+    (repOfMatrixHom R).character g = (R g).trace := by
+  rw [Representation.character]
+  show LinearMap.trace ℂ (Fin d → ℂ) (Matrix.toLinAlgEquiv' (R g)) = (R g).trace
+  rw [show (Matrix.toLinAlgEquiv' (R g) : (Fin d → ℂ) →ₗ[ℂ] (Fin d → ℂ)) = (R g).toLin' from rfl]
+  exact Matrix.trace_toLin'_eq (R g)
+
 section RegularDecomp
 
 variable {G : Type*} [Group G] [Fintype G]

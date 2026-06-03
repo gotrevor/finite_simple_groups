@@ -21,8 +21,9 @@ prime-power class-size lemma).  The classical proof of that lemma needs six ingr
    (`NumberField.Embeddings.pow_eq_one_of_norm_le_one`).
 5. **`-1/p` is not an algebraic integer.**  ✅ easy (`ℤ` integrally closed in `ℚ`); recorded here
    as `not_isIntegral_neg_inv_prime`.
-6. **Scalar ⟹ proper normal subgroup**, contradicting simplicity.  ✅ structural half proved here
-   (`scalarSubgroup`, `scalarSubgroup_normal`, `comm_of_scalarSubgroup_eq_top`).
+6. **Scalar ⟹ proper normal subgroup**, contradicting simplicity.  ✅ fully proved here
+   (`scalarSubgroup`, `scalarSubgroup_normal`, `comm_of_scalarSubgroup_eq_top`, and the final
+   contradiction `not_isScalar_of_isSimpleGroup_of_nonabelian`).
 
 So after this file the only genuinely missing mathlib infrastructure is (3) — column
 orthogonality.  Ingredients 1, 2, 4, 5, 6 are in hand (in-repo or mathlib).
@@ -197,6 +198,28 @@ theorem comm_of_scalarSubgroup_eq_top (ρ : Representation ℂ G V)
   obtain ⟨ca, hca⟩ : a ∈ scalarSubgroup ρ := by rw [htop]; exact Subgroup.mem_top a
   obtain ⟨cb, hcb⟩ : b ∈ scalarSubgroup ρ := by rw [htop]; exact Subgroup.mem_top b
   rw [map_mul, map_mul, hca, hcb, ← map_mul, ← map_mul, mul_comm]
+
+/-- **Ingredient 6/6, completed.**  In a *nonabelian simple* group, no nontrivial element acts as a
+scalar in a faithful representation `ρ`.  Indeed the scalar elements form a normal subgroup
+(`scalarSubgroup_normal`); a nontrivial scalar makes it `≠ ⊥`, so by simplicity it is `⊤`, whence
+`comm_of_scalarSubgroup_eq_top` forces `G` abelian — contradiction.
+
+This is the final contradiction in Burnside's prime-power class-size lemma: once a nontrivial
+element `g` is shown to act as a scalar in some faithful nontrivial irreducible representation
+(via ingredients 1–5 + the vanishing lemma), simplicity is violated. -/
+theorem not_isScalar_of_isSimpleGroup_of_nonabelian (ρ : Representation ℂ G V)
+    (hfaith : Function.Injective ρ) (hsimple : IsSimpleGroup G)
+    (hnonab : ¬ ∀ a b : G, a * b = b * a)
+    (g : G) (hg : g ≠ 1) (c : ℂ) (hc : ρ g = algebraMap ℂ (Module.End ℂ V) c) : False := by
+  haveI := hsimple
+  have hmem : g ∈ scalarSubgroup ρ := ⟨c, hc⟩
+  have hne : scalarSubgroup ρ ≠ ⊥ := by
+    intro h
+    rw [h, Subgroup.mem_bot] at hmem
+    exact hg hmem
+  have htop : scalarSubgroup ρ = ⊤ :=
+    (hsimple.eq_bot_or_eq_top_of_normal _ (scalarSubgroup_normal ρ)).resolve_left hne
+  exact hnonab (comm_of_scalarSubgroup_eq_top ρ htop hfaith)
 
 end ScalarSubgroup
 

@@ -152,6 +152,26 @@ theorem not_isIntegral_neg_inv_prime {p : ℕ} (hp : p.Prime) :
   have h2 : 2 ≤ p := hp.two_le
   omega
 
+/-- **Coprime-denominator integrality.**  If `m·β` and `n·β` are algebraic integers and `m, n` are
+coprime naturals, then `β` is an algebraic integer.  (Bézout: `a·m + b·n = 1`, so
+`β = a·(m·β) + b·(n·β)` is a `ℤ`-combination of algebraic integers.)  In the Burnside endgame, with
+`m = [G:C_G(g)] = pᵏ` and `n = χ(1)` coprime (`p ∤ χ(1)`), this upgrades ingredient 2
+(`[G:C_G(g)]·χ(g)/χ(1) ∈ ℤ̄`) together with `χ(g) ∈ ℤ̄` to `χ(g)/χ(1) ∈ ℤ̄`. -/
+theorem isIntegral_of_coprime_smul {β : ℂ} {m n : ℕ} (hcop : Nat.Coprime m n)
+    (hm : IsIntegral ℤ ((m : ℂ) * β)) (hn : IsIntegral ℤ ((n : ℂ) * β)) :
+    IsIntegral ℤ β := by
+  have hco : IsCoprime (m : ℤ) (n : ℤ) := Int.isCoprime_iff_gcd_eq_one.mpr (by exact_mod_cast hcop)
+  obtain ⟨a, b, hab⟩ := hco
+  have h1 : (a : ℂ) * (m : ℂ) + (b : ℂ) * (n : ℂ) = 1 := by exact_mod_cast hab
+  have hsum : (a : ℂ) * ((m : ℂ) * β) + (b : ℂ) * ((n : ℂ) * β) = β := by
+    linear_combination β * h1
+  have ha : IsIntegral ℤ (a : ℂ) := by
+    simpa using (isIntegral_algebraMap (R := ℤ) (A := ℂ) (x := a))
+  have hb : IsIntegral ℤ (b : ℂ) := by
+    simpa using (isIntegral_algebraMap (R := ℤ) (A := ℂ) (x := b))
+  rw [← hsum]
+  exact (ha.mul hm).add (hb.mul hn)
+
 /-! ### Ingredient 6/6: scalar elements form a normal subgroup
 
 In an irreducible representation of a simple group, the elements acting as a scalar form a

@@ -14,8 +14,11 @@ prime-power class-size lemma).  The classical proof of that lemma needs six ingr
    here (`classSize_char_isIntegral`) via class sums in `ℂ[G]` and Schur's lemma — the textbook
    structure-constant argument is bypassed because `ℤ[G]` is module-finite over `ℤ`, so every class
    sum is integral for free.
-3. **Column orthogonality** `∑_χ χ(1) χ(g) = 0` for `g ≠ 1`.  ⛔ mathlib has only row
-   orthonormality (`char_orthonormal`); column orthogonality is the one remaining gap.
+3. **Column orthogonality** `∑_χ χ(1) χ(g) = 0` for `g ≠ 1`.  🔶 Route B (regular character) keystone
+   built: `exists_wedderburn_character_decomp` gives `χ_reg(g) = ∑ᵢ dᵢ·χᵢ(g)` via Artin–Wedderburn
+   `ℂ[G] ≃ₐ ∏ᵢ Mₐᵢ(ℂ)`, modulo the one self-contained trace lemma `trace_mulLeft_pi_matrix` (out at
+   Aristotle).  With `character_leftRegular_eq` this yields `∑ᵢ dᵢ·χᵢ(g) = 0` for `g ≠ 1`.  Still to
+   build for the Burnside endgame: irreducibility of the `Rᵢ` and trivial-multiplicity `= 1`.
 4. **Kronecker's theorem** — an algebraic integer all of whose conjugates lie in the closed unit
    disc is `0` or a root of unity.  ✅ already in mathlib
    (`NumberField.Embeddings.pow_eq_one_of_norm_le_one`).
@@ -620,5 +623,100 @@ theorem burnside_vanishing_core {d : ℕ} (hd : 1 ≤ d) (ζ : Fin d → ℂ)
     have hβ_norm : ‖β‖ = 1 := norm_of_pow_eq_one _ n (by omega) hβ_pow
     have hsβ : s = (d : ℂ) * β := by rw [hβ_def, mul_div_cancel₀ s hd_ne]
     rw [hsβ, norm_mul, Complex.norm_natCast, hβ_norm, mul_one]
+
+/-! ### Regular-character decomposition via Artin–Wedderburn (ingredient 3, Route B)
+
+`ℂ[G]` is semisimple (Maschke), finite-dimensional, over the algebraically closed field `ℂ`, so
+`ℂ[G] ≃ₐ[ℂ] ∏ᵢ Matrix (Fin dᵢ) (Fin dᵢ) ℂ` (Wedderburn).  The `i`-th projection of the basis element
+`single g 1` gives an irreducible matrix representation `Rᵢ : G →* Matrix (Fin dᵢ) (Fin dᵢ) ℂ` with
+character `χᵢ(g) = trace(Rᵢ g)` and degree `dᵢ = χᵢ(1)`.  Pushing the regular character through `e`,
+splitting the trace over the product, and using `trace(mulLeft A) = d · trace A` on each matrix
+factor yields the **regular-character decomposition**
+
+  `χ_reg(g) = ∑ᵢ dᵢ · χᵢ(g)`.
+
+Combined with `character_leftRegular_eq` (`χ_reg(g) = |G|·[g=1]`), this gives the column-orthogonality
+relation `∑ᵢ dᵢ·χᵢ(g) = 0` for `g ≠ 1` that the Burnside endgame consumes (ingredient 3). -/
+
+/-- **Trace of left-multiplication on a product of matrix algebras.**  For `M = (Mᵢ)ᵢ` in the
+`ℂ`-algebra `∏ᵢ Matrix (Fin dᵢ) (Fin dᵢ) ℂ`, the trace of "left multiply by `M`" is
+`∑ᵢ dᵢ · trace(Mᵢ)`.  Left-multiplication is block-diagonal across the product, and on a single
+`d×d` matrix algebra `trace(mulLeft A) = d · trace A`.
+
+Out at Aristotle (Harmonic) job `eed8a149-2866-41a9-8086-f6f7ff10c1dc`; self-contained linear
+algebra.  Replace this `sorry` with the returned proof (verify `#print axioms`-clean first). -/
+theorem trace_mulLeft_pi_matrix {n : ℕ} (d : Fin n → ℕ)
+    (M : ∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ) :
+    LinearMap.trace ℂ (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)
+        (LinearMap.mulLeft ℂ M)
+      = ∑ i, (d i : ℂ) * (M i).trace := by
+  sorry
+
+/-- For an algebra equivalence `e`, conjugating left-multiplication by `x` gives left-multiplication
+by `e x`: `e.conj (mulLeft x) = mulLeft (e x)`.  (Used to push the regular character through the
+Wedderburn isomorphism via `LinearMap.trace_conj'`.) -/
+theorem conj_mulLeft {A B : Type*} [Ring A] [Ring B] [Algebra ℂ A] [Algebra ℂ B]
+    (e : A ≃ₐ[ℂ] B) (x : A) :
+    e.toLinearEquiv.conj (LinearMap.mulLeft ℂ x) = LinearMap.mulLeft ℂ (e x) := by
+  refine LinearMap.ext fun y => ?_
+  simp only [LinearEquiv.conj_apply_apply, LinearMap.mulLeft_apply, AlgEquiv.toLinearEquiv_apply,
+    map_mul]
+  congr 1
+  exact e.apply_symm_apply y
+
+section RegularDecomp
+
+variable {G : Type*} [Group G] [Fintype G]
+
+/-- The left-regular character `χ_reg(g)` is the trace of left-multiplication by `single g 1` on
+`ℂ[G]`.  (`Representation.ofMulAction` on the group acting on itself is left multiplication.) -/
+theorem character_ofMulAction_eq_trace_mulLeft {G : Type*} [Group G] (g : G) :
+    (Representation.ofMulAction ℂ G G).character g
+      = LinearMap.trace ℂ (MonoidAlgebra ℂ G)
+          (LinearMap.mulLeft ℂ (MonoidAlgebra.single g (1 : ℂ))) := by
+  rw [Representation.character]
+  congr 1
+  refine Finsupp.lhom_ext fun a b => ?_
+  rw [Representation.ofMulAction_single]
+  show MonoidAlgebra.single (g • a) b = MonoidAlgebra.single g 1 * MonoidAlgebra.single a b
+  rw [MonoidAlgebra.single_mul_single, one_mul, smul_eq_mul]
+
+/-- **Regular-character decomposition (ingredient 3, Route B).**  Via Artin–Wedderburn
+`ℂ[G] ≃ₐ ∏ᵢ Mₐᵢ(ℂ)`, the left-regular character decomposes as `χ_reg(g) = ∑ᵢ dᵢ · trace(Rᵢ g)`
+where `Rᵢ : G →* Mₐᵢ(ℂ)` is the `i`-th irreducible matrix representation (`g ↦ (e (single g 1)) i`)
+and `dᵢ` (`= trace(Rᵢ 1)`) its degree.  With `character_leftRegular_eq` this gives column
+orthogonality `∑ᵢ dᵢ·trace(Rᵢ g) = 0` for `g ≠ 1`. -/
+theorem exists_wedderburn_character_decomp :
+    ∃ (n : ℕ) (d : Fin n → ℕ) (R : ∀ i, G →* Matrix (Fin (d i)) (Fin (d i)) ℂ),
+      (∀ i, NeZero (d i)) ∧
+      (∀ i, R i 1 = 1) ∧
+      (∀ g, (Representation.ofMulAction ℂ G G).character g
+              = ∑ i, (d i : ℂ) * (R i g).trace) := by
+  haveI : NeZero (Nat.card G : ℂ) := ⟨Nat.cast_ne_zero.mpr Nat.card_pos.ne'⟩
+  haveI : Module.Finite ℂ (MonoidAlgebra ℂ G) := Module.Finite.of_basis (Finsupp.basisSingleOne)
+  obtain ⟨n, d, hd, ⟨e⟩⟩ :=
+    IsSemisimpleRing.exists_algEquiv_pi_matrix_of_isAlgClosed (R := MonoidAlgebra ℂ G) (F := ℂ)
+  have hone : e (MonoidAlgebra.single (1 : G) (1 : ℂ)) = 1 := by
+    rw [← MonoidAlgebra.one_def, map_one]
+  have hmul : ∀ g h : G, e (MonoidAlgebra.single (g * h) (1 : ℂ))
+      = e (MonoidAlgebra.single g 1) * e (MonoidAlgebra.single h 1) := by
+    intro g h
+    rw [← map_mul, MonoidAlgebra.single_mul_single, one_mul]
+  let R : ∀ i, G →* Matrix (Fin (d i)) (Fin (d i)) ℂ := fun i =>
+    { toFun := fun g => (e (MonoidAlgebra.single g 1)) i
+      map_one' := by
+        show (e (MonoidAlgebra.single (1 : G) (1 : ℂ))) i = 1
+        rw [hone]; rfl
+      map_mul' := fun g h => by
+        show (e (MonoidAlgebra.single (g * h) (1 : ℂ))) i
+           = (e (MonoidAlgebra.single g 1)) i * (e (MonoidAlgebra.single h 1)) i
+        rw [hmul g h]; rfl }
+  refine ⟨n, d, R, hd, fun i => (R i).map_one, fun g => ?_⟩
+  rw [character_ofMulAction_eq_trace_mulLeft g,
+    ← LinearMap.trace_conj' (LinearMap.mulLeft ℂ (MonoidAlgebra.single g (1 : ℂ))) e.toLinearEquiv,
+    conj_mulLeft e (MonoidAlgebra.single g 1), trace_mulLeft_pi_matrix d (e (MonoidAlgebra.single g 1))]
+  rfl
+
+end RegularDecomp
 
 end FiniteSimpleGroups

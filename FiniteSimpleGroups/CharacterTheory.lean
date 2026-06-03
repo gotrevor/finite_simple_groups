@@ -731,6 +731,32 @@ theorem isSimpleModule_of_ringHom_surjective {R S M : Type*} [Ring R] [Ring S] [
     { toFun := id, map_add' := fun _ _ => rfl, map_smul' := fun r m => hcompat r m }
   exact (l.isSimpleModule_iff_of_bijective Function.bijective_id).mpr ‹_›
 
+/-- **The natural module `Fin d → ℂ` of the full matrix algebra is simple** (for `d > 0`).  Any
+nonzero submodule contains a vector `v` with some `vᵢ ≠ 0`; a rank-one matrix maps `v` to any target
+`w`, so the submodule is everything.  Discharged by Aristotle (Harmonic) job
+`dc41262f-321e-4bf9-a161-7e1be4320f4c`, re-verified in this kernel and `#print axioms`-clean.
+
+Composed with `isSimpleModule_of_ringHom_surjective` (and `End ℂ V ≅ Matrix`) this gives the
+irreducibility of any representation whose `asAlgebraHom` is surjective — in particular each
+Wedderburn factor `Rᵢ`. -/
+theorem isSimpleModule_natural_matrix {d : ℕ} (hd : 0 < d) :
+    IsSimpleModule (Matrix (Fin d) (Fin d) ℂ) (Fin d → ℂ) := by
+  refine' { .. }
+  · refine' ⟨ ⊥, ⊤, _ ⟩
+    simp +decide [ Submodule.eq_top_iff' ]
+    exact ⟨ fun _ => 1, fun h => by simpa using congr_fun h ⟨ 0, hd ⟩ ⟩
+  · intro M
+    by_cases hM : M = ⊥
+    · exact Or.inl hM
+    · exact Or.inr (by
+      obtain ⟨ v, hv ⟩ := ( Submodule.ne_bot_iff _ ).mp hM
+      obtain ⟨ i, hi ⟩ : ∃ i : Fin d, v i ≠ 0 := Function.ne_iff.mp hv.2
+      refine' eq_top_iff.mpr fun w hw => _
+      convert M.smul_mem ( Matrix.of ( fun j k => if k = i then w j / v i else 0 ) ) hv.1 using 1
+      ext j
+      simp +decide [ Matrix.mulVec, dotProduct, Finset.sum_ite, Finset.filter_eq',
+        Finset.filter_ne', hi ])
+
 /-- **A nontrivial homomorphism out of a simple group is injective.**  Its kernel is a proper
 normal subgroup, hence `⊥` by simplicity.  Applied to a nontrivial Wedderburn-factor representation
 `Rᵢ : G →* Mₐᵢ(ℂ)` of a simple `G`, this gives the faithfulness that ingredient 6

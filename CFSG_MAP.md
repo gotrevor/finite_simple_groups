@@ -213,3 +213,54 @@ exactly that.
   `#print axioms prime_card_of_simpleGroup_card_lt_sixty` shows no `sorryAx`.
   (Was **1** at the 2026-05-31 count.)
 - Build green (8284 jobs).
+
+## GLS coordinates — where each milestone lives in the proof 🗺️📚
+
+*Added 2026-06-02. Grounded in the Gorenstein–Lyons–Solomon text layer now at
+`papers/md/gls-cfsg-vol01..10.md` (grep-able OCR — structure reliable, math lossy).
+The 10-volume GLS series is the "second-generation" CFSG proof: the reference
+architecture our bucket-B milestone axioms abstract. Use this to see what a milestone
+axiom stands in for and where to read the real argument.*
+
+### The series, by volume (from the TOCs — high confidence)
+| Vol | GLS structure | Content |
+|-----|---------------|---------|
+| 1 | Part I, Ch 1–2 | **Overview**: Main Theorem; the Uniqueness Grid + Classification Grid (Theorems C₁–C₇); the special-odd / special-even / generic trichotomy; quasithin subdivision by `e(G)` |
+| 2 | Part I, Ch G | Background: **General Group Theory** |
+| 3 | Part I, Ch A | Background: **Almost Simple K-Groups** (properties of the known simples) |
+| 4 | Part II | **Uniqueness Theorems** |
+| 5 | Part III | **Generic Case**, Stages 1–3a |
+| 6 | Part IV | **The Special Odd Case** |
+| 7 | Part III, Ch 7–11 | Generic Case, Theorem C*₇ Stages 3b, 4a |
+| 8 | Part III, Ch 12–17 | **Generic Case completed**, Theorem C*₇ Stages 4b+, 5+ (`G ≅ G₀`) |
+| 9 | — | **Theorem C₅** (component type; six large sporadics recognized; 2-local p-rank ≥ 4) + Theorem C₆ Stage 1 |
+| 10 | Part V, Ch 9–17 | **Theorem C₆ and Theorem C*₄** (+Capdeboscq, 2023) |
+
+The Generic Case (Theorem C₇/C*₇) is the spine and spans Vols 5, 7, 8. Special cases
+fan out: special odd → Vol 6; component / large-sporadic (C₅) → Vol 9; C₆/C*₄ → Vols
+9–10. **The Quasithin Theorem is NOT in these 10** — it's Aschbacher–Smith, AMS Surv
+111/112 (the Thin Case `e(G)=1` is Aschbacher alone), cited by GLS as a Background-style
+input. Background (Vols 2–3) is exactly the "Background Results" GLS cites but does not
+re-prove — their analogue of our axiomatize-don't-re-derive rule.
+
+### Milestone axiom → GLS home (best-effort; ⚠️ correspondence partly inferred)
+Bucket-B milestones use Aschbacher-program names; GLS organizes by Theorems C₁–C₇ + the
+type grid. They line up, but the exact milestone↔C-theorem match below is **my inference
+from the Vol 1 overview, not a GLS-stated bijection** — verify against Vol 1, Ch 1–2
+before treating any row as load-bearing. Confidence is about the *name-correspondence*,
+not the (deep, cited) truth of the GLS arguments.
+
+| milestone axiom (bucket B) | GLS locus | conf |
+|----|----|----|
+| `Feit_Thompson_odd_order` | Odd Order Theorem — Background Result [FT1] (Coq-formalized) | ~95% |
+| `Burnside_paqb` | Burnside `pᵃqᵇ` solvability — Background Result | ~90% |
+| `evenType_dichotomy` | even type splits: quasithin `e(G)≤2` (→≤3 for even type) vs generic `e(G)≥3` — Vol 1, ⟦p.10⟧ | ~80% |
+| `quasithin_isClassified` | Aschbacher–Smith Quasithin Theorem (Surv 111/112; Thin case = Aschbacher) — cited, not in these 10 | ~85% |
+| `nonQuasithin_char2_isClassified` | the **Generic Case**, Theorem C₇/C*₇ — Vols 5, 7, 8 | ~65% |
+| `componentType_isClassified` | component type — Theorem C₅, Vol 9 (large sporadics) | ~60% |
+| `oddType_isClassified` | groups of (special) odd type — Special Odd Case, Vol 6 (Part IV) | ~65% |
+| `aschbacher_dichotomy` | the type partition itself (odd/even; generic vs special) — Vol 1 overview | ~70% |
+
+Drill in: `grep -rni "Theorem C5" papers/md/`, then open the cited PDF at the nearest
+`⟦p.N⟧`. ⚠️ **Faithfulness:** this table maps *where to read*, not *what is true* — don't
+let a row become a Lean statement without reading the source page.

@@ -638,19 +638,48 @@ factor yields the **regular-character decomposition**
 Combined with `character_leftRegular_eq` (`χ_reg(g) = |G|·[g=1]`), this gives the column-orthogonality
 relation `∑ᵢ dᵢ·χᵢ(g) = 0` for `g ≠ 1` that the Burnside endgame consumes (ingredient 3). -/
 
+open LinearMap in
 /-- **Trace of left-multiplication on a product of matrix algebras.**  For `M = (Mᵢ)ᵢ` in the
 `ℂ`-algebra `∏ᵢ Matrix (Fin dᵢ) (Fin dᵢ) ℂ`, the trace of "left multiply by `M`" is
 `∑ᵢ dᵢ · trace(Mᵢ)`.  Left-multiplication is block-diagonal across the product, and on a single
 `d×d` matrix algebra `trace(mulLeft A) = d · trace A`.
 
-Out at Aristotle (Harmonic) job `eed8a149-2866-41a9-8086-f6f7ff10c1dc`; self-contained linear
-algebra.  Replace this `sorry` with the returned proof (verify `#print axioms`-clean first). -/
+Discharged by Aristotle (Harmonic) job `eed8a149-2866-41a9-8086-f6f7ff10c1dc`, then re-verified in
+this v4.29.1 kernel and confirmed `#print axioms`-clean (`[propext, Classical.choice, Quot.sound]`).
+The proof: split the trace over the product via the `Pi.basis` of `Matrix.stdBasis` factors, then on
+each factor the matrix of `mulLeft A` in the standard basis has entries `A p r · δ(q,s)` whose
+diagonal sum is `d · trace A`. -/
 theorem trace_mulLeft_pi_matrix {n : ℕ} (d : Fin n → ℕ)
     (M : ∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ) :
     LinearMap.trace ℂ (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)
         (LinearMap.mulLeft ℂ M)
       = ∑ i, (d i : ℂ) * (M i).trace := by
-  sorry
+  have h_trace_prod : (LinearMap.trace ℂ ((i : Fin n) → Matrix (Fin (d i)) (Fin (d i)) ℂ)) (mulLeft ℂ M) = ∑ i, (LinearMap.trace ℂ (Matrix (Fin (d i)) (Fin (d i)) ℂ)) (mulLeft ℂ (M i)) := by
+    have h_trace_prod : ∀ (f : (i : Fin n) → Matrix (Fin (d i)) (Fin (d i)) ℂ →ₗ[ℂ] Matrix (Fin (d i)) (Fin (d i)) ℂ), (LinearMap.trace ℂ (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)) (LinearMap.pi fun i => f i ∘ₗ LinearMap.proj i) = ∑ i, (LinearMap.trace ℂ (Matrix (Fin (d i)) (Fin (d i)) ℂ)) (f i) := by
+      intro f
+      have h_trace_direct_sum : ∀ (f : (i : Fin n) → (Matrix (Fin (d i)) (Fin (d i)) ℂ) →ₗ[ℂ] (Matrix (Fin (d i)) (Fin (d i)) ℂ)), (LinearMap.trace ℂ ((i : Fin n) → Matrix (Fin (d i)) (Fin (d i)) ℂ)) (pi fun i => f i ∘ₗ (LinearMap.proj i)) = ∑ i, (LinearMap.trace ℂ (Matrix (Fin (d i)) (Fin (d i)) ℂ)) (f i) := by
+        intro f
+        have h_iso : (LinearMap.trace ℂ ((i : Fin n) → Matrix (Fin (d i)) (Fin (d i)) ℂ)) = (LinearMap.trace ℂ (∀ i, Matrix (Fin (d i)) (Fin (d i)) ℂ)) := by
+          rfl
+        rw [ h_iso, LinearMap.trace_eq_matrix_trace ℂ ( Pi.basis fun i => Matrix.stdBasis ℂ ( Fin ( d i ) ) ( Fin ( d i ) ) ) ]
+        simp +decide [ LinearMap.trace_eq_matrix_trace ℂ ( Matrix.stdBasis ℂ ( Fin ( d _ ) ) ( Fin ( d _ ) ) ) ]
+        simp +decide [ Matrix.trace, toMatrix_apply ]
+        rw [ Finset.sum_sigma' ]
+        rfl
+      exact h_trace_direct_sum f
+    convert h_trace_prod ( fun i => mulLeft ℂ ( M i ) ) using 1
+  have h_trace_mulLeft : ∀ (i : Fin n) (A : Matrix (Fin (d i)) (Fin (d i)) ℂ), (LinearMap.trace ℂ (Matrix (Fin (d i)) (Fin (d i)) ℂ)) (mulLeft ℂ A) = (d i : ℂ) * A.trace := by
+    intro i A
+    set basis : Module.Basis (Fin (d i) × Fin (d i)) ℂ (Matrix (Fin (d i)) (Fin (d i)) ℂ) := Matrix.stdBasis ℂ (Fin (d i)) (Fin (d i))
+    rw [ LinearMap.trace_eq_matrix_trace ℂ basis ]
+    have h_entry : ∀ (p q r s : Fin (d i)), ((toMatrix basis basis) (mulLeft ℂ A)) (p, q) (r, s) = A p r * (if q = s then 1 else 0) := by
+      intro p q r s; simp +decide [ toMatrix_apply, Matrix.mul_apply ]
+      simp +decide [ basis, Matrix.mul_apply, stdBasis ]
+      rw [ Finset.sum_eq_single r ] <;> aesop
+    simp +decide [ h_entry, Matrix.trace ]
+    erw [ Finset.sum_congr rfl fun x hx => h_entry _ _ _ _ ] ; simp +decide [ Finset.sum_ite, Finset.filter_eq, Finset.filter_ne ]
+    erw [ Finset.sum_product ] ; simp +decide [ Finset.mul_sum _ _ _ ]
+  aesop
 
 /-- For an algebra equivalence `e`, conjugating left-multiplication by `x` gives left-multiplication
 by `e x`: `e.conj (mulLeft x) = mulLeft (e x)`.  (Used to push the regular character through the

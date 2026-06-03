@@ -992,6 +992,41 @@ theorem isIrreducible_of_surjective_algHom {G : Type*} [Group G] {d : ℕ} (hd :
       (Fin d → ℂ) _ _ Ψ.toRingHom _ l hbij).mpr
     (isSimpleModule_natural_matrix hd)
 
+/-- The augmentation (counit) algebra hom `ℂ[G] →ₐ[ℂ] ℂ`, `single g c ↦ c`, built from the trivial
+monoid hom `1 : G →* ℂ`.  Sends every `single g 1` to `1`. -/
+noncomputable def augHom (G : Type*) [Group G] : MonoidAlgebra ℂ G →ₐ[ℂ] ℂ :=
+  MonoidAlgebra.lift ℂ ℂ G (1 : G →* ℂ)
+
+@[simp] theorem augHom_single {G : Type*} [Group G] (g : G) (c : ℂ) :
+    augHom G (MonoidAlgebra.single g c) = c := by
+  simp [augHom, MonoidAlgebra.lift_single]
+
+/-- **A surjective trivial matrix representation is 1-dimensional.**  If `Ψ : ℂ[G] →ₐ Mₐ(ℂ)` is
+surjective and sends every `single g 1 ↦ 1` (the identity matrix), then its image is the scalar
+subalgebra `ℂ·1` (it equals `algebraMap ∘ augHom` by `algHom_ext`), so surjectivity forces every
+`d×d` matrix to be scalar, whence `d = 1`.  This shows the trivial Wedderburn factor has degree 1. -/
+theorem wedderburn_trivial_dim_one {G : Type*} [Group G] {d : ℕ} [NeZero d]
+    (Ψ : MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin d) (Fin d) ℂ)
+    (hsurj : Function.Surjective Ψ) (htriv : ∀ g, Ψ (MonoidAlgebra.single g 1) = 1) :
+    d = 1 := by
+  -- `Ψ = algebraMap ∘ augHom`, so every value of `Ψ` is a scalar matrix.
+  have hfact : Ψ = (Algebra.ofId ℂ (Matrix (Fin d) (Fin d) ℂ)).comp (augHom G) := by
+    refine MonoidAlgebra.algHom_ext fun g => ?_
+    rw [htriv g, AlgHom.comp_apply, augHom_single, Algebra.ofId_apply]
+    simp
+  have hscalar : ∀ M : Matrix (Fin d) (Fin d) ℂ, ∃ c : ℂ, M = c • (1 : Matrix (Fin d) (Fin d) ℂ) := by
+    intro M
+    obtain ⟨x, hx⟩ := hsurj M
+    refine ⟨augHom G x, ?_⟩
+    rw [← hx, hfact, AlgHom.comp_apply, Algebra.ofId_apply, Algebra.algebraMap_eq_smul_one]
+  -- If every matrix is scalar, `d ≤ 1`.
+  by_contra hd1
+  have hd2 : 1 < d := lt_of_le_of_ne (Nat.one_le_iff_ne_zero.mpr (NeZero.ne d)) (Ne.symm hd1)
+  obtain ⟨c, hc⟩ := hscalar (Matrix.single (⟨0, by omega⟩ : Fin d) (⟨1, by omega⟩ : Fin d) 1)
+  have h01 := congrFun (congrFun hc ⟨0, by omega⟩) ⟨1, by omega⟩
+  rw [Matrix.single_apply, Matrix.smul_apply, Matrix.one_apply] at h01
+  simp at h01
+
 section RegularDecomp
 
 variable {G : Type*} [Group G] [Fintype G]
@@ -1114,5 +1149,141 @@ theorem burnside_final_contradiction {ι : Type*} [Fintype ι]
     exact (isIntegral_algHom_iff (IsScalarTower.toAlgHom ℤ ℚ ℂ)
       (algebraMap ℚ ℂ).injective).mp (by simpa using h)
   exact not_isIntegral_neg_inv_prime hp hQ
+
+/-- **A nontrivial Wedderburn factor with `p ∤ dᵢ` has vanishing character at `g`.**  For a
+nonabelian simple `G` and `g ≠ 1` with `[G : C_G(g)] = pᵏ`: an irreducible matrix factor
+`R : G →* Mₐ(ℂ)` (from a surjective `Ψ`) that is *faithful* (`∃ h, R h ≠ 1`) and whose degree `d`
+is coprime to `p` (`p ∤ d`) satisfies `trace (R g) = 0`.
+
+Proof (ingredients 1, 2, 4, 6 + gap 2): ingredient 2 gives `pᵏ·χ(g)/d ∈ ℤ̄`; with `χ(g) ∈ ℤ̄` and
+`gcd(d, pᵏ) = 1`, Bézout (`isIntegral_of_coprime_smul`) yields `β = χ(g)/d ∈ ℤ̄`.  `R g` has finite
+order, so `matrix_trace_zero_or_scalar` gives `χ(g) = 0` or `R g` scalar; a scalar in a faithful
+irreducible of a nonabelian simple group is impossible
+(`not_isScalar_of_isSimpleGroup_of_nonabelian`), so `χ(g) = 0`. -/
+theorem wedderburn_factor_char_vanish
+    {G : Type*} [Group G] [Finite G] (hsimple : IsSimpleGroup G)
+    (hnonab : ¬ ∀ a b : G, a * b = b * a)
+    (g : G) (hg : g ≠ 1) (p k : ℕ) (hp : p.Prime)
+    (hidx : (Subgroup.centralizer ({g} : Set G)).index = p ^ k)
+    {d : ℕ} (hd : 0 < d) (hpd : ¬ p ∣ d)
+    (R : G →* Matrix (Fin d) (Fin d) ℂ)
+    (Ψ : MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin d) (Fin d) ℂ)
+    (hΨsurj : Function.Surjective Ψ)
+    (hΨR : ∀ g, Ψ (MonoidAlgebra.single g 1) = R g)
+    (hR1 : R 1 = 1) (hRnontriv : ∃ h, R h ≠ 1) :
+    (R g).trace = 0 := by
+  haveI : Fintype G := Fintype.ofFinite G
+  haveI := hsimple
+  haveI : NeZero d := ⟨hd.ne'⟩
+  haveI : Nonempty (Fin d) := ⟨⟨0, hd⟩⟩
+  haveI : Nontrivial (Fin d → ℂ) := inferInstance
+  haveI hirr : (repOfMatrixHom R).IsIrreducible :=
+    isIrreducible_of_surjective_algHom hd R Ψ hΨsurj hΨR
+  have hchar_1 : (repOfMatrixHom R).character 1 = (d : ℂ) := by
+    rw [repOfMatrixHom_character, hR1, Matrix.trace_one, Fintype.card_fin]
+  have h2 := centralizerIndex_char_isIntegral (repOfMatrixHom R) g
+  rw [repOfMatrixHom_character, hchar_1, hidx] at h2
+  -- h2 : IsIntegral ℤ ((↑(p^k)) * (R g).trace / (d:ℂ))
+  have hdne : (d : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hd.ne'
+  have hχint : IsIntegral ℤ (R g).trace := trace_matrixHom_isIntegral R g
+  have hcop : Nat.Coprime d (p ^ k) :=
+    Nat.Coprime.pow_right k ((hp.coprime_iff_not_dvd.mpr hpd).symm)
+  have hβint : IsIntegral ℤ ((R g).trace / (d : ℂ)) := by
+    refine isIntegral_of_coprime_smul hcop ?_ ?_
+    · have : (d : ℂ) * ((R g).trace / (d : ℂ)) = (R g).trace := by field_simp
+      rw [this]; exact hχint
+    · have : ((p ^ k : ℕ) : ℂ) * ((R g).trace / (d : ℂ))
+          = ((p ^ k : ℕ) : ℂ) * (R g).trace / (d : ℂ) := by ring
+      rw [this]; exact h2
+  have hM : (R g) ^ (orderOf g) = 1 := by rw [← map_pow, pow_orderOf_eq_one, map_one]
+  rcases matrix_trace_zero_or_scalar hd (orderOf_pos g) (R g) hM hβint with h0 | ⟨ζ, hζ⟩
+  · exact h0
+  · exfalso
+    have hRinj := injective_of_isSimpleGroup_of_exists_ne R hRnontriv
+    have hfaith : Function.Injective (repOfMatrixHom R) := fun a b hab =>
+      hRinj (Matrix.toLinAlgEquiv'.injective hab)
+    have hc : (repOfMatrixHom R) g = algebraMap ℂ (Module.End ℂ (Fin d → ℂ)) ζ := by
+      show Matrix.toLinAlgEquiv' (R g) = _
+      rw [hζ, map_smul, map_one, Algebra.algebraMap_eq_smul_one]
+    exact not_isScalar_of_isSimpleGroup_of_nonabelian (repOfMatrixHom R) hfaith hsimple hnonab
+      g hg ζ hc
+
+/-- **Burnside's prime-power class-size lemma (character-theoretic core).**  In a finite simple group
+`G`, no nontrivial `g` has a conjugacy class of prime-power size `> 1`: the centralizer index
+`[G : C_G(g)]` is never `pᵏ` with `k ≥ 1`.  This is exactly the axiom
+`isSimpleGroup_centralizer_index_not_primePow` of `Burnside.lean`.
+
+Assembly of all six ingredients via the regular-character decomposition (Route B): for `g ≠ 1`,
+`0 = χ_reg(g) = ∑ᵢ dᵢ·χᵢ(g)`.  The unique trivial factor `i₀` (gap 3) contributes `+1`; every other
+factor contributes a multiple of `p` — `χᵢ(g) = 0` when `p ∤ dᵢ` (`wedderburn_factor_char_vanish`),
+and `dᵢ·χᵢ(g) = p·(dᵢ/p)·χᵢ(g)` with `(dᵢ/p)·χᵢ(g) ∈ ℤ̄` when `p ∣ dᵢ`.  So `0 = 1 + p·Θ` with
+`Θ ∈ ℤ̄`, i.e. `Θ = -1/p ∈ ℤ̄` — contradicting `not_isIntegral_neg_inv_prime`.
+
+This rests on the single disclosed axiom `exists_unique_trivial_factor` (gap 3); all other
+ingredients are machine-checked. -/
+theorem burnside_class_size {G : Type*} [Group G] [Finite G] (hsimple : IsSimpleGroup G)
+    (g : G) (hg : g ≠ 1) (p k : ℕ) (hp : p.Prime) (hk : 1 ≤ k)
+    (hidx : (Subgroup.centralizer ({g} : Set G)).index = p ^ k) : False := by
+  classical
+  haveI : Fintype G := Fintype.ofFinite G
+  haveI := hsimple
+  -- `G` is nonabelian: otherwise `C_G(g) = ⊤`, index `1 ≠ pᵏ` (`k ≥ 1`).
+  have hnonab : ¬ ∀ a b : G, a * b = b * a := by
+    intro habel
+    have htop : Subgroup.centralizer ({g} : Set G) = ⊤ := by
+      rw [Subgroup.eq_top_iff']
+      intro x
+      rw [Subgroup.mem_centralizer_iff]
+      intro y hy
+      rw [Set.mem_singleton_iff] at hy; subst hy
+      exact habel y x
+    rw [htop, Subgroup.index_top] at hidx
+    have h2p : 2 ≤ p ^ k :=
+      le_trans hp.two_le (Nat.le_self_pow (by omega) p)
+    omega
+  -- Wedderburn data, with the unique trivial factor `i₀`.
+  obtain ⟨n, d, R, Ψ, i₀, hd, hR1, hΨsurj, hΨR, htriv, htrivu, hdec⟩ :=
+    exists_wedderburn_character_decomp (G := G)
+  have hd0 : d i₀ = 1 := by
+    haveI := hd i₀
+    exact wedderburn_trivial_dim_one (Ψ i₀) (hΨsurj i₀)
+      (fun gg => by rw [hΨR i₀ gg]; exact htriv gg)
+  -- Column orthogonality at `g ≠ 1`.
+  have hsum0 : ∑ i, (d i : ℂ) * (R i g).trace = 0 := by
+    rw [← hdec g, character_leftRegular_eq, if_neg hg]
+  -- For `i ≠ i₀`, the factor is nontrivial (faithful).
+  have hnontriv : ∀ i, i ≠ i₀ → ∃ h, R i h ≠ 1 := by
+    intro i hi
+    by_contra hall
+    push_neg at hall
+    exact hi (htrivu i hall)
+  -- Define `θ` and feed the arithmetic core.
+  refine burnside_final_contradiction (fun i => (d i : ℂ) * (R i g).trace) p hp i₀ ?_
+    (fun i => if p ∣ d i then ((d i / p : ℕ) : ℂ) * (R i g).trace else 0) ?_ ?_ hsum0
+  · -- `a i₀ = dᵢ₀² = 1`.
+    show (d i₀ : ℂ) * (R i₀ g).trace = 1
+    rw [htriv g, Matrix.trace_one, Fintype.card_fin, hd0]; norm_num
+  · -- `a i = p · θ i` for `i ≠ i₀`.
+    intro i hi
+    show (d i : ℂ) * (R i g).trace = (p : ℂ) * (if p ∣ d i then ((d i / p : ℕ) : ℂ) * (R i g).trace else 0)
+    by_cases hpd : p ∣ d i
+    · simp only [hpd, if_true]
+      have hdi : (d i : ℂ) = (p : ℂ) * ((d i / p : ℕ) : ℂ) := by
+        rw [← Nat.cast_mul, Nat.mul_div_cancel' hpd]
+      rw [hdi]; ring
+    · simp only [hpd, if_false, mul_zero]
+      rw [wedderburn_factor_char_vanish hsimple hnonab g hg p k hp hidx
+        (Nat.pos_of_ne_zero (NeZero.ne (d i))) hpd (R i) (Ψ i) (hΨsurj i) (hΨR i) (hR1 i)
+        (hnontriv i hi), mul_zero]
+  · -- `θ i ∈ ℤ̄` for `i ≠ i₀`.
+    intro i hi
+    show IsIntegral ℤ (if p ∣ d i then ((d i / p : ℕ) : ℂ) * (R i g).trace else 0)
+    by_cases hpd : p ∣ d i
+    · simp only [hpd, if_true]
+      have hnat : IsIntegral ℤ ((d i / p : ℕ) : ℂ) := by
+        simpa using isIntegral_algebraMap (R := ℤ) (A := ℂ) (x := ((d i / p : ℕ) : ℤ))
+      exact hnat.mul (trace_matrixHom_isIntegral (R i) g)
+    · simp only [hpd, if_false]
+      exact isIntegral_zero
 
 end FiniteSimpleGroups

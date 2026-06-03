@@ -1,3 +1,7 @@
+> ✅ **ANSWERED 2026-06-03** → see `ON-LINE-FINDINGS-2026-06-03-burnside-endgame.md`.
+> Headline: Request 2 fully in mathlib (drop Aristotle `dc41262f` + transfer);
+> Request 1(a/b) NO packaged lemma, but use the counting-free augmentation route (Option D).
+
 # Online requests — Burnside `pᵃqᵇ` endgame (ingredient 3, Route B)
 
 Repo: `~/src/finite_simple_groups`, branch `cfsg-sporadic-order-pin`.  The regular-character

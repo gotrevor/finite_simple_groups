@@ -1,5 +1,6 @@
 import Mathlib
 import FiniteSimpleGroups.Basic
+import FiniteSimpleGroups.CharacterTheory
 
 /-!
 # Burnside's `p^a q^b` theorem — character-theoretic core reduced to a sharp axiom
@@ -55,12 +56,16 @@ column-orthogonality relation `∑_χ χ(1) χ(g) = 0` (for `g ≠ 1`) together 
 yields a nontrivial `χ` with `p ∤ χ(1)` and `χ(g) ≠ 0`, so `g` acts as a scalar in `χ`; the
 elements acting as scalars form a proper nontrivial normal subgroup, contradicting simplicity.
 
-mathlib `v4.29.1` has only character orthonormality (`char_orthonormal`), so this is recorded as
-an honest axiom pending the integrality / class-sum infrastructure (`ON-LINE-REQUEST.md`). -/
-axiom isSimpleGroup_centralizer_index_not_primePow
+**Now a theorem** (`FiniteSimpleGroups.CharacterTheory.burnside_class_size`): the full character-
+theoretic argument (regular-character decomposition via Artin–Wedderburn + central-character
+integrality + Kronecker + the scalar bridge) is machine-checked.  It rests on the single disclosed
+axiom `exists_unique_trivial_factor` (gap 3, "the trivial representation is the unique 1-dim
+Wedderburn factor"), whose existence half is out at Aristotle. -/
+theorem isSimpleGroup_centralizer_index_not_primePow
     (G : Type*) [Group G] [Finite G] (hsimple : IsSimpleGroup G)
     (g : G) (hg : g ≠ 1) (p k : ℕ) (hp : p.Prime) (hk : 1 ≤ k)
-    (hidx : (centralizer ({g} : Set G)).index = p ^ k) : False
+    (hidx : (centralizer ({g} : Set G)).index = p ^ k) : False :=
+  burnside_class_size hsimple g hg p k hp hk hidx
 
 /-- **Burnside's `p^a q^b` theorem, simple case.**  A finite *simple* group all of whose prime
 divisors lie in `{p, q}` is solvable (equivalently: cyclic of prime order — the only finite

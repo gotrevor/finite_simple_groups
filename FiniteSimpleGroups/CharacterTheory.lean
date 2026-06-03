@@ -455,6 +455,41 @@ theorem sum_character_leftRegular_mul (f : G → ℂ) :
 
 end RegularCharacter
 
+/-! ### Toward ingredient 3: the Artin–Wedderburn count
+
+`ℂ[G]` is semisimple (Maschke) and finite-dimensional, so over the algebraically closed field `ℂ`
+it decomposes as `ℂ[G] ≃ₐ[ℂ] ∏ᵢ Matrix (Fin dᵢ) (Fin dᵢ) ℂ` (mathlib's
+`IsSemisimpleRing.exists_algEquiv_pi_matrix_of_isAlgClosed`).  The number of factors `n` is the
+number of irreducible characters `#Irr(G)`, and the `dᵢ` are the irreducible degrees `χᵢ(1)`.
+Comparing `ℂ`-dimensions gives the classical relation `∑ᵢ dᵢ² = |G|`.
+
+This is the structural backbone for the finite family `Irr(G)` that column orthogonality
+(ingredient 3, Route B) needs. -/
+
+section Wedderburn
+
+variable {G : Type*} [Group G] [Fintype G]
+
+/-- **`∑ dᵢ² = |G|`** from Artin–Wedderburn for `ℂ[G]`: there are finitely many irreducible degrees
+`dᵢ` (`= χᵢ(1)`, one per matrix factor of `ℂ[G] ≃ₐ ∏ᵢ Mₐᵢ(ℂ)`) and the sum of their squares is the
+group order.  Gives the finite index set and the dimension count underlying `Irr(G)`. -/
+theorem sum_sq_dim_eq_card :
+    ∃ (n : ℕ) (d : Fin n → ℕ), (∀ i, NeZero (d i)) ∧ ∑ i, (d i) ^ 2 = Fintype.card G := by
+  haveI : NeZero (Nat.card G : ℂ) := ⟨Nat.cast_ne_zero.mpr Nat.card_pos.ne'⟩
+  haveI : Module.Finite ℂ (MonoidAlgebra ℂ G) := Module.Finite.of_basis (Finsupp.basisSingleOne)
+  let b : Module.Basis G ℂ (MonoidAlgebra ℂ G) := Finsupp.basisSingleOne
+  obtain ⟨n, d, hd, ⟨e⟩⟩ :=
+    IsSemisimpleRing.exists_algEquiv_pi_matrix_of_isAlgClosed (R := MonoidAlgebra ℂ G) (F := ℂ)
+  refine ⟨n, d, hd, ?_⟩
+  have hfin : Module.finrank ℂ (MonoidAlgebra ℂ G)
+      = Module.finrank ℂ (Π i, Matrix (Fin (d i)) (Fin (d i)) ℂ) := e.toLinearEquiv.finrank_eq
+  rw [Module.finrank_eq_card_basis b, Module.finrank_pi_fintype] at hfin
+  simp only [Module.finrank_matrix, Fintype.card_fin, Module.finrank_self, mul_one] at hfin
+  rw [hfin]
+  exact Finset.sum_congr rfl fun i _ => pow_two (d i)
+
+end Wedderburn
+
 /-! ### Toward the scalar step: equality case of the triangle inequality
 
 After Burnside's vanishing lemma (`burnside_vanishing_core`, out at Aristotle) gives

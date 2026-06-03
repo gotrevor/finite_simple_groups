@@ -402,4 +402,47 @@ theorem centralizerIndex_char_isIntegral (ρ : Representation ℂ G V) [FiniteDi
 
 end CentralCharacter
 
+/-! ### Toward ingredient 3: the regular character
+
+The regular representation `leftRegular ℂ G = ofMulAction ℂ G G` decomposes as `⊕_χ V_χ^{χ(1)}`, so
+its character is `χ_reg = ∑_χ χ(1)·χ`.  Evaluated at `g ≠ 1`, `χ_reg(g) = 0` (a permutation
+representation with no fixed points), which is exactly **column orthogonality** `∑_χ χ(1)χ(g) = 0`.
+
+This lemma supplies the elementary half — the value of `χ_reg` — independent of the (still missing)
+decomposition over the finite family of irreducibles.  The trace of a permutation representation is
+its fixed-point count; for left multiplication `g·x = x ⟺ g = 1`, so `χ_reg(g) = |G|·[g = 1]`. -/
+
+section RegularCharacter
+
+open Representation
+open scoped Classical
+
+variable {G : Type*} [Group G] [Fintype G]
+
+/-- **The character of the regular representation** is `χ_reg(g) = |G|·[g = 1]`: the trace of the
+permutation matrix of left multiplication by `g`, whose fixed points are `{x : g·x = x} = ∅` unless
+`g = 1`.  When the regular-representation decomposition `χ_reg = ∑_χ χ(1)·χ` becomes available, this
+yields column orthogonality (ingredient 3). -/
+theorem character_leftRegular_eq (g : G) :
+    (Representation.ofMulAction ℂ G G).character g
+      = if g = 1 then (Fintype.card G : ℂ) else 0 := by
+  rw [Representation.character,
+    LinearMap.trace_eq_matrix_trace ℂ (Finsupp.basisSingleOne (R := ℂ) (ι := G))]
+  rw [Matrix.trace]
+  simp only [Matrix.diag_apply, LinearMap.toMatrix_apply, Finsupp.basisSingleOne_repr,
+    LinearEquiv.refl_apply, Finsupp.coe_basisSingleOne]
+  have key : ∀ x : G, (Representation.ofMulAction ℂ G G g (Finsupp.single x 1)) x
+      = if g = 1 then (1 : ℂ) else 0 := by
+    intro x
+    rw [Representation.ofMulAction]
+    simp only [MonoidHom.coe_mk, OneHom.coe_mk, Finsupp.lmapDomain_apply,
+      Finsupp.mapDomain_single, smul_eq_mul, Finsupp.single_apply]
+    by_cases hg1 : g = 1
+    · subst hg1; simp
+    · rw [if_neg (fun h => hg1 (mul_eq_right.mp h)), if_neg hg1]
+  rw [Finset.sum_congr rfl (fun x _ => key x), Finset.sum_const, Finset.card_univ, nsmul_eq_mul,
+    mul_ite, mul_one, mul_zero]
+
+end RegularCharacter
+
 end FiniteSimpleGroups

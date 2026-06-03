@@ -167,17 +167,25 @@ axioms`-clean — `[propext, Classical.choice, Quot.sound]`):
   `injective_iff_map_eq_one` + `QuotientGroup.eq_one_iff`; `pslFaithful` then from
   `eq_of_smul_eq_smul` since `g•x = pslPermHom g x` (compHom) and `Sym` is faithful.
 
-**Remaining 1 obligation (all build on `psl1Action` + `center_SL2`):**
-1. `IsQuasiPreprimitive (PSL 2 q) ℙ¹` + `IwasawaStructure (PSL 2 q) ℙ¹` (the two
-   that `PSL2_isSimpleGroup_of_iwasawa` still needs after `MulAction`/perfect):
-   - QuasiPreprimitive: PSL(2,q) is 2-transitive on `ℙ¹` (q+1 points) ⇒ primitive
-     ⇒ quasi-preprimitive (mathlib `IsPreprimitive` from 2-transitivity).  HARD:
-     needs the 2-transitivity proof (any ordered pair of distinct lines maps to
-     `([e₁],[e₂])`).
-   - IwasawaStructure: `T(point)` = image in PSL of the unipotent subgroup fixing
-     that line (the `upper`/`lower` transvection subgroup `≅ F⁺`, abelian),
-     conjugation-equivariant, with `iSup T = ⊤` (`transvections_generate`, PROVEN).
-     HARD: the conjugation-equivariance + generation bookkeeping.
+- ✅ **quasi-preprimitive** `IsQuasiPreprimitive (PSL 2 q) ℙ¹` — `SL2.pslQuasiPreprimitive`
+  (DONE 2026-06-03).  Proved PSL(2,q) **2-transitive** on ℙ¹ (`psl_two_trans` on
+  points, `psl_two_pretrans` on `Fin 2 ↪ ℙ¹`), then `isPreprimitive_of_is_two_pretransitive`
+  ⇒ `IsPreprimitive` ⇒ (instance `IsPreprimitive.isQuasiPreprimitive`) quasi-preprimitive.
+  Geometric core `exists_sl2_maps_ref`: distinct lines `[v]≠[w]` ⇒ `d=det[v|w]≠0`
+  (`parallel_of_det_zero` contrapositive) ⇒ the det-1 matrix `[v | d⁻¹w]` sends the
+  reference frame `([e₁],[e₂]) ↦ ([v],[w])`; compose `g₂∘g₁⁻¹` for general pairs;
+  push SL→PSL via `pslPermHom_mk_smul`.
+
+**Remaining 1 obligation (builds on `psl1Action` + `center_SL2` + `transvections_generate`):**
+1. `IwasawaStructure (PSL 2 q) ℙ¹` — the last piece `PSL2_isSimpleGroup_of_iwasawa`
+   needs.  Fields (mathlib `MulAction.IwasawaStructure`):
+   - `T : ℙ¹ → Subgroup (PSL 2 q)` — `T(line)` = image in PSL of the unipotent
+     subgroup fixing that line (the `upper`/`lower` transvection subgroup `≅ F⁺`).
+   - `is_comm : ∀ x, IsMulCommutative (T x)` — each `T x` abelian (transvections
+     `upper`/`lower` are an additive `F⁺`, via `upper_mul : upper s * upper t = upper (s+t)`).
+   - `is_conj : ∀ g x, T (g • x) = MulAut.conj g • T x` — conjugation-equivariance.
+   - `is_generator : iSup T = ⊤` — generation (`transvections_generate`, PROVEN).
+   HARD: the conjugation-equivariance + generation bookkeeping; attack paths in §D-next below.
 
 **Aristotle:** `card_SL2` (`|SL(2,q)| = q(q²-1)`, job `28df03ca`) grinding — useful
 for `|PSL(2,q)|` and the order tables; not on the critical path for simplicity.

@@ -23,10 +23,17 @@ them — perfectness** — from scratch and fully axiom-free:
   (`ker_le_center`, the converse of `center_le_ker`), so the descended hom
   `pslPermHom : PSL(2,q) → Sym(ℙ¹)` is injective.
 
-Four of the five Iwasawa obligations of `PSL2_isSimpleGroup_of_iwasawa` are thus
-machine-checked here (perfect, nontrivial, the `ℙ¹` action, faithful); the one
-remaining (`IsQuasiPreprimitive` together with the unipotent `IwasawaStructure`)
-builds on the `ℙ¹` action and `transvections_generate`. See `PENDING_WORK §D`.
+* `pslQuasiPreprimitive` : `IsQuasiPreprimitive (PSL 2 q) ℙ¹(F_q)` (the Iwasawa
+  `IsQuasiPreprimitive` obligation), from 2-transitivity of `PSL(2,q)` on `ℙ¹`
+  (`psl_two_trans`/`psl_two_pretrans`): a 2-transitive action is primitive, hence
+  quasi-preprimitive. The geometric core (`exists_sl2_maps_ref`) carries the
+  reference frame `([e₁],[e₂])` to any pair of distinct lines.
+
+Five of the six pieces feeding `PSL2_isSimpleGroup_of_iwasawa` are thus
+machine-checked here (perfect, nontrivial, the `ℙ¹` action, faithful,
+quasi-preprimitive); the one remaining is the unipotent `IwasawaStructure`
+(`T(line)` = stabilizer's transvection subgroup, conjugation-equivariant,
+generating via `transvections_generate`). See `PENDING_WORK §D`.
 
 Mathlib v4.29.1 has `PSL`/`SL` and the transvection machinery but **no** SL(2)
 perfectness and **no** PSL simplicity, so this is genuine new content, consistent
@@ -522,6 +529,148 @@ noncomputable instance pslFaithful (q : ℕ) [Fact (Nat.Prime q)] :
     apply pslPermHom_injective q
     ext x
     exact hsmul x
+
+/-! ### Quasi-preprimitivity via 2-transitivity — the Iwasawa `IsQuasiPreprimitive`
+obligation
+
+`PSL(2,q)` is **2-transitive** on `ℙ¹(F_q)`: any ordered pair of distinct lines
+maps to any other. A 2-transitive action is primitive
+(`isPreprimitive_of_is_two_pretransitive`), and primitive ⇒ quasi-preprimitive
+(`IsPreprimitive.isQuasiPreprimitive`). The geometric core is that the linear
+`SL(2,F)` action carries the reference frame `([e₁],[e₂])` to any pair of distinct
+lines `([v],[w])`: distinct lines are linearly independent (`d := det[v|w] ≠ 0`),
+so the determinant-1 matrix with columns `v, d⁻¹w` does the job. -/
+
+/-- **Two 2-D vectors with vanishing cross product are parallel.** If
+`det[v|w] = v₀w₁ − v₁w₀ = 0` and `v ≠ 0`, then `w = c·v` for some scalar `c`. The
+contrapositive (distinct lines ⇒ `det ≠ 0`) underlies 2-transitivity. -/
+theorem parallel_of_det_zero {K : Type*} [Field K]
+    (v w : Fin 2 → K) (hv : v ≠ 0)
+    (hdet : v 0 * w 1 - v 1 * w 0 = 0) :
+    ∃ c : K, w = c • v := by
+  by_cases h0 : v 0 = 0
+  · have hv1 : v 1 ≠ 0 := by
+      intro h1; apply hv; funext i; fin_cases i <;> simp_all
+    have hw0 : w 0 = 0 := by
+      rw [h0, zero_mul, zero_sub, neg_eq_zero] at hdet
+      exact (mul_eq_zero.mp hdet).resolve_left hv1
+    refine ⟨w 1 / v 1, ?_⟩
+    funext i; fin_cases i
+    · simp [h0, hw0]
+    · show w 1 = (w 1 / v 1) • v 1
+      rw [smul_eq_mul, div_mul_cancel₀ _ hv1]
+  · refine ⟨w 0 / v 0, ?_⟩
+    funext i; fin_cases i
+    · show w 0 = (w 0 / v 0) • v 0
+      rw [smul_eq_mul, div_mul_cancel₀ _ h0]
+    · show w 1 = (w 0 / v 0) • v 1
+      rw [smul_eq_mul, div_mul_eq_mul_div, eq_div_iff h0]
+      linear_combination hdet
+
+/-- The reference point `[e₁] = [1 : 0]` of `ℙ¹`. -/
+def E1 (q : ℕ) [Fact (Nat.Prime q)] : P1 q :=
+  Projectivization.mk (ZMod q) ![1, 0] (cons_ne_zero_of_fst 1 0 one_ne_zero)
+
+/-- The reference point `[e₂] = [0 : 1]` of `ℙ¹`. -/
+def E2 (q : ℕ) [Fact (Nat.Prime q)] : P1 q :=
+  Projectivization.mk (ZMod q) ![0, 1] (cons_ne_zero_of_snd 0 1 one_ne_zero)
+
+/-- **The `SL(2,q)` action carries the reference frame `([e₁],[e₂])` to any pair
+of distinct lines.** The matrix with columns `v` and `d⁻¹w` (`d = det[v|w] ≠ 0`
+since `[v] ≠ [w]`) has determinant 1 and sends `e₁ ↦ v`, `e₂ ↦ d⁻¹w ∥ w`. -/
+theorem exists_sl2_maps_ref (q : ℕ) [Fact (Nat.Prime q)]
+    (v w : Fin 2 → ZMod q) (hv : v ≠ 0) (hw : w ≠ 0)
+    (hPQ : Projectivization.mk (ZMod q) v hv ≠ Projectivization.mk (ZMod q) w hw) :
+    ∃ g : SpecialLinearGroup (Fin 2) (ZMod q),
+      g • E1 q = Projectivization.mk (ZMod q) v hv ∧
+      g • E2 q = Projectivization.mk (ZMod q) w hw := by
+  set d := v 0 * w 1 - v 1 * w 0 with hd_def
+  have hd : d ≠ 0 := by
+    intro hd0
+    apply hPQ
+    obtain ⟨c, hc⟩ := parallel_of_det_zero v w hv (hd_def ▸ hd0)
+    have hc0 : c ≠ 0 := by rintro rfl; rw [zero_smul] at hc; exact hw hc
+    rw [Projectivization.mk_eq_mk_iff]
+    refine ⟨Units.mk0 c⁻¹ (inv_ne_zero hc0), ?_⟩
+    rw [Units.smul_def, Units.val_mk0, hc, smul_smul, inv_mul_cancel₀ hc0, one_smul]
+  have hM_det :
+      (!![v 0, d⁻¹ * w 0; v 1, d⁻¹ * w 1] : Matrix (Fin 2) (Fin 2) (ZMod q)).det = 1 := by
+    rw [Matrix.det_fin_two_of]; field_simp; rw [hd_def]; ring
+  refine ⟨⟨_, hM_det⟩, ?_, ?_⟩
+  · rw [E1, Projectivization.smul_mk, Projectivization.mk_eq_mk_iff]
+    refine ⟨1, ?_⟩
+    rw [one_smul]
+    funext i; fin_cases i <;>
+      simp [smul_vec_def, Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+  · rw [E2, Projectivization.smul_mk, Projectivization.mk_eq_mk_iff]
+    refine ⟨Units.mk0 d⁻¹ (inv_ne_zero hd), ?_⟩
+    rw [Units.smul_def, Units.val_mk0]
+    funext i; fin_cases i <;>
+      simp [smul_vec_def, Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+
+/-- For any two distinct lines `P ≠ Q`, an `SL(2,q)` element maps the reference
+frame to `(P, Q)`. -/
+theorem exists_sl2_maps_pair (q : ℕ) [Fact (Nat.Prime q)] (P Q : P1 q) (hPQ : P ≠ Q) :
+    ∃ g : SpecialLinearGroup (Fin 2) (ZMod q), g • E1 q = P ∧ g • E2 q = Q := by
+  obtain ⟨g, h1, h2⟩ := exists_sl2_maps_ref q P.rep Q.rep
+    (Projectivization.rep_nonzero P) (Projectivization.rep_nonzero Q)
+    (by rw [Projectivization.mk_rep, Projectivization.mk_rep]; exact hPQ)
+  rw [Projectivization.mk_rep] at h1 h2
+  exact ⟨g, h1, h2⟩
+
+/-- **`SL(2,q)` is 2-transitive on `ℙ¹`** (on points): any distinct pair maps to
+any distinct pair, via composition `g₂ ∘ g₁⁻¹` through the reference frame. -/
+theorem sl2_two_trans (q : ℕ) [Fact (Nat.Prime q)] (x0 x1 y0 y1 : P1 q)
+    (hx : x0 ≠ x1) (hy : y0 ≠ y1) :
+    ∃ g : SpecialLinearGroup (Fin 2) (ZMod q), g • x0 = y0 ∧ g • x1 = y1 := by
+  obtain ⟨g1, hg1a, hg1b⟩ := exists_sl2_maps_pair q x0 x1 hx
+  obtain ⟨g2, hg2a, hg2b⟩ := exists_sl2_maps_pair q y0 y1 hy
+  refine ⟨g2 * g1⁻¹, ?_, ?_⟩
+  · rw [← hg1a, SemigroupAction.mul_smul, inv_smul_smul, hg2a]
+  · rw [← hg1b, SemigroupAction.mul_smul, inv_smul_smul, hg2b]
+
+/-- The `PSL` action of `mk g` agrees with the `SL` action of `g` on `ℙ¹`
+(the action factors through the quotient — how `psl1Action` was built). -/
+theorem pslPermHom_mk_smul (q : ℕ) [Fact (Nat.Prime q)]
+    (g : SpecialLinearGroup (Fin 2) (ZMod q)) (x : P1 q) :
+    pslPermHom q (QuotientGroup.mk g) x = g • x := by
+  rw [pslPermHom_mk]; rfl
+
+/-- **`PSL(2,q)` is 2-transitive on `ℙ¹`** (on points), inherited from the `SL`
+action via the surjection `SL ↠ PSL`. -/
+theorem psl_two_trans (q : ℕ) [Fact (Nat.Prime q)] (x0 x1 y0 y1 : P1 q)
+    (hx : x0 ≠ x1) (hy : y0 ≠ y1) :
+    ∃ g : PSL 2 q, g • x0 = y0 ∧ g • x1 = y1 := by
+  obtain ⟨g, h0, h1⟩ := sl2_two_trans q x0 x1 y0 y1 hx hy
+  refine ⟨QuotientGroup.mk g, ?_, ?_⟩
+  · show pslPermHom q (QuotientGroup.mk g) x0 = y0
+    rw [pslPermHom_mk_smul]; exact h0
+  · show pslPermHom q (QuotientGroup.mk g) x1 = y1
+    rw [pslPermHom_mk_smul]; exact h1
+
+/-- **`PSL(2,q)` is 2-pretransitive on `ℙ¹`** (the mathlib `IsMultiplyPretransitive`
+form, on ordered pairs `Fin 2 ↪ ℙ¹`). -/
+theorem psl_two_pretrans (q : ℕ) [Fact (Nat.Prime q)] :
+    MulAction.IsMultiplyPretransitive (PSL 2 q) (P1 q) 2 := by
+  rw [MulAction.isMultiplyPretransitive_iff]
+  intro x y
+  have hx : x 0 ≠ x 1 := fun h => absurd (x.injective h) (by decide)
+  have hy : y 0 ≠ y 1 := fun h => absurd (y.injective h) (by decide)
+  obtain ⟨g, hg0, hg1⟩ := psl_two_trans q (x 0) (x 1) (y 0) (y 1) hx hy
+  refine ⟨g, ?_⟩
+  ext i
+  fin_cases i
+  · simpa [Function.Embedding.smul_apply] using hg0
+  · simpa [Function.Embedding.smul_apply] using hg1
+
+/-- **`PSL(2,q)`'s action on `ℙ¹` is quasi-preprimitive** — the Iwasawa
+`IsQuasiPreprimitive` obligation. From 2-transitivity: 2-transitive ⇒ primitive
+(`isPreprimitive_of_is_two_pretransitive`) ⇒ quasi-preprimitive. -/
+noncomputable instance pslQuasiPreprimitive (q : ℕ) [Fact (Nat.Prime q)] :
+    MulAction.IsQuasiPreprimitive (PSL 2 q) (P1 q) :=
+  haveI : MulAction.IsPreprimitive (PSL 2 q) (P1 q) :=
+    MulAction.isPreprimitive_of_is_two_pretransitive (psl_two_pretrans q)
+  inferInstance
 
 end SL2
 end FiniteSimpleGroups

@@ -156,18 +156,19 @@ axioms`-clean — `[propext, Classical.choice, Quot.sound]`):
    `QuotientGroup.lift (toPermHom) (center_le_ker)` + `MulAction.compHom`
    (`center_smul_eq`: scalars fix every line).
 
-**Remaining 2 obligations (all build on `psl1Action` + `center_SL2`):**
-1. `FaithfulSMul (PSL 2 q) ℙ¹` — reduces to `ker (toPermHom (SL 2 q) ℙ¹) ≤ center`
-   (the reverse of `center_le_ker`; combined ⇒ `ker = center` ⇒ the lifted hom
-   `PSL →* Perm ℙ¹` is injective ⇒ faithful, since `Perm` acts faithfully).
-   **Math content** = "g fixes every line ⇒ g scalar": for g in the kernel,
-   `g • [v] = [v]` ⇒ `g.mulVec v` is parallel to v ⇒ `¬ LinearIndependent ![v, g•v]`
-   for all v ⇒ **`LinearMap.exists_eq_smul_id_of_forall_notLinearIndependent`**
-   (`Mathlib/LinearAlgebra/Center.lean`, needs `[IsDomain]`+`[Free]`, both hold)
-   gives `toLin' g = a • 1`, i.e. g scalar; `det = a² = 1 ⇒ a = ±1 ⇒ g ∈ center`.
-   Plumbing: `QuotientGroup.lift` injective from `ker ≤ N` (look for
-   `lift_injective`/`kerLift_injective`); `compHom` faithful from lifted injective.
-2. `IsQuasiPreprimitive (PSL 2 q) ℙ¹` + `IwasawaStructure (PSL 2 q) ℙ¹` (the two
+- ✅ **faithful** `FaithfulSMul (PSL 2 q) ℙ¹` — `SL2.pslFaithful` (DONE 2026-06-03).
+  Proved `ker (toPermHom (SL 2 q) ℙ¹) ≤ center` (`ker_le_center`, the reverse of
+  `center_le_ker`; combined ⇒ `ker = center`). The math core `mem_center_of_smul_eq`
+  ("g fixes every line ⇒ g scalar") went **fully elementary** rather than via
+  `exists_eq_smul_id`: testing the three lines `[e₁],[e₂],[e₁+e₂]` forces
+  `g 1 0 = g 0 1 = 0` and `g 0 0 = g 1 1` (`parallel_of_fixes`), then `det=1` ⇒
+  `g 0 0 ² = 1` ⇒ `g = ±1 ∈ center` (`center_SL2`). Plumbing: `pslPermHom` =
+  `QuotientGroup.lift (center) (toPermHom) (center_le_ker)`; injective via
+  `injective_iff_map_eq_one` + `QuotientGroup.eq_one_iff`; `pslFaithful` then from
+  `eq_of_smul_eq_smul` since `g•x = pslPermHom g x` (compHom) and `Sym` is faithful.
+
+**Remaining 1 obligation (all build on `psl1Action` + `center_SL2`):**
+1. `IsQuasiPreprimitive (PSL 2 q) ℙ¹` + `IwasawaStructure (PSL 2 q) ℙ¹` (the two
    that `PSL2_isSimpleGroup_of_iwasawa` still needs after `MulAction`/perfect):
    - QuasiPreprimitive: PSL(2,q) is 2-transitive on `ℙ¹` (q+1 points) ⇒ primitive
      ⇒ quasi-preprimitive (mathlib `IsPreprimitive` from 2-transitivity).  HARD:

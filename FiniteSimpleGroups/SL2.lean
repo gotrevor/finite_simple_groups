@@ -18,10 +18,15 @@ them — perfectness** — from scratch and fully axiom-free:
   obligation), built from the linear `SL(2,F)` action on `Fin 2 → F` descended
   through the center (which fixes every line, `center_smul_eq`).
 
-Three of the five Iwasawa obligations of `PSL2_isSimpleGroup_of_iwasawa` are thus
-machine-checked here (perfect, nontrivial, the `ℙ¹` action); the remaining two
-(`FaithfulSMul` and `IsQuasiPreprimitive`/the unipotent `IwasawaStructure`) build
-on the `ℙ¹` action and `center_SL2`. See `PENDING_WORK §D`.
+* `pslFaithful` : `FaithfulSMul (PSL 2 q) ℙ¹(F_q)` (the Iwasawa `FaithfulSMul`
+  obligation). The kernel of the `SL(2,q)` action on `ℙ¹` is exactly the center
+  (`ker_le_center`, the converse of `center_le_ker`), so the descended hom
+  `pslPermHom : PSL(2,q) → Sym(ℙ¹)` is injective.
+
+Four of the five Iwasawa obligations of `PSL2_isSimpleGroup_of_iwasawa` are thus
+machine-checked here (perfect, nontrivial, the `ℙ¹` action, faithful); the one
+remaining (`IsQuasiPreprimitive` together with the unipotent `IwasawaStructure`)
+builds on the `ℙ¹` action and `transvections_generate`. See `PENDING_WORK §D`.
 
 Mathlib v4.29.1 has `PSL`/`SL` and the transvection machinery but **no** SL(2)
 perfectness and **no** PSL simplicity, so this is genuine new content, consistent
@@ -396,6 +401,127 @@ noncomputable instance psl1Action (q : ℕ) [Fact (Nat.Prime q)] : MulAction (PS
     (QuotientGroup.lift (Subgroup.center _)
       (MulAction.toPermHom (SpecialLinearGroup (Fin 2) (ZMod q)) (P1 q))
       (center_le_ker q))
+
+/-! ### Faithfulness of the `PSL(2,q)` action — the Iwasawa `FaithfulSMul` obligation
+
+The kernel of the `SL(2,q)` action on `ℙ¹` is **exactly** the center (`center_le_ker`
+gave `⊇`; the reverse `ker_le_center` is the content here). Hence the descended hom
+`PSL(2,q) → Sym(ℙ¹)` is injective, so `PSL(2,q)` acts faithfully. The math core
+(`mem_center_of_smul_eq`) is the elementary "an element fixing every line is a
+scalar": testing the three lines `[e₁]`, `[e₂]`, `[e₁+e₂]` forces the off-diagonal
+entries to vanish and the diagonal entries to agree, so `g = a·I` with `det = a² = 1`,
+i.e. `a = ±1`, i.e. `g ∈ {±1} = ` center. -/
+
+/-- If `g` fixes the line `[v]` (for `v ≠ 0`), then `g.mulVec v` is a scalar
+multiple of `v` (the geometric meaning of "fixes the line"). -/
+theorem parallel_of_fixes (q : ℕ) [Fact (Nat.Prime q)]
+    (g : SpecialLinearGroup (Fin 2) (ZMod q))
+    (h : ∀ x : P1 q, g • x = x)
+    (v : Fin 2 → ZMod q) (hv : v ≠ 0) :
+    ∃ a : (ZMod q)ˣ, (a : ZMod q) • v = g.val.mulVec v := by
+  have hx := h (Projectivization.mk _ v hv)
+  rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff] at hx
+  obtain ⟨a, ha⟩ := hx
+  refine ⟨a, ?_⟩
+  rw [show g.val.mulVec v = g • v from (smul_vec_def g v).symm, ← Units.smul_def]
+  exact ha
+
+/-- `![x, y] ≠ 0` when its first entry is nonzero. -/
+theorem cons_ne_zero_of_fst {q : ℕ} [Fact (Nat.Prime q)] (x y : ZMod q) (hx : x ≠ 0) :
+    (![x, y] : Fin 2 → ZMod q) ≠ 0 := fun h => hx (by have := congrFun h 0; simpa using this)
+
+/-- `![x, y] ≠ 0` when its second entry is nonzero. -/
+theorem cons_ne_zero_of_snd {q : ℕ} [Fact (Nat.Prime q)] (x y : ZMod q) (hy : y ≠ 0) :
+    (![x, y] : Fin 2 → ZMod q) ≠ 0 := fun h => hy (by have := congrFun h 1; simpa using this)
+
+/-- **An `SL(2,q)` element fixing every line of `ℙ¹` is central** (`= ±1`). The
+crux of faithfulness: `ker (SL ↠ Sym ℙ¹) ≤ center`. Tests the three lines
+`[e₁], [e₂], [e₁+e₂]`: the first two force `g 1 0 = g 0 1 = 0`, the third forces
+`g 0 0 = g 1 1`; with `det = 1` this gives `g 0 0 ² = 1`, so `g = ±1`. -/
+theorem mem_center_of_smul_eq (q : ℕ) [Fact (Nat.Prime q)]
+    (g : SpecialLinearGroup (Fin 2) (ZMod q))
+    (h : ∀ x : P1 q, g • x = x) :
+    g ∈ Subgroup.center (SpecialLinearGroup (Fin 2) (ZMod q)) := by
+  have h1 : (1 : ZMod q) ≠ 0 := one_ne_zero
+  obtain ⟨a0, ha0⟩ := parallel_of_fixes q g h ![1, 0] (cons_ne_zero_of_fst 1 0 h1)
+  obtain ⟨a1, ha1⟩ := parallel_of_fixes q g h ![0, 1] (cons_ne_zero_of_snd 0 1 h1)
+  obtain ⟨a2, ha2⟩ := parallel_of_fixes q g h ![1, 1] (cons_ne_zero_of_fst 1 1 h1)
+  have hc : g.val 1 0 = 0 := by
+    have e := congrFun ha0 1
+    simp only [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.cons_val_zero,
+      Matrix.cons_val_one, Pi.smul_apply, smul_eq_mul, mul_zero, mul_one, add_zero] at e
+    exact e.symm
+  have hb : g.val 0 1 = 0 := by
+    have e := congrFun ha1 0
+    simp only [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.cons_val_zero,
+      Matrix.cons_val_one, Pi.smul_apply, smul_eq_mul, mul_zero, mul_one, zero_add] at e
+    exact e.symm
+  have had : g.val 0 0 = g.val 1 1 := by
+    have e0 := congrFun ha2 0
+    have e1 := congrFun ha2 1
+    simp only [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.cons_val_zero,
+      Matrix.cons_val_one, Pi.smul_apply, smul_eq_mul, mul_one] at e0 e1
+    have key : g.val 0 0 + g.val 0 1 = g.val 1 0 + g.val 1 1 := e0.symm.trans e1
+    linear_combination key - hb + hc
+  have hdet : g.val 0 0 * g.val 1 1 - g.val 0 1 * g.val 1 0 = 1 := by
+    have := g.2; rwa [Matrix.det_fin_two] at this
+  have hsq : g.val 0 0 * g.val 0 0 = 1 := by
+    rw [← had] at hdet; rw [hb, zero_mul, sub_zero] at hdet; exact hdet
+  rw [center_SL2]
+  rcases mul_self_eq_one_iff.mp hsq with ha | ha
+  · left
+    apply Subtype.ext
+    ext i j; fin_cases i <;> fin_cases j <;> simp_all [Matrix.one_apply]
+  · right
+    apply Subtype.ext
+    ext i j; fin_cases i <;> fin_cases j <;>
+      simp_all [SpecialLinearGroup.coe_neg, Matrix.one_apply]
+
+/-- **The kernel of the `ℙ¹` action equals the center** — combined with
+`center_le_ker`, `ker (toPermHom) = center`. -/
+theorem ker_le_center (q : ℕ) [Fact (Nat.Prime q)] :
+    (MulAction.toPermHom (SpecialLinearGroup (Fin 2) (ZMod q)) (P1 q)).ker ≤
+      Subgroup.center (SpecialLinearGroup (Fin 2) (ZMod q)) := by
+  intro g hg
+  rw [MonoidHom.mem_ker] at hg
+  apply mem_center_of_smul_eq q g
+  intro x
+  have := (Equiv.ext_iff.mp hg) x
+  simpa using this
+
+/-- The descended permutation representation `PSL(2,q) → Sym(ℙ¹)`. The
+`psl1Action` instance is `MulAction.compHom` of this hom. -/
+noncomputable def pslPermHom (q : ℕ) [Fact (Nat.Prime q)] : PSL 2 q →* Equiv.Perm (P1 q) :=
+  QuotientGroup.lift (Subgroup.center _)
+    (MulAction.toPermHom (SpecialLinearGroup (Fin 2) (ZMod q)) (P1 q))
+    (center_le_ker q)
+
+theorem pslPermHom_mk (q : ℕ) [Fact (Nat.Prime q)]
+    (g : SpecialLinearGroup (Fin 2) (ZMod q)) :
+    pslPermHom q (QuotientGroup.mk g) =
+      MulAction.toPermHom (SpecialLinearGroup (Fin 2) (ZMod q)) (P1 q) g := rfl
+
+/-- `pslPermHom` is injective: its kernel is `ker (toPermHom) / center = ⊥`
+because `ker (toPermHom) = center` (`ker_le_center`). -/
+theorem pslPermHom_injective (q : ℕ) [Fact (Nat.Prime q)] :
+    Function.Injective (pslPermHom q) := by
+  rw [injective_iff_map_eq_one]
+  intro x hx
+  induction x using QuotientGroup.induction_on with
+  | H g =>
+    rw [pslPermHom_mk] at hx
+    exact (QuotientGroup.eq_one_iff g).mpr (ker_le_center q (MonoidHom.mem_ker.mpr hx))
+
+/-- **`PSL(2,q)` acts faithfully on `ℙ¹(F_q)`** — the Iwasawa `FaithfulSMul`
+obligation. Since `g • x = pslPermHom q g x` (the action is `compHom` of
+`pslPermHom`) and `Sym(ℙ¹)` acts faithfully, faithfulness reduces to
+`pslPermHom`'s injectivity. -/
+noncomputable instance pslFaithful (q : ℕ) [Fact (Nat.Prime q)] :
+    FaithfulSMul (PSL 2 q) (P1 q) where
+  eq_of_smul_eq_smul {g₁ g₂} hsmul := by
+    apply pslPermHom_injective q
+    ext x
+    exact hsmul x
 
 end SL2
 end FiniteSimpleGroups

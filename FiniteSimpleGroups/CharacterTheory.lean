@@ -10,10 +10,12 @@ prime-power class-size lemma).  The classical proof of that lemma needs six ingr
 1. **`χ(g)` is an algebraic integer.**  ✅ proved here (`trace_isIntegral_of_pow_eq_one`,
    `Representation.character_isIntegral`): for a finite group the matrix of `ρ g` has finite
    order, its eigenvalues are roots of unity (integral over `ℤ`), and the trace is their sum.
-2. **Central-character integrality** `[G:C_G(g)]·χ(g)/χ(1)` is an algebraic integer.  ⛔ needs
-   the class-sum / centre-of-group-algebra machinery, **not in mathlib v4.29.1** — the main gap.
+2. **Central-character integrality** `[G:C_G(g)]·χ(g)/χ(1)` is an algebraic integer.  ✅ proved
+   here (`classSize_char_isIntegral`) via class sums in `ℂ[G]` and Schur's lemma — the textbook
+   structure-constant argument is bypassed because `ℤ[G]` is module-finite over `ℤ`, so every class
+   sum is integral for free.
 3. **Column orthogonality** `∑_χ χ(1) χ(g) = 0` for `g ≠ 1`.  ⛔ mathlib has only row
-   orthonormality (`char_orthonormal`); column orthogonality is the second gap.
+   orthonormality (`char_orthonormal`); column orthogonality is the one remaining gap.
 4. **Kronecker's theorem** — an algebraic integer all of whose conjugates lie in the closed unit
    disc is `0` or a root of unity.  ✅ already in mathlib
    (`NumberField.Embeddings.pow_eq_one_of_norm_le_one`).
@@ -22,9 +24,8 @@ prime-power class-size lemma).  The classical proof of that lemma needs six ingr
 6. **Scalar ⟹ proper normal subgroup**, contradicting simplicity.  ✅ structural half proved here
    (`scalarSubgroup`, `scalarSubgroup_normal`, `comm_of_scalarSubgroup_eq_top`).
 
-So after this file the only genuinely missing mathlib infrastructure is (2) and (3) — the
-central-character / class-sum integrality and column orthogonality.  Ingredients 1, 4, 5, 6 are
-in hand (in-repo or mathlib).
+So after this file the only genuinely missing mathlib infrastructure is (3) — column
+orthogonality.  Ingredients 1, 2, 4, 5, 6 are in hand (in-repo or mathlib).
 -/
 
 namespace FiniteSimpleGroups
@@ -198,5 +199,146 @@ theorem comm_of_scalarSubgroup_eq_top (ρ : Representation ℂ G V)
   rw [map_mul, map_mul, hca, hcb, ← map_mul, ← map_mul, mul_comm]
 
 end ScalarSubgroup
+
+/-! ### Ingredient 2/6: central-character integrality (class sums)
+
+This section discharges ingredient 2: for a finite group, an irreducible complex representation
+`ρ` with character `χ`, and `g : G`, the number `(class size of g)·χ(g)/χ(1)` is an algebraic
+integer.  The classical proof goes through class sums in the group algebra and Schur's lemma.
+
+The key simplification (versus the textbook structure-constant argument) is that **every** element
+of `ℤ[G]` is integral over `ℤ`, because `ℤ[G]` is module-finite over `ℤ` (free of rank `|G|`).  So
+the class sum is integral for free; centrality of the class sum is needed only to make `ρ` send it
+to a scalar (Schur), not for integrality. -/
+
+section CentralCharacter
+
+open Representation
+open scoped MonoidAlgebra Classical
+
+variable {G : Type*} [Group G]
+
+/-- **Abstract central-character lemma.** If `z : ℂ[G]` acts (via an irreducible `ρ`) commuting
+with the whole `G`-action and is integral over `ℤ`, then `ρ` sends it to a scalar `c • 1` with `c`
+an algebraic integer.  (Schur's lemma: a `G`-equivariant endomorphism of an irreducible complex
+representation is a scalar; integrality transfers along the algebra map `ℂ[G] → End ℂ V` and is
+reflected back to `ℂ` since `ℂ → End ℂ V` is injective.) -/
+theorem exists_scalar_isIntegral_of_central {V : Type*} [AddCommGroup V] [Module ℂ V]
+    [FiniteDimensional ℂ V] [Nontrivial V]
+    (ρ : Representation ℂ G V) [ρ.IsIrreducible]
+    (z : MonoidAlgebra ℂ G)
+    (hzc : ∀ g v, (ρ.asAlgebraHom z) (ρ g v) = ρ g ((ρ.asAlgebraHom z) v))
+    (hzi : IsIntegral ℤ z) :
+    ∃ c : ℂ, ρ.asAlgebraHom z = algebraMap ℂ (Module.End ℂ V) c ∧ IsIntegral ℤ c := by
+  obtain ⟨c, hc⟩ : ∃ c : ℂ, ρ.asAlgebraHom z = algebraMap ℂ (Module.End ℂ V) c := by
+    let f : Representation.IntertwiningMap ρ ρ :=
+      LinearMap.intertwiningMap_of_isIntertwiningMap ρ ρ (ρ.asAlgebraHom z) hzc
+    obtain ⟨c, hcf⟩ :=
+      (Representation.IsIrreducible.algebraMap_intertwiningMap_bijective_of_isAlgClosed
+        (ρ := ρ)).2 f
+    refine ⟨c, ?_⟩
+    have : (algebraMap ℂ (Representation.IntertwiningMap ρ ρ) c).toLinearMap = f.toLinearMap := by
+      rw [hcf]
+    rw [Representation.IntertwiningMap.algebraMap_apply] at this
+    ext v
+    have h2 := LinearMap.congr_fun this v
+    simpa [f, LinearMap.intertwiningMap_of_isIntertwiningMap,
+      Algebra.algebraMap_eq_smul_one] using h2.symm
+  refine ⟨c, hc, ?_⟩
+  have h1 : IsIntegral ℤ (ρ.asAlgebraHom z) := hzi.map (ρ.asAlgebraHom.restrictScalars ℤ)
+  rw [hc] at h1
+  have hinj : Function.Injective (algebraMap ℂ (Module.End ℂ V)) :=
+    FaithfulSMul.algebraMap_injective ℂ (Module.End ℂ V)
+  exact (isIntegral_algebraMap_iff hinj).mp h1
+
+variable [Fintype G] {V : Type*} [AddCommGroup V] [Module ℂ V]
+
+/-- The **class sum** of `g`: the sum of `single x 1` over the conjugacy class of `g` in `ℂ[G]`. -/
+noncomputable def classSum (g : G) : MonoidAlgebra ℂ G :=
+  ∑ x ∈ Finset.univ.filter (fun x => IsConj g x), MonoidAlgebra.single x (1 : ℂ)
+
+/-- The class sum is integral over `ℤ`: it is the image of the corresponding element of `ℤ[G]`
+(integral over `ℤ`, since `ℤ[G]` is module-finite over `ℤ`) under the coefficient map `ℤ → ℂ`. -/
+theorem classSum_isIntegral (g : G) : IsIntegral ℤ (classSum g) := by
+  haveI : Module.Finite ℤ (MonoidAlgebra ℤ G) := Module.Finite.of_basis (Finsupp.basisSingleOne)
+  set z : MonoidAlgebra ℤ G :=
+    ∑ x ∈ Finset.univ.filter (fun x => IsConj g x), MonoidAlgebra.single x (1 : ℤ) with hz_def
+  have hz : IsIntegral ℤ z := Algebra.IsIntegral.isIntegral z
+  have hmap : MonoidAlgebra.mapAlgHom G (Algebra.ofId ℤ ℂ) z = classSum g := by
+    rw [hz_def, classSum, map_sum]
+    refine Finset.sum_congr rfl fun x _ => ?_
+    rw [MonoidAlgebra.mapAlgHom_single]
+    simp
+  rw [← hmap]
+  exact hz.map (MonoidAlgebra.mapAlgHom G (Algebra.ofId ℤ ℂ))
+
+/-- The class sum is central in `ℂ[G]`: conjugation by `k` permutes the conjugacy class. -/
+theorem classSum_central (g k : G) :
+    MonoidAlgebra.single k (1 : ℂ) * classSum g = classSum g * MonoidAlgebra.single k 1 := by
+  unfold classSum
+  rw [Finset.mul_sum, Finset.sum_mul]
+  simp only [MonoidAlgebra.single_mul_single, mul_one]
+  refine Finset.sum_nbij' (fun x => k * x * k⁻¹) (fun y => k⁻¹ * y * k) ?_ ?_ ?_ ?_ ?_
+  · intro x hx
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+      (Finset.mem_filter.mp hx).2.trans (isConj_iff.mpr ⟨k, rfl⟩)⟩
+  · intro y hy
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+      (Finset.mem_filter.mp hy).2.trans (isConj_iff.mpr ⟨k⁻¹, by group⟩)⟩
+  · intro x _; group
+  · intro y _; group
+  · intro x _; congr 1; group
+
+/-- The operator `ρ(classSum g)` commutes with the whole `G`-action (centrality of the class sum). -/
+theorem asAlgebraHom_classSum_comm (ρ : Representation ℂ G V) (g k : G) (v : V) :
+    (ρ.asAlgebraHom (classSum g)) (ρ k v) = ρ k ((ρ.asAlgebraHom (classSum g)) v) := by
+  have hk : ρ k = ρ.asAlgebraHom (MonoidAlgebra.single k 1) :=
+    (Representation.asAlgebraHom_single_one ρ k).symm
+  have key : ρ.asAlgebraHom (classSum g) * ρ k = ρ k * ρ.asAlgebraHom (classSum g) := by
+    rw [hk, ← map_mul, ← map_mul, classSum_central]
+  have h2 := congr($key v)
+  rw [Module.End.mul_apply, Module.End.mul_apply] at h2
+  exact h2
+
+/-- Trace of `ρ(classSum g)` is `(class size)·χ(g)`, since `χ` is constant on the conjugacy class. -/
+theorem trace_asAlgebraHom_classSum (ρ : Representation ℂ G V) [FiniteDimensional ℂ V] (g : G) :
+    LinearMap.trace ℂ V (ρ.asAlgebraHom (classSum g))
+      = ((Finset.univ.filter (fun x => IsConj g x)).card : ℂ) * ρ.character g := by
+  unfold classSum
+  rw [map_sum]
+  simp only [Representation.asAlgebraHom_single_one]
+  rw [map_sum]
+  have : ∀ x ∈ Finset.univ.filter (fun x => IsConj g x),
+      LinearMap.trace ℂ V (ρ x) = ρ.character g := by
+    intro x hx
+    obtain ⟨c, hc⟩ := isConj_iff.mp (Finset.mem_filter.mp hx).2
+    rw [← hc]
+    exact ρ.char_conj g c
+  rw [Finset.sum_congr rfl this, Finset.sum_const, nsmul_eq_mul]
+
+/-- **Central character integrality (ingredient 2/6).** For a finite group, an irreducible complex
+representation `ρ`, and `g : G`, the number `(class size of g)·χ(g)/χ(1)` is an algebraic integer.
+
+This is the central-character map evaluated at the class sum: by Schur, `ρ(classSum g) = c • 1`, and
+taking traces gives `c·χ(1) = (class size)·χ(g)`, so `c = (class size)·χ(g)/χ(1)`; `c` is integral
+over `ℤ` because the class sum is.  (The class size here is the cardinality of the conjugacy class,
+i.e. `[G : C_G(g)]` — see `Burnside.lean` for the orbit–stabilizer identification.) -/
+theorem classSize_char_isIntegral (ρ : Representation ℂ G V) [FiniteDimensional ℂ V]
+    [ρ.IsIrreducible] [Nontrivial V] (g : G) :
+    IsIntegral ℤ (((Finset.univ.filter (fun x => IsConj g x)).card : ℂ)
+      * ρ.character g / ρ.character 1) := by
+  obtain ⟨c, hc, hcint⟩ := exists_scalar_isIntegral_of_central ρ (classSum g)
+    (asAlgebraHom_classSum_comm ρ g) (classSum_isIntegral g)
+  have htr : LinearMap.trace ℂ V (ρ.asAlgebraHom (classSum g)) = c * ρ.character 1 := by
+    rw [hc, Algebra.algebraMap_eq_smul_one, map_smul, smul_eq_mul, LinearMap.trace_one, ρ.char_one]
+  have htr2 := trace_asAlgebraHom_classSum ρ g
+  rw [htr] at htr2
+  have hne : ρ.character 1 ≠ 0 := by
+    rw [ρ.char_one]; exact_mod_cast (Module.finrank_pos).ne'
+  have heq : ((Finset.univ.filter (fun x => IsConj g x)).card : ℂ) * ρ.character g
+      / ρ.character 1 = c := (div_eq_iff hne).mpr htr2.symm
+  rw [heq]; exact hcint
+
+end CentralCharacter
 
 end FiniteSimpleGroups

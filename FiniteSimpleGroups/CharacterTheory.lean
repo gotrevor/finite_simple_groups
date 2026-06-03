@@ -745,6 +745,21 @@ theorem injective_of_isSimpleGroup_of_exists_ne {G H : Type*} [Group G] [IsSimpl
     have hmem : g ∈ φ.ker := by rw [h]; exact Subgroup.mem_top g
     exact hg (MonoidHom.mem_ker.mp hmem)
 
+/-- **A nonabelian simple group is perfect:** `[G,G] = ⊤`.  The commutator subgroup is normal, so by
+simplicity it is `⊥` or `⊤`; `⊥` would force `G` abelian (`commutator_eq_bot_iff_center_eq_top`),
+contradicting nonabelianness.  Consequence (for gap 3, `T = 1`): `G^ab = 1`, so the trivial
+representation is the only linear character, hence the unique `dᵢ = 1` Wedderburn factor. -/
+theorem commutator_eq_top_of_isSimpleGroup_of_nonabelian {G : Type*} [Group G] [IsSimpleGroup G]
+    (hnonab : ¬ ∀ a b : G, a * b = b * a) : commutator G = ⊤ := by
+  rcases IsSimpleGroup.eq_bot_or_eq_top_of_normal (commutator G) inferInstance with h | h
+  · exfalso
+    apply hnonab
+    rw [commutator_eq_bot_iff_center_eq_top] at h
+    intro a b
+    have hb : b ∈ Subgroup.center G := by rw [h]; exact Subgroup.mem_top b
+    exact Subgroup.mem_center_iff.mp hb a
+  · exact h
+
 /-- The `Representation ℂ G (Fin d → ℂ)` underlying a matrix homomorphism `R : G →* Mₐ(ℂ)`, via the
 algebra equivalence `Matrix.toLinAlgEquiv' : Mₐ(ℂ) ≃ₐ End ℂ (Fin d → ℂ)`.  Lets the Wedderburn-factor
 maps `Rᵢ` be fed to the `Representation`-level ingredients (2 and 6) of Burnside's lemma. -/

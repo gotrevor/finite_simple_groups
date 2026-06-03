@@ -95,6 +95,39 @@ theorem Representation.character_isIntegral {G : Type*} [Group G] [Finite G]
   refine trace_isIntegral_of_pow_eq_one (orderOf_pos g) _ ?_
   rw [LinearMap.toMatrix_pow, ← map_pow, pow_orderOf_eq_one, map_one, LinearMap.toMatrix_one]
 
+/-- **`‖trace M‖ ≤ d`** for a finite-order `d × d` complex matrix (`M ^ n = 1`, `n ≥ 1`): the
+trace is a sum of `d` eigenvalues, each of modulus `1` (a root of unity). -/
+theorem norm_trace_le_of_pow_eq_one {d n : ℕ} (hn : 1 ≤ n) (M : Matrix (Fin d) (Fin d) ℂ)
+    (hM : M ^ n = 1) : ‖Matrix.trace M‖ ≤ (d : ℝ) := by
+  obtain ⟨hcard, hpow⟩ := charpoly_roots_pow_eq_one M hM
+  rw [Matrix.trace_eq_sum_roots_charpoly]
+  refine (norm_multiset_sum_le _).trans ?_
+  refine (Multiset.sum_le_card_nsmul _ 1 ?_).trans ?_
+  · intro x hx
+    obtain ⟨r, hr, rfl⟩ := Multiset.mem_map.mp hx
+    have hrn : ‖r‖ ^ n = 1 := by rw [← norm_pow, hpow r hr, norm_one]
+    by_contra hgt
+    rw [not_le] at hgt
+    have h1 : 1 < ‖r‖ ^ n := one_lt_pow₀ hgt (by omega)
+    rw [hrn] at h1
+    exact lt_irrefl 1 h1
+  · rw [Multiset.card_map, hcard, nsmul_eq_mul, mul_one]
+
+/-- **`‖χ(g)‖ ≤ χ(1)`**: a character value of a finite group is bounded in modulus by the
+degree `χ(1) = Module.finrank ℂ V` (the eigenvalues of `ρ g` are roots of unity, so their sum has
+modulus `≤ dim`).  This is the bound that makes `χ(g)/χ(1)` lie in the closed unit disc, feeding
+Kronecker's theorem in Burnside's vanishing lemma. -/
+theorem Representation.norm_character_le {G : Type*} [Group G] [Finite G]
+    {V : Type*} [AddCommGroup V] [Module ℂ V] [FiniteDimensional ℂ V]
+    (ρ : Representation ℂ G V) (g : G) :
+    ‖ρ.character g‖ ≤ (Module.finrank ℂ V : ℝ) := by
+  classical
+  let b := Module.finBasis ℂ V
+  show ‖LinearMap.trace ℂ V (ρ g)‖ ≤ _
+  rw [LinearMap.trace_eq_matrix_trace ℂ b]
+  refine norm_trace_le_of_pow_eq_one (orderOf_pos g) _ ?_
+  rw [LinearMap.toMatrix_pow, ← map_pow, pow_orderOf_eq_one, map_one, LinearMap.toMatrix_one]
+
 /-- **`-1/p` is not an algebraic integer** for a prime `p` (ingredient 5/6).  A rational that is
 integral over `ℤ` is an integer (`ℤ` is integrally closed in `ℚ`), and `-1/p ∉ ℤ` for `p ≥ 2`.
 This is what — against the column-orthogonality relation `1 + ∑_{χ≠1} χ(1)χ(g)/p = 0` rewritten

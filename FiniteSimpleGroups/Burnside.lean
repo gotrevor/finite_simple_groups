@@ -56,11 +56,11 @@ column-orthogonality relation `∑_χ χ(1) χ(g) = 0` (for `g ≠ 1`) together 
 yields a nontrivial `χ` with `p ∤ χ(1)` and `χ(g) ≠ 0`, so `g` acts as a scalar in `χ`; the
 elements acting as scalars form a proper nontrivial normal subgroup, contradicting simplicity.
 
-**Now a theorem** (`FiniteSimpleGroups.CharacterTheory.burnside_class_size`): the full character-
-theoretic argument (regular-character decomposition via Artin–Wedderburn + central-character
-integrality + Kronecker + the scalar bridge) is machine-checked.  It rests on the single disclosed
-axiom `exists_unique_trivial_factor` (gap 3, "the trivial representation is the unique 1-dim
-Wedderburn factor"), whose existence half is out at Aristotle. -/
+**Now a theorem** (`FiniteSimpleGroups.CharacterTheory.burnside_class_size`), fully machine-checked
+with **no custom axioms** (`#print axioms` = `[propext, Classical.choice, Quot.sound]`): the complete
+character-theoretic argument — regular-character decomposition via Artin–Wedderburn, central-character
+integrality (class sums + Schur), Kronecker, the scalar bridge, and the uniqueness of the trivial
+Wedderburn factor (averaging-idempotent nonnegative-trace argument). -/
 theorem isSimpleGroup_centralizer_index_not_primePow
     (G : Type*) [Group G] [Finite G] (hsimple : IsSimpleGroup G)
     (g : G) (hg : g ≠ 1) (p k : ℕ) (hp : p.Prime) (hk : 1 ≤ k)

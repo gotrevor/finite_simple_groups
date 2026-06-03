@@ -3,9 +3,10 @@ import Mathlib
 /-!
 # Character theory toward Burnside's `p^a q^b` theorem
 
-This file develops the character-theoretic bricks needed to discharge the sharp axiom
+This file develops the character-theoretic bricks that **discharge** the sharp lemma
 `isSimpleGroup_centralizer_index_not_primePow` of `FiniteSimpleGroups.Burnside` (Burnside's
-prime-power class-size lemma).  The classical proof of that lemma needs six ingredients:
+prime-power class-size lemma) — now a theorem (`burnside_class_size`) with **no custom axioms**.
+The classical proof needs six ingredients, all machine-checked here:
 
 1. **`χ(g)` is an algebraic integer.**  ✅ proved here (`trace_isIntegral_of_pow_eq_one`,
    `Representation.character_isIntegral`): for a finite group the matrix of `ρ g` has finite
@@ -14,11 +15,13 @@ prime-power class-size lemma).  The classical proof of that lemma needs six ingr
    here (`classSize_char_isIntegral`) via class sums in `ℂ[G]` and Schur's lemma — the textbook
    structure-constant argument is bypassed because `ℤ[G]` is module-finite over `ℤ`, so every class
    sum is integral for free.
-3. **Column orthogonality** `∑_χ χ(1) χ(g) = 0` for `g ≠ 1`.  🔶 Route B (regular character) keystone
-   built: `exists_wedderburn_character_decomp` gives `χ_reg(g) = ∑ᵢ dᵢ·χᵢ(g)` via Artin–Wedderburn
-   `ℂ[G] ≃ₐ ∏ᵢ Mₐᵢ(ℂ)`, modulo the one self-contained trace lemma `trace_mulLeft_pi_matrix` (out at
-   Aristotle).  With `character_leftRegular_eq` this yields `∑ᵢ dᵢ·χᵢ(g) = 0` for `g ≠ 1`.  Still to
-   build for the Burnside endgame: irreducibility of the `Rᵢ` and trivial-multiplicity `= 1`.
+3. **Column orthogonality** `∑_χ χ(1) χ(g) = 0` for `g ≠ 1`.  ✅ proved here via Route B (regular
+   character): `exists_wedderburn_character_decomp` gives `χ_reg(g) = ∑ᵢ dᵢ·χᵢ(g)` via Artin–Wedderburn
+   `ℂ[G] ≃ₐ ∏ᵢ Mₐᵢ(ℂ)` (`trace_mulLeft_pi_matrix`); with `character_leftRegular_eq` this is
+   `∑ᵢ dᵢ·χᵢ(g) = 0` for `g ≠ 1`.  The Burnside endgame (`burnside_class_size`) also uses:
+   irreducibility of each `Rᵢ` (`isIrreducible_of_surjective_algHom`), the scalar bridge
+   (`matrix_scalar_of_pow_eq_one_of_norm_trace_eq` + `matrix_trace_zero_or_scalar`), and uniqueness
+   of the trivial factor (`trivial_factor_unique`, averaging-idempotent argument).
 4. **Kronecker's theorem** — an algebraic integer all of whose conjugates lie in the closed unit
    disc is `0` or a root of unity.  ✅ already in mathlib
    (`NumberField.Embeddings.pow_eq_one_of_norm_le_one`).
@@ -28,8 +31,10 @@ prime-power class-size lemma).  The classical proof of that lemma needs six ingr
    (`scalarSubgroup`, `scalarSubgroup_normal`, `comm_of_scalarSubgroup_eq_top`, and the final
    contradiction `not_isScalar_of_isSimpleGroup_of_nonabelian`).
 
-So after this file the only genuinely missing mathlib infrastructure is (3) — column
-orthogonality.  Ingredients 1, 2, 4, 5, 6 are in hand (in-repo or mathlib).
+All six ingredients are in hand.  The capstone `burnside_class_size` assembles them into the
+prime-power class-size lemma, discharging the former axiom; `Burnside.burnside_simple` and
+`ProofStrategy.Burnside_paqb` are now fully machine-checked
+(`#print axioms` = `[propext, Classical.choice, Quot.sound]`).
 -/
 
 namespace FiniteSimpleGroups

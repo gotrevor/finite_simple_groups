@@ -3,9 +3,27 @@
 Per the unblock protocol: a live inventory of every open `axiom` in the repo, with concrete
 attack paths.  Updated 2026-06-03.
 
-## A. Genuinely attackable now (active thread)
+## ✅ A. Burnside `pᵃqᵇ` — COMPLETE (fully machine-checked, no custom axioms)
 
-### `isSimpleGroup_centralizer_index_not_primePow` (`Burnside.lean`)
+`Burnside.isSimpleGroup_centralizer_index_not_primePow` is now a **theorem**
+(`CharacterTheory.burnside_class_size`).  `Burnside.burnside_simple` and `ProofStrategy.Burnside_paqb`
+`#print axioms` = `[propext, Classical.choice, Quot.sound]` — **no custom axioms**.  All three former
+gaps discharged this lap (2026-06-03):
+- **Gap 1** (irreducibility of each Wedderburn factor `Rᵢ`): `isIrreducible_of_surjective_algHom`
+  (transfer simplicity from the natural matrix module along the surjective `Ψᵢ = πᵢ∘e` via
+  `LinearMap.isSimpleModule_iff_of_bijective`).  No Aristotle needed.
+- **Gap 2** (scalar bridge `‖trace(ρg)‖ = d ⇒ ρg scalar`): `matrix_scalar_of_pow_eq_one_of_norm_trace_eq`
+  (ported from Aristotle `e66a25d1`, re-verified) + `matrix_trace_zero_or_scalar`.
+- **Gap 3** (trivial factor unique, `T = 1`): existence `exists_trivial_factor` (augmentation/idempotent,
+  ported from Aristotle `a3e3d823`) + uniqueness `trivial_factor_unique` (**proved locally** — the
+  averaging-idempotent `w = |G|⁻¹∑g` has nonnegative-integer component traces summing to 1, so two
+  trivial factors would force the sum ≥ 2; `matrix_idempotent_trace_natCast` via `IsProj.trace`).
+
+Nothing left to do on the Burnside thread.  (Historical detail below retained for the record.)
+
+<details><summary>Historical: the former axiom and its 6 ingredients</summary>
+
+### `isSimpleGroup_centralizer_index_not_primePow` (`Burnside.lean`) — now discharged
 *Burnside's prime-power class-size lemma: a finite simple group has no conjugacy class of
 prime-power size `> 1`.*  Sole residual axiom of `burnside_simple` after the Sylow/centre
 reduction.  Six classical ingredients; **1, 2, 4, 5, 6 are DONE** (in-repo or mathlib).  The sole
@@ -97,6 +115,8 @@ After ingredient 3: assemble the sharp axiom from
 `not_isScalar_of_isSimpleGroup_of_nonabelian`; so the `p∤χ(1)` terms vanish.)  The scalar step
 `‖χ(g)‖=χ(1) ⇒ ρ g scalar` is OUT at Aristotle (`e66a25d1`, matrix form); port + wrap to the
 Representation level when it returns.
+
+</details>
 
 ## B. Deep / intended-permanent (do NOT spend a lap trying to "crack")
 

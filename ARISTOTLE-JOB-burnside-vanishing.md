@@ -76,3 +76,33 @@ the whole structural keystone `χ_reg(g) = ∑ᵢ dᵢ·χᵢ(g)` is built and g
 4. **Submit next**: irreducibility of the Wedderburn factors `Rᵢ` (full matrix image ⇒ simple
    module) and the trivial-multiplicity-one count `T = 1` — the two remaining rep-theory pieces
    for the Burnside endgame (see `PENDING_WORK.md §A`).
+
+## Job 4 — Natural matrix module is simple ✅ DONE + PORTED (2026-06-03)
+
+**UUID `dc41262f-321e-4bf9-a161-7e1be4320f4c`** (`simplejob`).  Returned, verified clean in
+v4.29.1, ported as `isSimpleModule_natural_matrix` (`IsSimpleModule (Matrix (Fin d) (Fin d) ℂ)
+(Fin d → ℂ)`, d>0).  Proof: nonzero submodule has `v` with `vᵢ≠0`; a rank-one matrix maps `v` to any
+`w`.
+
+## Job 5 — Natural module of `End ℂ V` is simple (IN FLIGHT)
+
+**UUID `09bdf796-4b12-4d42-b3ff-d7f1e8376fa4`** (`endjob`).  Project `/tmp/endjob` (`Target.lean`:
+inlines `isSimpleModule_natural_matrix` as an axiom, goal `isSimpleModule_End_of_nontrivial`:
+`IsSimpleModule (Module.End ℂ V) V` for `V` nonzero fin-dim/ℂ).  Transport the matrix result along a
+basis `V ≃ₗ (Fin d → ℂ)` (`d = finrank`).
+
+### When it returns
+1. download + verify clean (`#print axioms`).  Port as `isSimpleModule_End_of_nontrivial` into
+   `CharacterTheory.lean` (it's the only missing input below; matrix axiom → the real ported lemma).
+2. **Assemble the irreducibility criterion** `isIrreducible_of_asAlgebraHom_surjective`
+   (`Function.Surjective ρ.asAlgebraHom ⇒ ρ.IsIrreducible`): wiring is
+   `rw [Representation.irreducible_iff_isSimpleModule_asModule]` then
+   `isSimpleModule_of_ringHom_surjective ρ.asAlgebraHom.toRingHom hsurj <compat>` with the
+   `End ℂ V`-simplicity as the `[IsSimpleModule S M]` input — **BUT** there is `asModule`
+   type-synonym friction (the `ℂ[G]`-module lives on `ρ.asModule`, the `End`-module on `V`); the
+   `Module (End ℂ V) ρ.asModule` instance + the compatibility `z • m = asAlgebraHom z • m` need
+   `Representation.asModule` smul lemmas (or hand this whole criterion to Aristotle to dodge the
+   instance plumbing).
+3. **Submit next**: surjectivity of `(repOfMatrixHom Rᵢ).asAlgebraHom` for the Wedderburn factors
+   (= `toLinAlgEquiv' ∘ πᵢ ∘ e` surjective; algebra-hom ext on `single g 1` generators), which feeds
+   the criterion to give `Rᵢ` irreducible — completing gap 1.

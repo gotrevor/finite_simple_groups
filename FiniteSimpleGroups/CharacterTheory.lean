@@ -713,6 +713,24 @@ theorem conj_mulLeft {A B : Type*} [Ring A] [Ring B] [Algebra ℂ A] [Algebra �
   congr 1
   exact e.apply_symm_apply y
 
+/-- **Simplicity transfers along a surjective ring hom with compatible actions.**  If `f : R →+* S`
+is surjective and the `R`- and `S`-actions on `M` agree through `f` (`r • m = f r • m`), then `M` is
+a simple `R`-module whenever it is a simple `S`-module.  (The identity is a bijective `f`-semilinear
+map.)
+
+For the Wedderburn factor `Rᵢ`: with `R = ℂ[G]`, `S = End ℂ (Fin dᵢ → ℂ)`, `f = Rᵢ.asAlgebraHom`
+surjective, this reduces `IsIrreducible (repOfMatrixHom Rᵢ)` (i.e. `IsSimpleModule ℂ[G] ·.asModule`)
+to `IsSimpleModule (End ℂ (Fin dᵢ → ℂ)) (Fin dᵢ → ℂ)` (the natural module is simple; Aristotle
+`dc41262f` proves the `Matrix` form). -/
+theorem isSimpleModule_of_ringHom_surjective {R S M : Type*} [Ring R] [Ring S] [AddCommGroup M]
+    [Module R M] [Module S M] (f : R →+* S) (hf : Function.Surjective f)
+    (hcompat : ∀ (r : R) (m : M), r • m = f r • m) [IsSimpleModule S M] :
+    IsSimpleModule R M := by
+  haveI : RingHomSurjective f := ⟨hf⟩
+  let l : M →ₛₗ[f] M :=
+    { toFun := id, map_add' := fun _ _ => rfl, map_smul' := fun r m => hcompat r m }
+  exact (l.isSimpleModule_iff_of_bijective Function.bijective_id).mpr ‹_›
+
 /-- **A nontrivial homomorphism out of a simple group is injective.**  Its kernel is a proper
 normal subgroup, hence `⊥` by simplicity.  Applied to a nontrivial Wedderburn-factor representation
 `Rᵢ : G →* Mₐᵢ(ℂ)` of a simple `G`, this gives the faithfulness that ingredient 6

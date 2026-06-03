@@ -644,6 +644,96 @@ theorem burnside_vanishing_core {d : ℕ} (hd : 1 ≤ d) (ζ : Fin d → ℂ)
     have hsβ : s = (d : ℂ) * β := by rw [hβ_def, mul_div_cancel₀ s hd_ne]
     rw [hsβ, norm_mul, Complex.norm_natCast, hβ_norm, mul_one]
 
+/-! ### Scalar bridge (gap 2): maximal trace modulus ⟹ scalar matrix
+
+The vanishing lemma gives `χ(g) = 0 ∨ ‖χ(g)‖ = χ(1)`.  The scalar case `‖χ(g)‖ = χ(1)`
+(equivalently `‖trace(ρ g)‖ = dim`) forces `ρ g` (finite order, so diagonalizable) to be a *scalar*
+matrix.  The proof: the charpoly roots are eigenvalues, all `n`-th roots of unity (`ρ g` has finite
+order), so unit modulus; `‖∑ roots‖ = ‖trace‖ = d` forces them all equal (`eq_of_norm_sum_eq_card`,
+the equality case of the triangle inequality); a finite-order matrix with charpoly `(X-ζ)^d` has
+`minpoly` dividing both the separable `X^n-1` (so squarefree) and `(X-ζ)^d`, hence `minpoly = X-ζ`,
+so `ρ g = ζ•1`.
+
+Ported from Aristotle (Harmonic) job `e66a25d1`, re-verified in this v4.29.1 kernel and confirmed
+`#print axioms`-clean. -/
+
+/-- Roots of the characteristic polynomial of `M` are `n`-th roots of unity when `M ^ n = 1`. -/
+theorem root_charpoly_pow_eq_one {d n : ℕ} (M : Matrix (Fin d) (Fin d) ℂ)
+    (hM : M ^ n = 1) (a : ℂ) (ha : a ∈ M.charpoly.roots) : a ^ n = 1 := by
+  obtain ⟨ v, hv ⟩ := ( show ∃ v : Fin d → ℂ, v ≠ 0 ∧ M.mulVec v = a • v from by
+                          have h_singular : Matrix.det (M - Matrix.scalar (Fin d) a) = 0 := by
+                            rw [ Matrix.det_eq_sign_charpoly_coeff ];
+                            simp_all +decide [ Matrix.charpoly, Matrix.det_apply' ];
+                            convert ha.2 using 1;
+                            simp +decide [ Polynomial.eval_finset_sum, Polynomial.eval_mul, Polynomial.eval_prod, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_one, Polynomial.coeff_zero_eq_eval_zero ];
+                            exact Finset.sum_congr rfl fun _ _ => by congr; ext; by_cases h : ‹Equiv.Perm ( Fin d ) › ‹_› = ‹_› <;> simp +decide [ h ] ;
+                          obtain ⟨ v, hv ⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr h_singular;
+                          exact ⟨ v, hv.1, by simpa [ sub_eq_iff_eq_add, Matrix.sub_mulVec ] using hv.2 ⟩ );
+  have h_induction : (M ^ n).mulVec v = a ^ n • v := by
+    refine' Nat.recOn n _ _ <;> simp_all +decide [ pow_succ, Matrix.mulVec_smul ];
+    intro n hn; simp_all +decide [ ← Matrix.mulVec_mulVec, mul_assoc ] ;
+    rw [ Matrix.mulVec_smul, hn, smul_smul, mul_comm ];
+  exact smul_left_injective _ hv.1 <| by simpa [ hM ] using h_induction.symm
+
+/-- If `M ^ n = 1` (`n ≥ 1`) and `charpoly M = (X - C ζ) ^ d`, then `M = ζ • 1`.  (`minpoly M`
+divides the separable `X^n-1`, so is squarefree; it also divides `(X-ζ)^d`, hence equals `X-ζ`.) -/
+theorem matrix_scalar_of_charpoly_eq_pow {d n : ℕ} (hn : 1 ≤ n)
+    (M : Matrix (Fin d) (Fin d) ℂ) (hM : M ^ n = 1) (ζ : ℂ)
+    (hchar : M.charpoly = (X - C ζ) ^ d) :
+    M = ζ • (1 : Matrix (Fin d) (Fin d) ℂ) := by
+  have h_poly : minpoly ℂ M ∣ (Polynomial.X ^ n - 1) := by
+    exact minpoly.dvd ℂ M ( by aesop );
+  have h_min_poly_div : minpoly ℂ M ∣ (Polynomial.X - Polynomial.C ζ) := by
+    have h_min_poly_div_pow : Squarefree (minpoly ℂ M) := by
+      refine' Polynomial.Separable.squarefree _;
+      refine' Polynomial.Separable.of_dvd _ h_poly;
+      refine' Polynomial.separable_X_pow_sub_C _ _ _ <;> aesop
+    have h_min_poly_div : minpoly ℂ M ∣ (Polynomial.X - Polynomial.C ζ) ^ d := by
+      exact hchar ▸ Matrix.minpoly_dvd_charpoly M
+    have h_min_poly_div_final : minpoly ℂ M ∣ (Polynomial.X - Polynomial.C ζ) := by
+      rcases d with ( _ | d ) <;> simp_all +decide [ pow_succ, mul_dvd_mul_iff_left ];
+      · exact h_min_poly_div.trans ( one_dvd _ );
+      · convert Squarefree.dvd_pow_iff_dvd h_min_poly_div_pow ( Nat.succ_ne_zero d ) |>.1 _ using 1 ; aesop;
+    exact h_min_poly_div_final;
+  obtain ⟨ p, hp ⟩ := h_min_poly_div; replace hp := congr_arg ( Polynomial.aeval ( R := ℂ ) M ) hp; simp_all +decide [ pow_succ, sub_eq_iff_eq_add ] ;
+  simp +decide [ Algebra.smul_def ]
+
+set_option maxHeartbeats 800000 in
+/-- **Scalar from maximal trace modulus (gap 2).**  A finite-order complex matrix `M` (`M ^ n = 1`,
+`n ≥ 1`) whose trace has modulus equal to the dimension `d` is a scalar matrix `ζ • 1`.
+
+The `d` charpoly roots are eigenvalues (`Matrix.trace M = ∑ roots`), each an `n`-th root of unity
+(`root_charpoly_pow_eq_one`), so of modulus `1`; `‖∑ roots‖ = ‖trace‖ = d` forces them all equal
+(`eq_of_norm_sum_eq_card`); then `charpoly = (X-ζ)^d` and `matrix_scalar_of_charpoly_eq_pow` finishes. -/
+theorem matrix_scalar_of_pow_eq_one_of_norm_trace_eq {d n : ℕ} (hn : 1 ≤ n)
+    (M : Matrix (Fin d) (Fin d) ℂ) (hM : M ^ n = 1) (hnorm : ‖Matrix.trace M‖ = (d : ℝ)) :
+    ∃ ζ : ℂ, M = ζ • (1 : Matrix (Fin d) (Fin d) ℂ) := by
+  have h_roots_unity : ∀ a ∈ M.charpoly.roots, a ^ n = 1 :=
+    fun a ha => root_charpoly_pow_eq_one M hM a ha
+  have h_splits : M.charpoly.Splits := IsAlgClosed.splits _
+  obtain ⟨r, hr⟩ : ∃ r : Fin d → ℂ, M.charpoly.roots = Multiset.ofList (List.ofFn r) := by
+    have h_roots_card : Multiset.card M.charpoly.roots = d := by
+      rw [ Polynomial.splits_iff_card_roots ] at h_splits ; aesop;
+    rcases m : M.charpoly.roots with ⟨ ⟩ ; simp_all +decide [ List.ofFn_eq_map ];
+    use fun i => ‹List ℂ›[i]!;
+    convert List.Perm.of_eq _;
+    refine' List.ext_get _ _ <;> aesop;
+  have h_norm_r : ∀ i, ‖r i‖ = 1 := by
+    intro i; specialize h_roots_unity ( r i ) ; simp_all +decide [ List.ofFn_eq_map ] ;
+    simpa [ show n ≠ 0 by linarith, pow_eq_one_iff_of_nonneg ] using congr_arg Norm.norm h_roots_unity;
+  have h_norm_sum : ‖∑ i, r i‖ = d := by
+    convert hnorm using 1;
+    rw [ Matrix.trace_eq_sum_roots_charpoly ];
+    norm_num [ hr, List.sum_ofFn ];
+  obtain ⟨ζ, hζ⟩ : ∃ ζ : ℂ, ∀ i, r i = ζ := by
+    rcases d with ( _ | d ) <;> norm_num at *;
+    exact ⟨ r 0, fun i => eq_of_norm_sum_eq_card r h_norm_r ( by simpa using h_norm_sum ) i 0 ⟩;
+  have h_charpoly : M.charpoly = (Polynomial.X - Polynomial.C ζ) ^ d := by
+    convert Polynomial.Splits.eq_prod_roots h_splits using 1;
+    simp_all +decide [ List.prod_ofFn ];
+    rw [ Matrix.charpoly_monic ] ; norm_num;
+  exact ⟨ ζ, matrix_scalar_of_charpoly_eq_pow hn M hM ζ h_charpoly ⟩
+
 /-! ### Regular-character decomposition via Artin–Wedderburn (ingredient 3, Route B)
 
 `ℂ[G]` is semisimple (Maschke), finite-dimensional, over the algebraically closed field `ℂ`, so

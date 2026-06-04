@@ -123,24 +123,96 @@ theorem u_isotropic_of_mem {g : Matrix n n α} (hg : g ∈ Matrix.unitaryGroup n
     {v : n → α} (hv : star v ⬝ᵥ v = 0) : star (g *ᵥ v) ⬝ᵥ (g *ᵥ v) = 0 := by
   rw [u_preserves_form hg, hv]
 
+/-- **Conjugation equivariance (adjoint form).** For `g ∈ unitaryGroup`, `g · τ_{v,a} · gᴴ =
+τ_{g·v, a}`. The rank-one factor `v ⊗ star v` conjugates to `(g·v) ⊗ ((star v) ᵥ* gᴴ)`, and
+`(star v) ᵥ* gᴴ = star (g·v)` is the adjoint identity. The `gᴴ` form is what the group-level
+coercion `(g⁻¹).val = star g.val = g.valᴴ` produces directly. -/
+theorem uTransvection_conjH {g : Matrix n n α} (hg : g ∈ Matrix.unitaryGroup n α)
+    (v : n → α) (a : α) :
+    g * uTransvection v a * gᴴ = uTransvection (g *ᵥ v) a := by
+  have hggH : g * gᴴ = 1 := by
+    have h := Matrix.mem_unitaryGroup_iff.mp hg
+    rwa [Matrix.star_eq_conjTranspose] at h
+  rw [uTransvection, uTransvection, mul_add, mul_one, mul_smul_comm, add_mul, hggH,
+    smul_mul_assoc, mul_vecMulVec, vecMulVec_mul, vecMul_conjTranspose, star_star]
+
 /-- **Conjugation equivariance of unitary transvections.** For `g ∈ unitaryGroup` and all `v, a`,
 `g · τ_{v,a} · g⁻¹ = τ_{g·v, a}`. This is the conjugation input to the `PSU` Iwasawa structure
-(the unitary analogue of `spTransvection_conj`). The rank-one factor `v ⊗ star v` conjugates to
-`(g·v) ⊗ ((star v) ᵥ* gᴴ)`, and `(star v) ᵥ* gᴴ = star (g·v)` is the adjoint identity. -/
+(the unitary analogue of `spTransvection_conj`), via `g⁻¹ = gᴴ`. -/
 theorem uTransvection_conj {g : Matrix n n α} (hg : g ∈ Matrix.unitaryGroup n α)
     (v : n → α) (a : α) :
     g * uTransvection v a * g⁻¹ = uTransvection (g *ᵥ v) a := by
   have hggH : g * gᴴ = 1 := by
     have h := Matrix.mem_unitaryGroup_iff.mp hg
     rwa [Matrix.star_eq_conjTranspose] at h
-  have hinv : g⁻¹ = gᴴ := Matrix.inv_eq_right_inv hggH
-  rw [hinv, uTransvection, uTransvection, mul_add, mul_one, mul_smul_comm, add_mul, hggH,
-    smul_mul_assoc, mul_vecMulVec, vecMulVec_mul, vecMul_conjTranspose, star_star]
+  rw [Matrix.inv_eq_right_inv hggH, uTransvection_conjH hg]
 
 /-- The unitary transvection packaged as an element of `specialUnitaryGroup n α` (for isotropic
 `v` and trace-zero `a`). -/
 noncomputable def uTransvecSU (v : n → α) (a : α) (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0) :
     Matrix.specialUnitaryGroup n α :=
   ⟨uTransvection v a, uTransvection_mem_su v a hv ha⟩
+
+@[simp] theorem uTransvecSU_coe (v : n → α) (a : α) (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0) :
+    (uTransvecSU v a hv ha : Matrix n n α) = uTransvection v a := rfl
+
+/-! ### The trace-zero parameter group and the unitary root subgroup
+
+Unlike the symplectic case, where `τ_{v,c}` is symplectic for *every* `c`, a unitary transvection
+`τ_{v,a}` is unitary only for **trace-zero** `a` (`a + star a = 0`). These trace-zero (a.k.a.
+skew-Hermitian) scalars form an additive subgroup `traceZero α`; the map `a ↦ τ_{v,a}` is then a
+homomorphism `Multiplicative (traceZero α) →* SU` whose abelian range — the **root subgroup**
+`uRootSubgroup v` — is conjugated by `g ∈ SU` to `uRootSubgroup (g·v)`. These are the `is_comm`
+and `is_conj` inputs to the unitary Iwasawa structure on `PSU`. -/
+
+/-- The **trace-zero (skew-Hermitian) scalars** `{a : a + star a = 0}` as an additive subgroup of
+`α`. These are exactly the admissible transvection parameters; over `F_{q²}` (`star x = x^q`) they
+are the kernel of the trace `x ↦ x + x^q` to `F_q`, an `F_q`-line. -/
+def traceZero (α : Type*) [CommRing α] [StarRing α] : AddSubgroup α where
+  carrier := {a | a + star a = 0}
+  add_mem' {a b} ha hb := by
+    simp only [Set.mem_setOf_eq, star_add] at *; linear_combination ha + hb
+  zero_mem' := by simp
+  neg_mem' {a} ha := by
+    simp only [Set.mem_setOf_eq, star_neg] at *; linear_combination -ha
+
+@[simp] theorem mem_traceZero {a : α} : a ∈ traceZero α ↔ a + star a = 0 := Iff.rfl
+
+/-- **The unitary root-subgroup homomorphism** `Multiplicative (traceZero α) →* SU`,
+`a ↦ τ_{v,a}`, for isotropic `v`. The one-parameter family law `τ_{v,a}·τ_{v,b} = τ_{v,a+b}`
+(`uTransvection_mul`) makes it a homomorphism out of the abelian trace-zero group. -/
+noncomputable def uTransvecHom (v : n → α) (hv : star v ⬝ᵥ v = 0) :
+    Multiplicative (traceZero α) →* Matrix.specialUnitaryGroup n α where
+  toFun a := uTransvecSU v (Multiplicative.toAdd a : traceZero α) hv
+    (mem_traceZero.mp (Multiplicative.toAdd a).2)
+  map_one' := Subtype.ext (by simp)
+  map_mul' a b := Subtype.ext (by
+    simp only [Submonoid.coe_mul, uTransvecSU_coe]
+    exact (uTransvection_mul v _ _ hv).symm)
+
+/-- **The unitary root subgroup along an isotropic `v`** — the range of `uTransvecHom v`, the
+abelian "long root" subgroup `{τ_{v,a} : a + star a = 0}`. The unitary analogue of
+`spTransvecGroup`. -/
+noncomputable def uRootSubgroup (v : n → α) (hv : star v ⬝ᵥ v = 0) :
+    Subgroup (Matrix.specialUnitaryGroup n α) :=
+  (uTransvecHom v hv).range
+
+instance (v : n → α) (hv : star v ⬝ᵥ v = 0) : IsMulCommutative (uRootSubgroup v hv) := by
+  unfold uRootSubgroup; infer_instance
+
+/-- **Conjugation in the group**: `g · τ_{v,a} · g⁻¹ = τ_{g·v, a}` for `g ∈ SU`. The unitary
+analogue of `spTransvecSp_conj`; uses `(g⁻¹).val = star g.val = g.valᴴ` to land on
+`uTransvection_conjH`. -/
+theorem uTransvecSU_conj (g : Matrix.specialUnitaryGroup n α) (v : n → α) (a : α)
+    (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0) :
+    g * uTransvecSU v a hv ha * g⁻¹
+      = uTransvecSU ((g : Matrix n n α) *ᵥ v) a
+          (u_isotropic_of_mem (Matrix.specialUnitaryGroup_le_unitaryGroup g.2) hv) ha := by
+  apply Subtype.ext
+  have hcoeInv : ((g⁻¹ : Matrix.specialUnitaryGroup n α) : Matrix n n α) = (↑g)ᴴ := by
+    rw [← Matrix.star_eq_inv, Matrix.specialUnitaryGroup.coe_star,
+      Matrix.star_eq_conjTranspose]
+  simp only [Submonoid.coe_mul, uTransvecSU_coe, hcoeInv]
+  exact uTransvection_conjH (Matrix.specialUnitaryGroup_le_unitaryGroup g.2) v a
 
 end FiniteSimpleGroups.PSU

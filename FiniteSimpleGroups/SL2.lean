@@ -3,6 +3,7 @@ import FiniteSimpleGroups.LieType
 import FiniteSimpleGroups.PSLIwasawa
 import FiniteSimpleGroups.SL2Card
 import FiniteSimpleGroups.SLnAction
+import FiniteSimpleGroups.SLnIwasawa
 
 /-!
 # `PSL(2,q)` is simple for prime `q ≥ 4` — all Iwasawa obligations, machine-checked
@@ -972,7 +973,10 @@ theorem PSL_isSimpleGroup (n q : ℕ) [Fact (Nat.Prime q)]
     subst hn2
     have hq3 : ¬ q ≤ 3 := fun h => h_skip ⟨rfl, h⟩
     exact SL2.PSL2_isSimpleGroup q (by omega)
-  · -- `n ≥ 3`: the deep higher-rank axiom.
-    exact PSL_isSimpleGroup_rank_ge_three n q h3
+  · -- `n ≥ 3`: discharged via the Iwasawa criterion on `ℙ^{n-1}` (`SLnIwasawa`), modulo the
+    -- two disclosed geometric axioms (transvections generate `SLₙ`; `SLₙ` 2-transitive on `ℙ`).
+    haveI : Nonempty (Fin n) := ⟨⟨0, by omega⟩⟩
+    have hcard : 3 ≤ Fintype.card (Fin n) := by rw [Fintype.card_fin]; exact h3
+    exact SLn.PSLn_isSimpleGroup_of_rank (n := Fin n) (F := ZMod q) hcard
 
 end FiniteSimpleGroups

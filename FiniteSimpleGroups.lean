@@ -17,6 +17,7 @@ import FiniteSimpleGroups.PSLIwasawa
 import FiniteSimpleGroups.SLnAction
 import FiniteSimpleGroups.SL2
 import FiniteSimpleGroups.SLnPerfect
+import FiniteSimpleGroups.SLnSimple
 import FiniteSimpleGroups.Wielandt
 import FiniteSimpleGroups.AschbacherDichotomy
 import FiniteSimpleGroups.ComponentCommute

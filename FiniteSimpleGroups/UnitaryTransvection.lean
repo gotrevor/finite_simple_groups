@@ -408,6 +408,54 @@ theorem uScale_mem_su (v w : N → F) (lam : F) (hlam : lam ≠ 0) (hfix : star 
     ⟨uScale_mem v w lam hlam hvw hwv hviso hwiso, by
       rw [uScale_det v w lam hvw hwv hviso hwiso, hfix, mul_inv_cancel₀ hlam]⟩
 
+open scoped commutatorElement in
+/-- **Each unitary transvection lies in the commutator subgroup of `SU`** — given a hyperbolic pair
+`(v,w)` and a fixed-field scalar `λ` (`star λ = λ`) with `N(λ) = λ·star λ ≠ 1`. Indeed
+`τ_{v,a} = ⁅g, τ_{v, a/(N(λ)-1)}⁆` where `g = uScale v w λ` scales `v` by `λ`
+(`uScale_mem_su`/`uScale_mulVec_self`), by the commutator collapse `uTransvection_commutator`. The
+unitary analogue of `SpN.spTransvecSp_mem_commutator`; the `N(λ)≠1` hypothesis is the honest
+field-size condition (it fails for the small non-perfect unitary groups). -/
+theorem uTransvecSU_mem_commutator (v w : N → F) (lam : F) (hlam : lam ≠ 0) (hfix : star lam = lam)
+    (hN : lam * star lam ≠ 1)
+    (hvw : star v ⬝ᵥ w = 1) (hwv : star w ⬝ᵥ v = 1)
+    (hviso : star v ⬝ᵥ v = 0) (hwiso : star w ⬝ᵥ w = 0)
+    (a : F) (ha : a + star a = 0) :
+    uTransvecSU v a hviso ha ∈ commutator (Matrix.specialUnitaryGroup N F) := by
+  have hne : lam * star lam - 1 ≠ 0 := sub_ne_zero.mpr hN
+  have hDfix : star (lam * star lam - 1) = lam * star lam - 1 := by
+    rw [star_sub, star_one, star_mul', star_star, mul_comm]
+  set c : F := (lam * star lam - 1)⁻¹ * a with hc
+  have hca : c + star c = 0 := by
+    have hsc : star c = (lam * star lam - 1)⁻¹ * star a := by
+      rw [hc, star_mul', star_inv₀, hDfix]
+    rw [hsc, hc, ← mul_add, ha, mul_zero]
+  have hgu : (uScale v w lam) ∈ Matrix.unitaryGroup N F :=
+    uScale_mem v w lam hlam hvw hwv hviso hwiso
+  set g : Matrix.specialUnitaryGroup N F :=
+    ⟨uScale v w lam, uScale_mem_su v w lam hlam hfix hvw hwv hviso hwiso⟩ with hg
+  have hgv : (g : Matrix N N F) *ᵥ v = lam • v := uScale_mulVec_self v w lam hwv hviso
+  have hgcoe : (g : Matrix N N F) = uScale v w lam := rfl
+  have hginv : ((g⁻¹ : Matrix.specialUnitaryGroup N F) : Matrix N N F) = (g : Matrix N N F)⁻¹ := by
+    rw [← Matrix.star_eq_inv, Matrix.specialUnitaryGroup.coe_star, Matrix.star_eq_conjTranspose]
+    refine (Matrix.inv_eq_right_inv ?_).symm
+    rw [← Matrix.star_eq_conjTranspose]
+    exact Matrix.mem_unitaryGroup_iff.mp hgu
+  have hhinv : ((uTransvecSU v c hviso hca)⁻¹ : Matrix.specialUnitaryGroup N F).1
+      = (uTransvection v c)⁻¹ := by
+    rw [← Matrix.star_eq_inv, Matrix.specialUnitaryGroup.coe_star, uTransvecSU_coe,
+      uTransvection_star, uTransvection_inv_eq hviso]
+    congr 1
+    exact eq_neg_of_add_eq_zero_right hca
+  have hcomm : ⁅g, uTransvecSU v c hviso hca⁆ = uTransvecSU v a hviso ha := by
+    apply Subtype.ext
+    rw [commutatorElement_def]
+    simp only [Submonoid.coe_mul, hginv, hhinv, uTransvecSU_coe, hgcoe]
+    rw [uTransvection_commutator hgu hgv hviso]
+    congr 1
+    rw [hc, ← mul_assoc, mul_inv_cancel₀ hne, one_mul]
+  rw [← hcomm]
+  exact Subgroup.commutator_mem_commutator (Subgroup.mem_top g) (Subgroup.mem_top _)
+
 end Scaling
 
 end FiniteSimpleGroups.PSU

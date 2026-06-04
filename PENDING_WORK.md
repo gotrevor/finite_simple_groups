@@ -413,10 +413,12 @@ This lap discharged BOTH former core axioms and wired into LieType:
   (`det = λ·(star λ)⁻¹`, via Weinstein–Aronszajn `det_one_add_mul_comm` + 2×2 `det_fin_two`),
   `uScale_mem_su` (`∈ SU` when `star λ = λ`, the fixed field, so `det = λ·λ⁻¹ = 1`). The hyperbolic
   partner `w` comes from the proven `exists_hyperbolic_partner` — no generation needed for the
-  element. **REMAINING for perfectness:** (i) `uTransvecSU_mem_commutator` (each transvection is a
-  commutator, mirror `spTransvecSp_mem_commutator`, uses `uScale_mem_su` + `uTransvection_commutator`
-  + a fixed-field `λ` with `λ²≠1`); (ii) lift to `commutator (SU) = ⊤` via Step-3a generation;
-  (iii) descend to `PSUConcrete`. CAUTION: small exceptions (e.g. SU(3,2) not perfect) — the
+  element. ✅ **(i) `uTransvecSU_mem_commutator` DONE** (2026-06-04 eve, axiom-clean): each unitary
+  transvection `τ_{v,a} = ⁅uScale v w λ, τ_{v, a/(N(λ)-1)}⁆ ∈ commutator(SU)`, given a hyperbolic
+  pair and a fixed-field `λ` with `N(λ) = λ·star λ ≠ 1` (mirrors `spTransvecSp_mem_commutator`).
+  **REMAINING for perfectness:** (ii) lift to `commutator (SU) = ⊤` via Step-3a generation (the
+  ONLY missing input now — submitted to Aristotle); (iii) descend to `PSUConcrete`. CAUTION: small
+  exceptions (e.g. SU(3,2) not perfect) — the
   fixed-field `λ²≠1` needs `|F₀| ≥ 4`; defer the exact exclusion. For general (non-fixed-field) `λ`,
   multiply `uScale` by a norm-1 scalar `μ=(star λ)λ⁻¹` on the complement to fix `det` (n≥3, TODO).
 - **Step 3c — assemble** `MulAction.IwasawaStructure` (same mathlib criterion as PSL/PSp/PSU) ⟹

@@ -1363,6 +1363,49 @@ theorem uEichler_isotropic_mem_uTransvecGen {x h : Fin n → UnitaryField p} {μ
     exact uEichler_eq_mul_transvection μ hxiso hxh
   rw [heq]; exact hQgen
 
+/-- **Eichler split (`n ≥ 4` anisotropic mate case): an Eichler with `h = h₁ + h₂`, both `hᵢ`
+isotropic `⊥ x`, lies in `⟨transvections⟩`.** Via the composition law
+`E_{x,h₁,μ₁}·E_{x,h₂,μ₂} = E_{x,h₁+h₂,μ₁+μ₂+⟨h₁,h₂⟩}` (`uEichler_comp`), each factor an isotropic-`h`
+Eichler (`uEichler_isotropic_mem_uTransvecGen`). This completes the Eichler API and discharges the
+anisotropic mate step `UExactMateTrans` whenever `dim x^⊥/⟨x⟩ ≥ 2` (`n ≥ 4`) — i.e. the mate
+difference `h = f'−f` splits into two isotropic vectors `⊥ x`. The `n = 3` case has `x^⊥/⟨x⟩`
+anisotropic (no such split) and remains tied to the deep `SU₃` core (`UScaleKill`). -/
+theorem uEichler_split_mem_uTransvecGen {x h₁ h₂ : Fin n → UnitaryField p}
+    {μ₁ μ₂ : UnitaryField p}
+    (hxiso : star x ⬝ᵥ x = 0) (h1iso : star h₁ ⬝ᵥ h₁ = 0) (h2iso : star h₂ ⬝ᵥ h₂ = 0)
+    (hxh1 : star x ⬝ᵥ h₁ = 0) (hxh2 : star x ⬝ᵥ h₂ = 0)
+    (hμ1 : μ₁ + star μ₁ = 0) (hμ2 : μ₂ + star μ₂ = 0) :
+    (⟨uEichler x (h₁ + h₂) (μ₁ + μ₂ + star h₁ ⬝ᵥ h₂),
+        uEichler_mem_su x (h₁ + h₂) (μ₁ + μ₂ + star h₁ ⬝ᵥ h₂) hxiso
+          (by simp only [dotProduct_add, hxh1, hxh2, add_zero])
+          (by
+            have hswap : star (star h₁ ⬝ᵥ h₂) = star h₂ ⬝ᵥ h₁ := (dotProduct_star_swap h₁ h₂).symm
+            simp only [star_add, dotProduct_add, add_dotProduct, hswap, h1iso, h2iso,
+              zero_add, add_zero]
+            linear_combination hμ1 + hμ2)⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) ∈ uTransvecGen p (n := n) := by
+  set Q := (⟨uEichler x h₁ μ₁, uEichler_mem_su x h₁ μ₁ hxiso hxh1 (by rw [hμ1]; exact h1iso.symm)⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))
+    * ⟨uEichler x h₂ μ₂, uEichler_mem_su x h₂ μ₂ hxiso hxh2 (by rw [hμ2]; exact h2iso.symm)⟩
+    with hQ
+  have hQgen : Q ∈ uTransvecGen p (n := n) :=
+    mul_mem (uEichler_isotropic_mem_uTransvecGen p hxiso h1iso hxh1 hμ1)
+      (uEichler_isotropic_mem_uTransvecGen p hxiso h2iso hxh2 hμ2)
+  have heq : (⟨uEichler x (h₁ + h₂) (μ₁ + μ₂ + star h₁ ⬝ᵥ h₂),
+      uEichler_mem_su x (h₁ + h₂) (μ₁ + μ₂ + star h₁ ⬝ᵥ h₂) hxiso
+        (by simp only [dotProduct_add, hxh1, hxh2, add_zero])
+        (by
+          have hswap : star (star h₁ ⬝ᵥ h₂) = star h₂ ⬝ᵥ h₁ := (dotProduct_star_swap h₁ h₂).symm
+          simp only [star_add, dotProduct_add, add_dotProduct, hswap, h1iso, h2iso,
+            zero_add, add_zero]
+          linear_combination hμ1 + hμ2)⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) = Q := by
+    apply Subtype.ext
+    simp only [hQ, Submonoid.coe_mul]
+    show uEichler x (h₁ + h₂) (μ₁ + μ₂ + star h₁ ⬝ᵥ h₂) = uEichler x h₁ μ₁ * uEichler x h₂ μ₂
+    exact (uEichler_comp μ₁ μ₂ hxiso hxh1 hxh2).symm
+  rw [heq]; exact hQgen
+
 /-- **Within-`offSU C` non-orthogonal line move, in `⟨transvections⟩` and fixing `C`.** For isotropic
 `v, w ∈ offSU C` non-orthogonal, the Eichler product `τ_{v,b}·τ_{w,t}` maps `v ↦ c·w` (`c ≠ 0`),
 lies in `⟨transvections⟩` (a product of two generators), and fixes `C` (its centres `v, w` lie in

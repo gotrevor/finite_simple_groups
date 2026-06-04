@@ -567,6 +567,21 @@ theorem PSU_nontrivial (hn : 3 ≤ n) : Nontrivial (PSUConcrete n p) := by
   rw [hsum] at hiso
   exact hk ((mul_eq_zero.mp hiso).resolve_left (by rwa [Pi.star_apply] at hsk))
 
+/-- **`SU_n(F_{p²})` is perfect, modulo the unitary Witt generation theorem** (`n ≥ 3`, `p ≥ 5`).
+Assembles `commutator_specialUnitaryGroup_eq_top` with the concrete fixed-field scalar
+(`exists_fixedField_norm_ne_one`, `p ≥ 5`) and hyperbolic partners (`exists_hyperbolic_partner`).
+The sole remaining input is `hgen` — that unitary transvections generate `SU` (Step 3a, submitted
+to Aristotle). Once `hgen` is discharged this becomes unconditional and supplies the Iwasawa
+`is_perfect` obligation for `PSUConcrete n p`. -/
+theorem commutator_SU_eq_top_of_generate (hn : 3 ≤ n) (hp : 5 ≤ p)
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p)
+        (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤) :
+    commutator (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) = ⊤ := by
+  obtain ⟨lam, hlam, hfix, hN⟩ := UnitaryField.exists_fixedField_norm_ne_one p hp
+  exact commutator_specialUnitaryGroup_eq_top lam hlam hfix hN
+    (exists_hyperbolic_partner p hn) hgen
+
 end Concrete
 
 /-! ### The `PSU = SU/Z` action on isotropic projective points, and faithfulness

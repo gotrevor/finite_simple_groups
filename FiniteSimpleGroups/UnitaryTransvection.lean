@@ -334,6 +334,44 @@ theorem uEichler_eq_mul_transvection {x h : n → α} (μ : α)
     Matrix.mul_neg, Matrix.mul_smul, Matrix.vecMulVec_mul_vecMulVec, hxx, hhx, vecMulVec_zero]
   abel
 
+/-- **The pure (`μ = 0`) Eichler transformation with an isotropic, orthogonal second vector `h` is an
+explicit product of THREE unitary transvections.** For `⟨x,x⟩ = ⟨h,h⟩ = ⟨x,h⟩ = 0` and a trace-zero
+unit `c` (`c·d = 1`, `star d = −d`, so `d = c⁻¹` over a field with `star c = −c`),
+`E_{x,h,0} = τ_{h,d} · τ_{x,−c} · τ_{x+d·h, c}`.
+
+This is the **"Eichler-as-transvection-product"** brick of the Dieudonné generation proof (the prior
+`uEichler_eq_mul_transvection` reduced the general Eichler to this pure `μ = 0` case). The structural
+insight that makes it work with NO ambient hyperbolic partner: the three centres `x`, `h`,
+`x+d·h` are pairwise- and self-orthogonal isotropic, so **every `vecMulVec` cross-product vanishes**
+(`P·Q = P·R = Q·R = 0` for `P = h⊗h̄`, `Q = x⊗x̄`, `R = (x+d·h)⊗(x+d·h)̄`), collapsing the triple
+product to `1 + c·R − c·Q + d·P`; expanding `R` and using `c·d = 1` leaves exactly
+`1 + h⊗x̄ − x⊗h̄ = E_{x,h,0}`. (Ref: Dieudonné, *La géométrie des groupes classiques*; Taylor,
+*The Geometry of the Classical Groups* Ch. 11; the Eichler/Siegel transformation as a product of
+transvections.) -/
+theorem uEichler_isotropic_eq_transvection_prod {x h : n → α}
+    (hxx : star x ⬝ᵥ x = 0) (hhh : star h ⬝ᵥ h = 0) (hxh : star x ⬝ᵥ h = 0)
+    {c d : α} (hcd : c * d = 1) (hstard : star d = -d) :
+    uEichler x h 0
+      = uTransvection h d * uTransvection x (-c) * uTransvection (x + d • h) c := by
+  have hhx : star h ⬝ᵥ x = 0 := by
+    rw [show star h ⬝ᵥ x = star (star x ⬝ᵥ h) by
+      simp only [dotProduct, star_sum, Pi.star_apply, star_mul', star_star, mul_comm], hxh, star_zero]
+  apply Matrix.ext_iff_mulVec.mpr
+  intro z
+  -- expand the triple-product action; the dotProduct of `x`/`h` with any `z + α•x + β•h` is just
+  -- the dotProduct with `z` (the added pieces lie in the totally isotropic span `{x,h}`)
+  simp only [← Matrix.mulVec_mulVec, uTransvection_mulVec, uEichler_mulVec,
+    star_add, star_smul, hstard, dotProduct_add, add_dotProduct, dotProduct_smul, smul_dotProduct,
+    smul_eq_mul, hxx, hhh, hxh, hhx, mul_zero, zero_mul, zero_smul, add_zero]
+  -- both sides are now linear combinations of the atoms `x`, `h`, `z`; the scalar coefficients
+  -- match after using `c·d = 1`
+  -- both sides are linear combinations of the atoms `x`, `h`, `z`; the three scalar coefficients
+  -- (of `z`, `h`, `x`) match after using `c·d = 1`
+  match_scalars
+  · ring
+  · linear_combination (d * (star h ⬝ᵥ z) - star x ⬝ᵥ z) * hcd
+  · linear_combination (star h ⬝ᵥ z) * hcd
+
 /-- **The Eichler transformation fixes its isotropic centre `x`** (`⟨x,x⟩ = 0`, `⟨x,h⟩ = 0`): all
 three correction coefficients `⟨x,x⟩`, `⟨h,x⟩`, `μ⟨x,x⟩` vanish. -/
 theorem uEichler_apply_self (x h : n → α) (μ : α)

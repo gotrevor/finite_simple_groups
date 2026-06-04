@@ -15,6 +15,7 @@ import FiniteSimpleGroups.Adjacent.PrimeMul
 import FiniteSimpleGroups.FittingSubgroup
 import FiniteSimpleGroups.PSLIwasawa
 import FiniteSimpleGroups.SL2
+import FiniteSimpleGroups.SLnPerfect
 import FiniteSimpleGroups.Wielandt
 import FiniteSimpleGroups.AschbacherDichotomy
 import FiniteSimpleGroups.ComponentCommute

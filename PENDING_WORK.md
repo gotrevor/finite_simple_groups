@@ -205,12 +205,31 @@ axioms`-clean — `[propext, Classical.choice, Quot.sound]`):
   (`|PSL(2,q)|·2 = q(q²−1)`, i.e. `q(q²−1)/2`, via Lagrange + `card_SL2`). `SL2Card.lean`
   is now wired into the build (imported by `SL2.lean`; was orphaned).
 
-**NEXT THREAD (open).** With `PSL(2,q)` done, candidate next discharges, in rough
-tractability order:
-- **`PSL_isSimpleGroup_rank_ge_three`** — the natural continuation of this thread.
-  HARD (BN-pair / root-system machinery mathlib lacks); but `PSL(3,q)` simplicity
-  could in principle go through an Iwasawa structure on `ℙ²` analogous to the n=2
-  build. Likely multi-lap; decompose first.
+## E. ACTIVE THREAD — `PSL(n,q)` simplicity for `n ≥ 3` via Iwasawa (started 2026-06-04)
+
+Discharging `PSL_isSimpleGroup_rank_ge_three` (`LieType.lean`). Same Iwasawa pattern
+as `n = 2` but on `ℙ^{n-1}`. **Progress this lap** — `FiniteSimpleGroups/SLnPerfect.lean`:
+- ✅ `steinberg_comm` — the Steinberg/Chevalley relation `⁅t_{ik}(a),t_{kj}(b)⁆ =
+  t_{ij}(ab)` (pairwise-distinct i,j,k), pure `Matrix.single` algebra, axiom-clean.
+  (Cracked locally — beat the Aristotle job `4827df6e`, now ignored.)
+- ✅ `transvecSL_mem_commutator` — **for `3 ≤ |n|`, every elementary transvection is a
+  commutator in `SL(n,F)`**, axiom-clean. This is the genuinely-new n≥3 content: no
+  field-size restriction (the `n=2` `|F|≥4` obstruction vanishes once a 3rd coordinate
+  exists). Uses `steinberg_comm` + 3rd-index existence (`3 ≤ |n|`).
+- ✅ `commutator_SLn_eq_top` — **`SL(n,F)` perfect for `3 ≤ |n|`**, modulo ONE disclosed
+  axiom `transvecSL_closure_eq_top` (transvections generate `SL n F`). `#print axioms`
+  = `[propext, Classical.choice, Quot.sound, transvecSL_closure_eq_top]`.
+
+**Next bricks for §E** (toward the full Iwasawa structure on `ℙ^{n-1}`):
+1. **`transvecSL_closure_eq_top`** (the one open axiom) — transvections generate `SL n F`.
+   mathlib has `Matrix.diagonal_transvection_induction` (matrices = products of diagonals
+   + transvections); missing step = det-1 diagonal is a product of transvections
+   (Whitehead). OUT at Aristotle (submit next). For `n=2` it's `SL2.transvections_generate`.
+2. `SL(n,q) ↷ ℙ^{n-1}` action + 2-transitivity ⇒ quasi-preprimitive (mirror `pslQuasiPreprimitive`).
+3. center of `SL(n,q)` = scalar matrices `{λI : λⁿ=1}`; faithful `PSL` action on `ℙ^{n-1}`.
+4. the unipotent `IwasawaStructure` (transvection subgroups fixing a point of `ℙ^{n-1}`).
+
+**OTHER candidate discharges, lower priority:**
 - **`alternatingGroup_isSimple`** — BLOCKED: bucket C (mathlib `Alternating/Simple.lean`
   / `alternatingGroup.isSimpleGroup` post-dates v4.29.1 pin; only `isSimpleGroup_five`
   present). Discharge = bump the pin, NOT re-derive (the one rule). Confirmed absent

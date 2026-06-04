@@ -31,7 +31,7 @@ Given these three, `PSpn_isSimpleGroup_of_iwasawa` concludes `IsSimpleGroup (PSp
 -/
 
 open Matrix
-open scoped Pointwise
+open scoped Pointwise commutatorElement
 
 namespace FiniteSimpleGroups.SpN
 
@@ -256,12 +256,67 @@ theorem Tline_iSup : iSup (Tline (l := l) (F := F)) = ⊤ := by
     exact h (Subgroup.mem_top g)
   exact Subgroup.mem_comap.mp hg
 
-/-- **DISCLOSED AXIOM (perfectness).** `PSp(2n,F)` is perfect (`commutator = ⊤`) for `2 ≤ n`
-over a field large enough to exclude `PSp(4,2) ≅ S₆`. Each symplectic transvection is a
-commutator in `Sp(2n)` once `n ≥ 2`; descends to `Sp/Z`. The `Nonempty l` / field-size
-hypothesis is carried as a side condition `hperf`. -/
-axiom commutator_PSp_eq_top [Nonempty l] :
-    commutator (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) = ⊤
+/-- **DISCLOSED AXIOM (scaling element).** For every non-zero `v` and every non-zero scalar
+`λ`, there is a symplectic `g` scaling the line `[v]` by `λ`: `g·v = λ·v`. This is **true over
+every field** (no field-size hypothesis): extend `v` to a hyperbolic pair `(v,w)` and take
+`g = diag(λ on v, λ⁻¹ on w, 1 on ⟨v,w⟩⊥)`, which preserves `ω` since `ω(λv,λ⁻¹w) = ω(v,w)`.
+It replaces the deep "PSp perfect" axiom: with it, perfectness is **machine-checked** below
+(`commutator_Sp_eq_top`) modulo only this elementary fact and the generation axiom. The
+narrow remaining brick — a concrete block-diagonal matrix membership — is an ideal Aristotle
+target. (Provable; only disclosed because the `⟨v,w⟩⊥` complement construction is not yet
+formalized.) -/
+axiom sp_scaling_exists (v : (l ⊕ l) → F) (hv : v ≠ 0) (lam : F) (hlam : lam ≠ 0) :
+    ∃ g : symplecticGroup l F, (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ v = lam • v
+
+/-- **Each symplectic transvection lies in the commutator subgroup** (given a scaling scalar
+`λ` with `λ² ≠ 1`). For `v ≠ 0`, `τ_{v,c} = ⁅g, τ_{v, c/(λ²-1)}⁆` where `g·v = λ·v`
+(`sp_scaling_exists`), by the commutator collapse `spTransvecSp_commutator`. The symplectic
+analogue of `SLn.transvecSL_mem_commutator`; the `λ²≠1` hypothesis is the honest field-size
+condition (it fails over `𝔽₂, 𝔽₃`, exactly where `PSp(4,q)` can fail to be simple/perfect). -/
+theorem spTransvecSp_mem_commutator {v : (l ⊕ l) → F} (hv : v ≠ 0) {lam : F}
+    (hlam0 : lam ≠ 0) (hlam1 : lam * lam ≠ 1) (c : F) :
+    spTransvecSp v c ∈ commutator (symplecticGroup l F) := by
+  obtain ⟨g, hg⟩ := sp_scaling_exists v hv lam hlam0
+  have hne : lam * lam - 1 ≠ 0 := sub_ne_zero.mpr hlam1
+  have hcomm : ⁅g, spTransvecSp v (c * (lam * lam - 1)⁻¹)⁆ = spTransvecSp v c := by
+    rw [commutatorElement_def, spTransvecSp_commutator hg]
+    congr 1
+    rw [mul_comm c, ← mul_assoc, mul_inv_cancel₀ hne, one_mul]
+  rw [← hcomm]
+  exact Subgroup.commutator_mem_commutator (Subgroup.mem_top g) (Subgroup.mem_top _)
+
+/-- **`Sp(2n,F)` is perfect** (`commutator = ⊤`) when `F` has a scalar `λ ≠ 0` with `λ² ≠ 1`
+(i.e. `|F| ≥ 4`). The generating transvections (`sp_transvec_closure_eq_top`) each lie in the
+commutator subgroup (`spTransvecSp_mem_commutator`), so the whole group does. Machine-checked
+modulo the generation and scaling axioms — the symplectic analogue of `commutator_SLn_eq_top`. -/
+theorem commutator_Sp_eq_top {lam : F} (hlam0 : lam ≠ 0) (hlam1 : lam * lam ≠ 1) :
+    commutator (symplecticGroup l F) = ⊤ := by
+  rw [eq_top_iff, ← sp_transvec_closure_eq_top]
+  refine iSup_le fun v => ?_
+  intro y hy
+  rw [mem_spTransvecGroup] at hy
+  obtain ⟨c, rfl⟩ := hy
+  by_cases hv : v = 0
+  · subst hv
+    have h0 : spTransvecSp (0 : (l ⊕ l) → F) c = 1 := by
+      apply Subtype.ext; simp [spTransvecSp_coe, spTransvection]
+    rw [h0]; exact one_mem _
+  · exact spTransvecSp_mem_commutator hv hlam0 hlam1 c
+
+/-- **`PSp(2n,F)` is perfect** (formerly a disclosed axiom, now machine-checked modulo the
+generation + scaling axioms), for `F` with a scalar `λ ≠ 0`, `λ² ≠ 1`. Descends from
+`commutator_Sp_eq_top` along the surjection `Sp ↠ Sp/Z`, exactly as `commutator_PSLn_eq_top`.
+The `λ²≠1` hypothesis correctly **excludes** `PSp(4,2) ≅ S₆` (not perfect) — fixing a latent
+over-generality in the previous axiom. -/
+theorem commutator_PSp_eq_top {lam : F} (hlam0 : lam ≠ 0) (hlam1 : lam * lam ≠ 1) :
+    commutator (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) = ⊤ := by
+  set G := symplecticGroup l F
+  let f := QuotientGroup.mk' (Subgroup.center G)
+  have hf : Function.Surjective f := QuotientGroup.mk'_surjective _
+  have hmap : commutator (G ⧸ Subgroup.center G) = Subgroup.map f (commutator G) := by
+    show ⁅(⊤ : Subgroup _), ⊤⁆ = Subgroup.map f ⁅(⊤ : Subgroup G), ⊤⁆
+    rw [Subgroup.map_commutator, Subgroup.map_top_of_surjective f hf]
+  rw [hmap, commutator_Sp_eq_top hlam0 hlam1, Subgroup.map_top_of_surjective f hf]
 
 /-- **DISCLOSED AXIOM (quasi-preprimitivity).** `PSp(2n,F)` acts quasi-preprimitively on
 `ℙ²ⁿ⁻¹`. Unlike `SLn`, `Sp` is **not** 2-transitive (it preserves the form `ω`), so this needs
@@ -314,14 +369,17 @@ noncomputable def pspIwasawaStructure [Nonempty l] :
       rw [MulAut.conj_apply, map_mul, map_mul, map_inv, ← hg]; rfl
     is_generator := Tline_iSup }
 
-/-- **`PSp(2n,F) = Sp/Z` is simple** for `Nonempty l` (dimension `2n ≥ 2`), **modulo the three
-disclosed geometric axioms** `sp_transvec_closure_eq_top`, `commutator_PSp_eq_top`,
-`pspQuasiPreprimitive`. The Iwasawa criterion (`IwasawaStructure.isSimpleGroup`) applied to the
-faithful action on `ℙ²ⁿ⁻¹` with all six obligations: perfect, nontrivial, MulAction, faithful,
-quasi-preprimitive, and the `IwasawaStructure`. The symplectic analogue of
-`SLn.PSLn_isSimpleGroup_of_rank`. -/
-theorem PSpn_isSimpleGroup_of_iwasawa [Nonempty l] :
+/-- **`PSp(2n,F) = Sp/Z` is simple** for `Nonempty l` (dimension `2n ≥ 2`) and `F` with a
+scalar `λ ≠ 0`, `λ² ≠ 1` (i.e. `|F| ≥ 4`, the honest field-size condition that **excludes the
+non-simple `PSp(4,2) ≅ S₆`**), **modulo the two remaining geometric axioms**
+`sp_transvec_closure_eq_top` (generation) and `pspQuasiPreprimitive`, plus the elementary
+`sp_scaling_exists`. Perfectness is now machine-checked (`commutator_PSp_eq_top`). The Iwasawa
+criterion (`IwasawaStructure.isSimpleGroup`) applied to the faithful action on `ℙ²ⁿ⁻¹` with all
+six obligations. The symplectic analogue of `SLn.PSLn_isSimpleGroup_of_rank`. -/
+theorem PSpn_isSimpleGroup_of_iwasawa [Nonempty l]
+    (hlam : ∃ lam : F, lam ≠ 0 ∧ lam * lam ≠ 1) :
     IsSimpleGroup (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) := by
+  obtain ⟨lam, hlam0, hlam1⟩ := hlam
   letI := pspAction (l := l) (F := F)
   haveI : Nontrivial (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) :=
     PSp_nontrivial
@@ -330,6 +388,6 @@ theorem PSpn_isSimpleGroup_of_iwasawa [Nonempty l] :
   haveI : MulAction.IsQuasiPreprimitive
       (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F))
       (Projectivization F ((l ⊕ l) → F)) := pspQuasiPreprimitive
-  exact pspIwasawaStructure.isSimpleGroup commutator_PSp_eq_top pspFaithful
+  exact pspIwasawaStructure.isSimpleGroup (commutator_PSp_eq_top hlam0 hlam1) pspFaithful
 
 end FiniteSimpleGroups.SpN

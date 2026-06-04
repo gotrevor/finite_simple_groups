@@ -1300,6 +1300,47 @@ theorem uTransvecSU_mem_gen (v : Fin n → UnitaryField p) (a : UnitaryField p)
     uTransvecSU v a hv ha ∈ uTransvecGen p (n := n) :=
   Subgroup.subset_closure ⟨v, a, hv, ha, rfl⟩
 
+/-- **Within-`offSU C` non-orthogonal line move, in `⟨transvections⟩` and fixing `C`.** For isotropic
+`v, w ∈ offSU C` non-orthogonal, the Eichler product `τ_{v,b}·τ_{w,t}` maps `v ↦ c·w` (`c ≠ 0`),
+lies in `⟨transvections⟩` (a product of two generators), and fixes `C` (its centres `v, w` lie in
+`offSU C`, so it fixes every `e_j`, `j ∈ C`, by `FixSU_of_fixes_perp`). The membership- and
+`FixSU`-aware within-complement transitivity engine of the genAux induction (the on-`uTransvecGen`
+analogue of `exists_su_maps_nonorth_fixing_perp`). -/
+theorem offSU_maps_nonorth_gen {C : Finset (Fin n)} {v w : Fin n → UnitaryField p}
+    (hv : offSU p C v) (hw : offSU p C w)
+    (hviso : star v ⬝ᵥ v = 0) (hwiso : star w ⬝ᵥ w = 0) (hvw : star v ⬝ᵥ w ≠ 0) :
+    ∃ (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) (c : UnitaryField p),
+      g ∈ uTransvecGen p (n := n) ∧ FixSU p C g ∧ c ≠ 0 ∧
+        (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ v = c • w := by
+  have hβ : star w ⬝ᵥ v = star (star v ⬝ᵥ w) := dotProduct_star_swap v w
+  set β := star v ⬝ᵥ w with hβdef
+  set Nβ := star β * β with hNdef
+  have hNβ0 : Nβ ≠ 0 := mul_ne_zero (star_ne_zero.mpr hvw) hvw
+  have hNβH : star Nβ = Nβ := by rw [hNdef, star_mul', star_star, mul_comm]
+  obtain ⟨t, ht0, httr⟩ := UnitaryField.exists_traceZero_ne_zero p
+  have hstart : star t = -t := by linear_combination httr
+  set b := -(Nβ⁻¹ * t⁻¹) with hbdef
+  have hb_tr : b + star b = 0 := by
+    rw [hbdef, star_neg, star_mul', star_inv₀, star_inv₀, hNβH, hstart, inv_neg]; ring
+  have hcoef : b * (t * Nβ) = -1 := by
+    rw [hbdef, neg_mul, show Nβ⁻¹ * t⁻¹ * (t * Nβ) = (Nβ⁻¹ * Nβ) * (t⁻¹ * t) by ring,
+      inv_mul_cancel₀ hNβ0, inv_mul_cancel₀ ht0, mul_one]
+  have hperp : ∀ x : Fin n → UnitaryField p, star v ⬝ᵥ x = 0 → star w ⬝ᵥ x = 0 →
+      (↑(uTransvecSU v b hviso hb_tr * uTransvecSU w t hwiso httr) :
+        Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x = x := by
+    intro x hvx hwx
+    rw [Submonoid.coe_mul, uTransvecSU_coe, uTransvecSU_coe, ← Matrix.mulVec_mulVec,
+      uTransvection_mulVec w t x, hwx, mul_zero, zero_smul, add_zero,
+      uTransvection_mulVec v b x, hvx, mul_zero, zero_smul, add_zero]
+  refine ⟨uTransvecSU v b hviso hb_tr * uTransvecSU w t hwiso httr, t * star β,
+    mul_mem (uTransvecSU_mem_gen p v b hviso hb_tr) (uTransvecSU_mem_gen p w t hwiso httr),
+    FixSU_of_fixes_perp p hv hw hperp, mul_ne_zero ht0 (star_ne_zero.mpr hvw), ?_⟩
+  rw [Submonoid.coe_mul, uTransvecSU_coe, uTransvecSU_coe, ← Matrix.mulVec_mulVec,
+    uTransvection_mulVec w t v, hβ, uTransvection_mulVec v b,
+    dotProduct_add, dotProduct_smul, hviso, ← hβdef, smul_eq_mul, zero_add,
+    show t * star β * β = t * Nβ by rw [hNdef]; ring, hcoef, neg_one_smul]
+  abel
+
 /-! ### Explicit coordinate hyperbolic pair (with span recovery) for the generation induction
 
 The genAux dimension induction peels a pair of unfixed coordinates `{i,j}` at a time. The isotropic

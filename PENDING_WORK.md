@@ -355,7 +355,48 @@ the correction `c = ⟨h,y⟩+μ` is **automatically trace-zero** (because `y,y'
 "requires Witt" diagnosis from the `ugen`/`t1` Aristotle runs was wrong for hT1. The t1 Aristotle
 job (`19b0b4a0`) is now MOOT. **Only `hgen` remains (Step 3a below).**
 
-**★★★ UPDATE 2026-06-04 (generation-infrastructure lap — current HEAD).** `hT1` now also
+**★★★★ UPDATE 2026-06-04 (genAux-skeleton lap — current HEAD `23ce90e`).** The `hgen` Dieudonné
+dimension induction is now **FULLY BUILT modulo two precisely-isolated geometric atoms** — all
+axiom-clean (`[propext, Classical.choice, Quot.sound]`), in `UnitarySimple.lean §offSU/FixSU` +
+`§genAux`. Concretely **`hgen ⟸ UExactLineTrans + UExactMateTrans + (2 ≠ 0)`**
+(`hgen_of_line_mate`):
+  - **Bookkeeping layer:** `offSU C` (coordinate-vanishing), `FixSU C g` (fixes `e_j`, `j∈C`),
+    closure (`offSU_add/sub/smul/single`, `FixSU_mul`), `offSU_preserved` (FixSU preserves offSU,
+    via `u_preserves_form` + `coord_eq_form : ⟨e_j,x⟩ = x_j`), `FixSU_of_fixes_perp` (a perp-fixing
+    Eichler move with both centres in `offSU C` ⟹ `FixSU C`), base case `FixSU_univ_eq_one`.
+  - **`uTransvecGen`** = `Subgroup.closure {transvections}` (so `hgen ⟺ uTransvecGen = ⊤`);
+    `uTransvecSU_mem_gen` (generators), `offSU_maps_nonorth_gen` (the within-`offSU C` non-orth line
+    move `v↦c·w`, NOW carrying `∈ uTransvecGen` + `FixSU C`).
+  - **Coordinate hyperbolic pair** `hpA = e_i+c·e_j`, `hpB = 2⁻¹(e_i−c·e_j)` (`N(c)=−1`) with span
+    recovery `fixes_coords_of_fixes_hpAB` (fixing the pair ⟹ fixing `e_i,e_j`).
+  - **`uGenAux`** (the genAux_le analogue): strong induction peeling a coordinate pair `{i,j}` per
+    step, base `Cᶜ.card ≤ 1` via the det base case `u_eq_one_of_fixes_all_but_one`. Takes the deep
+    step `UExactPairTrans` (exact pair-transitivity in `offSU C`, landing in `uTransvecGen`) as a
+    hypothesis; `uTransvecGen_eq_top_of_hpair` instantiates at `C=∅`.
+  - **`UExactPairTrans_of_line_mate`** splits the deep step (the `offS_transvecGen_maps_pair`
+    assembly `g = t₂·t₁`): map `e↦e'` exactly (`UExactLineTrans`), then fix `e'` and map the
+    preserved mate `t₁·f↦f'` (`UExactMateTrans`). **The mate scalar is auto-pinned to 1** by
+    `⟨e',·⟩=1` (form-preserved), so the mate step carries **NO torus**.
+
+  **⇒ THE TWO REMAINING ATOMS (next laps):**
+  1. **`UExactLineTrans`** (THE deep wall) — exact single-vector transitivity `e↦e'` in
+     `offSU C`, in `uTransvecGen`. The line move `offSU_maps_nonorth_gen` gives `e↦c·e'`; killing
+     the scalar `c` (a 1-dim `F_q`-coset, generally `∉ F_q`) needs the **third-dimension `F_{q²}*`
+     line-stabiliser scaling `exists_scale`** (n≥3 essential — `diag(μ,star μ⁻¹)` on one plane has
+     `det = μ/star μ ≠ 1`, balanced by `det = star μ/μ` on a second plane / anisotropic axis). SU-level
+     `exists_scale` is at Aristotle (`9105747d`, R·P construction); but generation needs the
+     **T-level** (transvection-product) torus — the genuine multi-lap core.
+  2. **`UExactMateTrans`** (no torus, but needs partners) — mate `f↦f'` fixing `e`. Reduces to
+     **`uEichler ∈ uTransvecGen`** (Eichler = product of transvections). This lap proved the
+     μ-peeling `uEichler_eq_mul_transvection : E_{x,h,μ} = E_{x,h,0}·τ_{x,−μ}`, reducing it to the
+     **pure** `E_{x,h,0}` (h isotropic). KEY FINDING: `E_{x,h,0}` is **NOT** a product of
+     `span{x,h}`-transvections (those commute & act diagonally since `span{x,h}` is totally
+     isotropic when `x⊥h` both isotropic) — it requires **ambient hyperbolic partners** of `x`/`h`.
+     So this atom, while torus-free, is a genuine (non-local) Dieudonné lemma; a good Aristotle brick
+     once a partner-based factorization is sketched.
+
+**★★★ UPDATE 2026-06-04 (generation-infrastructure lap — superseded by the genAux-skeleton lap above).**
+`hT1` now also
 DISCHARGED on the real defs (commits `fa29843`/`e6abae4`); capstone `PSU_isSimpleGroup_modulo_generation`
 is axiom-clean modulo `hgen` ALONE. This lap built the scaffolding for the `hgen` Dieudonné dimension
 induction (all axiom-clean, in `UnitarySimple.lean` general section + `UnitaryTransvection.lean`):

@@ -5,6 +5,38 @@ item below, and remove this file once nothing is left open.
 
 ---
 
+## 2026-06-04 (genAux-skeleton lap) — SHARPENED: two precise atoms for `hgen`
+
+The `hgen` Dieudonné generation induction is now **fully formalized modulo two isolated atoms**
+(`UnitarySimple.lean`, `hgen ⟸ UExactLineTrans + UExactMateTrans + (2≠0)`, all axiom-clean). The
+generic Witt/SU-generation ask below is **subsumed**; what would now unblock fastest, in priority
+order, are textbook/literature answers to these TWO specific sub-questions:
+
+1. **(THE wall) The `F_{q²}*` line-stabiliser scaling as a PRODUCT OF TRANSVECTIONS (n≥3).**
+   In `SU_n(F_{q²})`, `n≥3`, given an isotropic hyperbolic pair `(e,m)` (`⟨e,m⟩=1`) and `μ∈F_{q²}*`,
+   I need an element scaling `e ↦ μ·e` that is a **product of unitary transvections** (NOT just any
+   SU element — the SU-level one is easy: `diag(μ,star μ⁻¹)` on `⟨e,m⟩` × a norm-1 scaling on a 3rd
+   axis). Equivalently: is the maximal-torus element `diag(μ, star μ⁻¹, μ⁻¹, star μ)` on two
+   hyperbolic planes an **explicit product of transvections**? This is the crux of the
+   Dieudonné/Eichler generation proof. **What I need:** the explicit transvection (or Eichler-move)
+   factorization of this torus element, from Dieudonné *La géométrie des groupes classiques*, Grove
+   *Classical Groups* §6/§11, or Taylor *Geometry of the Classical Groups* Ch. 11 — ideally the
+   precise word/Bruhat decomposition `t = ∏ τ_{vᵢ,aᵢ}` with the `vᵢ` and `aᵢ` in terms of `e,m` and
+   the second plane's `e',m'`. Also: the small-rank base cases (`SU_2`-of-a-hyperbolic-plane ≅
+   `SL_2(F_q)`, `SU_3`) where this is classical.
+
+2. **The unitary Eichler/Siegel transformation `E_{x,h}` as a product of transvections.**
+   For isotropic `x`, `h ⊥ x` (h possibly anisotropic), `E_{x,h}(v) = v + ⟨x,v⟩h − ⟨h,v⟩x −
+   μ⟨x,v⟩x` (`μ+star μ = ⟨h,h⟩`). I proved the μ-part peels off as `τ_{x,−μ}`, reducing to the
+   **pure** `E_{x,h,0}` with `h` isotropic. I verified `E_{x,h,0}` is NOT a product of transvections
+   centred in `span{x,h}` (totally isotropic ⟹ they commute & act diagonally) — it must use a
+   **hyperbolic partner** `k` of `x` (`⟨x,k⟩=1`). **What I need:** the standard explicit
+   factorization of `E_{x,h,0}` as a product of transvections using `x`, `k`, `h` (Taylor Ch. 8/11,
+   or the "Eichler transformations are products of two transvections" lemma + its precise form for
+   the unitary group with the `star`/trace-zero scalars).
+
+---
+
 ## 2026-06-04 — Witt's extension theorem for Hermitian forms (the PSU wall)
 
 **Context.** The PSU(n,q) simplicity formalization (`FiniteSimpleGroups/UnitarySimple.lean`) is now

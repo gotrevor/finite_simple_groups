@@ -489,6 +489,32 @@ theorem exists_hyperbolic_partner (_hn : 3 ≤ n) :
     linear_combination ht
   · rw [dotProduct_add, dotProduct_smul, hzw1, hziso, smul_eq_mul, mul_zero, add_zero]
 
+/-- **Explicit coordinate hyperbolic pair** for the identity Hermitian form. For distinct
+coordinates `i ≠ j` and `2 ≠ 0`, the isotropic vectors `a = eᵢ + c·eⱼ` (`N(c) = −1`) and
+`b = 2⁻¹·(eᵢ − c·eⱼ)` form a hyperbolic pair (`⟨a,b⟩ = 1`), supported on `{i,j}`. The cross term
+`⟨a, eᵢ − c·eⱼ⟩ = 1 − N(c) = 2`; the `2⁻¹` rescales it to `1`. The building block of the isotropic
+hyperbolic basis underlying the `hgen` generation dimension induction (coordinate-pairs
+`(2i, 2i+1)` tile the even part; a lone anisotropic `eₙ` remains for odd `n`). -/
+theorem exists_coord_hyperbolic_pair (h2 : (2 : UnitaryField p) ≠ 0) {i j : Fin n} (hij : i ≠ j) :
+    ∃ a b : Fin n → UnitaryField p,
+      star a ⬝ᵥ a = 0 ∧ star b ⬝ᵥ b = 0 ∧ star a ⬝ᵥ b = 1 := by
+  obtain ⟨c, hc⟩ := UnitaryField.exists_norm_neg_one p
+  have hcn : (-c) * star (-c) = -1 := by rw [star_neg, neg_mul_neg]; exact hc
+  -- cross term ⟨eᵢ + c·eⱼ, eᵢ + (-c)·eⱼ⟩ = 2
+  have hcross : star ((Pi.single i 1 : Fin n → UnitaryField p) + Pi.single j c) ⬝ᵥ
+      ((Pi.single i 1 : Fin n → UnitaryField p) + Pi.single j (-c)) = 2 := by
+    rw [star_add, ← Pi.single_star, ← Pi.single_star, star_one]
+    simp only [add_dotProduct, dotProduct_add, single_dotProduct, Pi.single_eq_same,
+      Pi.single_eq_of_ne hij, Pi.single_eq_of_ne hij.symm, mul_one, mul_zero, add_zero, zero_add,
+      mul_neg]
+    rw [mul_comm (star c) c, hc]; ring
+  refine ⟨Pi.single i 1 + Pi.single j c,
+    (2⁻¹ : UnitaryField p) • (Pi.single i 1 + Pi.single j (-c)),
+    isotropic_single_pair hij hc, ?_, ?_⟩
+  · rw [star_smul, smul_dotProduct, dotProduct_smul, isotropic_single_pair hij hcn,
+      smul_zero, smul_zero]
+  · rw [dotProduct_smul, hcross, smul_eq_mul, inv_mul_cancel₀ h2]
+
 /-- **Connectivity, the perpendicular case — MACHINE-CHECKED** (formerly the last PSU-faithfulness
 axiom). For nonzero isotropic `z₁, z₂` with `⟨z₂,z₁⟩ = 0`, `n ≥ 3`, there is a common
 non-orthogonal isotropic `u`. Take a hyperbolic partner `w₁` of `z₁` (`⟨z₁,w₁⟩ = 1`, `w₁`

@@ -1222,7 +1222,7 @@ theorem psu_isTrivialBlock_of_isBlock (hn : 3 ≤ n)
         ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
     (hT2 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
       star x.1.rep ⬝ᵥ y.1.rep = 0 → star x.1.rep ⬝ᵥ y'.1.rep = 0 →
-        y ≠ x → y' ≠ x → ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+        star y.1.rep ⬝ᵥ y'.1.rep ≠ 0 → ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
     (hSep : ∀ {x y : IsoPoint p n}, x ≠ y → star x.1.rep ⬝ᵥ y.1.rep = 0 →
       ∃ s : Fin n → UnitaryField p, s ≠ 0 ∧ star s ⬝ᵥ s = 0 ∧
         star x.1.rep ⬝ᵥ s = 0 ∧ star y.1.rep ⬝ᵥ s ≠ 0)
@@ -1248,13 +1248,8 @@ theorem psu_isTrivialBlock_of_isBlock (hn : 3 ≤ n)
       have hyS : star y.1.rep ⬝ᵥ S.1.rep ≠ 0 := by
         show star y.1.rep ⬝ᵥ (Projectivization.mk (UnitaryField p) s hs0).rep ≠ 0
         rw [ha'eq]; exact mul_ne_zero ha'0 hys
-      -- `S ≠ x` (else `⟨y,S⟩` would be `⟨y,x⟩ = star ⟨x,y⟩ = 0`)
-      have hSx : S ≠ x := by
-        intro hcon
-        rw [hcon] at hyS
-        exact hyS (by rw [dotProduct_star_swap, hperp, star_zero])
-      -- T2 maps `y → S` inside `Stab[x]`, so `S ∈ B`
-      obtain ⟨g, hgx, hgy⟩ := hT2 hperp hxS hxy.symm hSx
+      -- T2 maps `y → S` inside `Stab[x]` (the pair `(y, S)` is non-perpendicular), so `S ∈ B`
+      obtain ⟨g, hgx, hgy⟩ := hT2 hperp hxS hyS
       have hgB : g • B = B := hB.smul_eq_of_mem hx (by rw [hgx]; exact hx)
       have hSB : S ∈ B := by rw [← hgy, ← hgB]; exact Set.smul_mem_smul_set hy
       exact block_univ_of_nonperp_pair p n hn hT1 hB hy hSB hyS
@@ -1472,7 +1467,7 @@ theorem PSU_isSimpleGroup_of_generate_of_eichler (hn : 3 ≤ n) (hp : 5 ≤ p)
         ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
     (hT2 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
       star x.1.rep ⬝ᵥ y.1.rep = 0 → star x.1.rep ⬝ᵥ y'.1.rep = 0 →
-        y ≠ x → y' ≠ x → ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+        star y.1.rep ⬝ᵥ y'.1.rep ≠ 0 → ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
     (hSep : ∀ {x y : IsoPoint p n}, x ≠ y → star x.1.rep ⬝ᵥ y.1.rep = 0 →
       ∃ s : Fin n → UnitaryField p, s ≠ 0 ∧ star s ⬝ᵥ s = 0 ∧
         star x.1.rep ⬝ᵥ s = 0 ∧ star y.1.rep ⬝ᵥ s ≠ 0) :
@@ -1513,7 +1508,7 @@ theorem PSU_isSimpleGroup_of_generate_of_eichler' (hn : 3 ≤ n) (hp : 5 ≤ p)
         ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
     (hT2 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
       star x.1.rep ⬝ᵥ y.1.rep = 0 → star x.1.rep ⬝ᵥ y'.1.rep = 0 →
-        y ≠ x → y' ≠ x → ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+        star y.1.rep ⬝ᵥ y'.1.rep ≠ 0 → ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
     (hPP : letI := psuAction p n; ∀ {x y : IsoPoint p n}, x ≠ y →
       star x.1.rep ⬝ᵥ y.1.rep = 0 → ∃ v : Fin n → UnitaryField p, star v ⬝ᵥ v = 0 ∧
         star x.1.rep ⬝ᵥ v = 1 ∧ star y.1.rep ⬝ᵥ v = 0) :
@@ -1537,24 +1532,54 @@ theorem psu_hPP {x y : IsoPoint p n} (hxy : x ≠ y) (hperp : star x.1.rep ⬝�
     exact ⟨c, hc.symm⟩
   exact exists_isotropic_perp_partner p x.2 (Projectivization.rep_nonzero y.1) hperp hnp
 
-/-- **`PSU_n(F_{p²})` is simple** (`n ≥ 3`, `p ≥ 5`) for general `n`, reduced to the THREE pure
-group-action atoms — Witt generation `hgen`, non-perp transitivity `hT1`, perp transitivity `hT2`.
-The perpendicular-partner existence is now a **theorem** (`psu_hPP`), so the entire isotropic
-separation is machine-checked and DROPS OUT of the hypothesis list. Every remaining hypothesis is a
-single stabilizer-transitivity / generation statement (all consequences of Witt's theorem for the
-unitary group). For `n = 3`, `psu3_isSimpleGroup_of_generate_of_T1` needs only `{hgen, hT1}`. -/
-theorem PSU_isSimpleGroup_of_generate_of_transitivity (hn : 3 ≤ n) (hp : 5 ≤ p)
+/-- **The perp-transitivity atom `hT2` is DISCHARGED** (for the only case block-triviality needs):
+for isotropic points `x, y, y'` with `y, y' ⊥ x` and `⟨y,y'⟩ ≠ 0`, there is `g ∈ PSU` fixing `x` with
+`g•y = y'`. Direct from the Eichler seed `exists_su_fixes_maps_nonorth`: the transvection centres
+`y, y' ∈ x^⊥` automatically fix `x`. Block-triviality only ever invokes `hT2` on a non-perpendicular
+pair (the separator `S` satisfies `⟨y,S⟩ ≠ 0`), so this is exactly the needed case — and `hT2` ceases
+to be a hypothesis. -/
+theorem psu_hT2_nonperp {x y y' : IsoPoint p n}
+    (hxy : star x.1.rep ⬝ᵥ y.1.rep = 0) (hxy' : star x.1.rep ⬝ᵥ y'.1.rep = 0)
+    (hyy' : star y.1.rep ⬝ᵥ y'.1.rep ≠ 0) :
+    letI := psuAction p n; ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y' := by
+  letI := psuAction p n
+  have hyx : star y.1.rep ⬝ᵥ x.1.rep = 0 := by rw [dotProduct_star_swap, hxy, star_zero]
+  have hy'x : star y'.1.rep ⬝ᵥ x.1.rep = 0 := by rw [dotProduct_star_swap, hxy', star_zero]
+  obtain ⟨g, c, hc, hgy, hgx⟩ := exists_su_fixes_maps_nonorth p y.1.rep y'.1.rep x.1.rep
+    y.2 y'.2 hyy' hyx hy'x
+  refine ⟨QuotientGroup.mk g, ?_, ?_⟩
+  · rw [psu_mk_smul p n g x]
+    apply Subtype.ext
+    rw [isoPoint_smul_coe]
+    conv_lhs => rw [← Projectivization.mk_rep x.1]
+    conv_rhs => rw [← Projectivization.mk_rep x.1]
+    rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff']
+    exact ⟨1, by rw [one_smul, su_smul_vec_def]; exact hgx.symm⟩
+  · rw [psu_mk_smul p n g y]
+    apply Subtype.ext
+    rw [isoPoint_smul_coe]
+    conv_lhs => rw [← Projectivization.mk_rep y.1]
+    conv_rhs => rw [← Projectivization.mk_rep y'.1]
+    rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff']
+    exact ⟨c, by rw [su_smul_vec_def]; exact hgy.symm⟩
+
+/-- **★ `PSU_n(F_{p²})` is simple** (`n ≥ 3`, `p ≥ 5`) for general `n`, reduced to just TWO atoms —
+the Witt generation `hgen` and the non-perpendicular stabilizer-transitivity `hT1`. Both the
+perpendicular-partner existence (`psu_hPP`) and the perpendicular transitivity in its needed case
+(`psu_hT2_nonperp`) are now **theorems**, machine-checked via the Eichler seed
+`exists_su_fixes_maps_nonorth` and the trace-correction partner construction. So general-`n` PSU now
+needs the SAME two inputs as the `n = 3` case (`psu3_isSimpleGroup_of_generate_of_T1`): `hT2`/`hSep`
+are gone. The remaining `hT1` and `hgen` are the genuine group-level Eichler/Witt-generation core. -/
+theorem PSU_isSimpleGroup_of_generate_of_T1 (hn : 3 ≤ n) (hp : 5 ≤ p)
     (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
       ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
         (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤)
     (hT1 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
       star x.1.rep ⬝ᵥ y.1.rep ≠ 0 → star x.1.rep ⬝ᵥ y'.1.rep ≠ 0 →
-        ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
-    (hT2 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
-      star x.1.rep ⬝ᵥ y.1.rep = 0 → star x.1.rep ⬝ᵥ y'.1.rep = 0 →
-        y ≠ x → y' ≠ x → ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y') :
+        ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y') :
     IsSimpleGroup (PSUConcrete n p) :=
-  PSU_isSimpleGroup_of_generate_of_eichler' p n hn hp hgen hT1 hT2
+  PSU_isSimpleGroup_of_generate_of_eichler' p n hn hp hgen hT1
+    (fun hxy hxy' hyy' => psu_hT2_nonperp p n hxy hxy' hyy')
     (fun hxy hperp => psu_hPP p n hxy hperp)
 
 end Iwasawa

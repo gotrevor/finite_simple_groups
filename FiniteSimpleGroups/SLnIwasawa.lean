@@ -31,6 +31,7 @@ remaining step (mirrors `SL2.transvecGroup`/`Tline`).
 -/
 
 open Matrix
+open scoped Pointwise
 
 namespace FiniteSimpleGroups.SLn
 
@@ -220,5 +221,141 @@ theorem Tline_mk (v : n → F) (hv : v ≠ 0) :
     Tline (Projectivization.mk F v hv)
       = (dirTransvecGroup v).map (QuotientGroup.mk' (Subgroup.center _)) :=
   congrArg (Subgroup.map (QuotientGroup.mk' (Subgroup.center _))) (dirTransvecGroup_rep v hv)
+
+/-! ### Generation: the family `Tline` generates `PSL(n,F)`
+
+Every elementary transvection `transvecSL i j c` is `1 + eᵢ⊗(c·eⱼ)`, a member of
+`dirTransvecGroup eᵢ`; since the elementary transvections generate `SL(n,F)`
+(`transvecSL_closure_eq_top`), the images `Tline` generate `PSL = SL/Z`. -/
+
+/-- `(c·eⱼ)(eᵢ) = 0` for `i ≠ j` — the constraint making `1 + eᵢ⊗(c·eⱼ)` a transvection. -/
+theorem elem_constraint {i j : n} (hij : i ≠ j) (c : F) :
+    (c • (Pi.single j 1 : n → F)) ⬝ᵥ (Pi.single i 1 : n → F) = 0 := by
+  rw [smul_dotProduct, single_dotProduct, one_mul, Pi.single_eq_of_ne hij.symm, smul_zero]
+
+/-- **The elementary transvection is a direction-`eᵢ` transvection**: `transvection i j c =
+1 + eᵢ⊗(c·eⱼ)`. -/
+theorem transvection_eq_dirTransMat {i j : n} (c : F) :
+    Matrix.transvection i j c
+      = dirTransMat (Pi.single i (1 : F)) (c • (Pi.single j 1 : n → F)) := by
+  rw [dirTransMat, Matrix.transvection]
+  congr 1
+  ext k l
+  rw [vecMulVec_apply, Pi.single_apply, Pi.smul_apply, Pi.single_apply, smul_eq_mul]
+  by_cases hk : k = i
+  · subst hk
+    by_cases hl : l = j
+    · subst hl; rw [single_apply_same]; simp
+    · rw [single_apply_of_col_ne k k (Ne.symm hl)]; simp [hl]
+  · rw [single_apply_of_row_ne (Ne.symm hk)]; simp [hk]
+
+/-- `transvecSL i j c ∈ dirTransvecGroup eᵢ` (it is `1 + eᵢ⊗(c·eⱼ)`). -/
+theorem transvecSL_mem_dirTransvecGroup {i j : n} (hij : i ≠ j) (c : F) :
+    transvecSL hij c ∈ dirTransvecGroup (Pi.single i (1 : F)) := by
+  rw [mem_dirTransvecGroup]
+  refine ⟨c • (Pi.single j 1 : n → F), elem_constraint hij c, ?_⟩
+  apply Subtype.ext
+  rw [dirTransSL_val, transvecSL_val]
+  exact (transvection_eq_dirTransMat c).symm
+
+/-- **The family `Tline` generates `PSL(n,F)`** — the Iwasawa `is_generator` obligation.
+Reduces to `transvecSL_closure_eq_top`: each `transvecSL i j c` lies in `Tline [eᵢ]`, so the
+closure of the generators (= `⊤` in `SL`) descends to `iSup Tline = ⊤` in `SL/Z`. -/
+theorem Tline_iSup : iSup (Tline (n := n) (F := F)) = ⊤ := by
+  rw [eq_top_iff]
+  intro y _
+  obtain ⟨y_SL, rfl⟩ := QuotientGroup.mk'_surjective (Subgroup.center _) y
+  have hsub : {g : SpecialLinearGroup n F | ∃ (i j : n) (h : i ≠ j) (c : F), g = transvecSL h c}
+      ⊆ ((iSup Tline).comap (QuotientGroup.mk' (Subgroup.center (SpecialLinearGroup n F)))
+          : Subgroup (SpecialLinearGroup n F)) := by
+    rintro w ⟨i, j, hij, c, rfl⟩
+    have hei : (Pi.single i 1 : n → F) ≠ 0 := fun hz => by simpa using congrFun hz i
+    refine Subgroup.mem_comap.mpr ?_
+    have hmem : QuotientGroup.mk' (Subgroup.center _) (transvecSL hij c)
+        ∈ Tline (Projectivization.mk F (Pi.single i 1) hei) := by
+      rw [Tline_mk]
+      exact Subgroup.mem_map_of_mem _ (transvecSL_mem_dirTransvecGroup hij c)
+    exact le_iSup Tline _ hmem
+  have hmem : y_SL ∈ (iSup Tline).comap
+      (QuotientGroup.mk' (Subgroup.center (SpecialLinearGroup n F))) := by
+    have h := (Subgroup.closure_le _).mpr hsub
+    rw [transvecSL_closure_eq_top] at h
+    exact h (Subgroup.mem_top y_SL)
+  exact Subgroup.mem_comap.mp hmem
+
+/-! ### Assembling the Iwasawa criterion: `PSL(n,F)` simple for rank ≥ 3 -/
+
+/-- **The Iwasawa structure on `PSL(n,F) ↷ ℙ^{n-1}`** — the final Iwasawa obligation: the
+family `Tline` of abelian transvection subgroups (`is_comm`), conjugation-equivariant
+(`is_conj`, via `dirTransvecGroup_conj` through the quotient) and generating (`is_generator`,
+`Tline_iSup`). Generalizes `SL2.pslIwasawa` to all ranks. -/
+noncomputable def pslnIwasawaStructure :
+    letI := pslnAction (n := n) (F := F)
+    MulAction.IwasawaStructure
+      (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F))
+      (Projectivization F (n → F)) :=
+  letI := pslnAction (n := n) (F := F)
+  { T := Tline
+    is_comm := fun x => inferInstance
+    is_conj := fun g x => by
+      obtain ⟨g_SL, hg⟩ := QuotientGroup.mk_surjective g
+      have hne : g_SL.val *ᵥ x.rep ≠ 0 := by
+        rw [← smul_vec_def]
+        exact (smul_ne_zero_iff_ne g_SL).mpr (Projectivization.rep_nonzero x)
+      have hgx : g • x = Projectivization.mk F (g_SL.val *ᵥ x.rep) hne := by
+        rw [← hg]
+        show g_SL • x = Projectivization.mk F (g_SL.val *ᵥ x.rep) hne
+        conv_lhs => rw [← Projectivization.mk_rep x]
+        rw [Projectivization.smul_mk]; rfl
+      have hpar : dirTransvecGroup ((g • x).rep) = dirTransvecGroup (g_SL.val *ᵥ x.rep) := by
+        have h2 : Projectivization.mk F ((g • x).rep) (Projectivization.rep_nonzero _)
+            = Projectivization.mk F (g_SL.val *ᵥ x.rep) hne := by
+          rw [Projectivization.mk_rep]; exact hgx
+        rw [Projectivization.mk_eq_mk_iff] at h2
+        obtain ⟨a, ha⟩ := h2
+        rw [← ha, Units.smul_def]
+        exact dirTransvecGroup_smul (Units.ne_zero a) _
+      rw [show (MulAut.conj g) • Tline x = (Tline x).map (MulAut.conj g) from
+            Subgroup.toSubmonoid_inj.mp rfl]
+      rw [Tline, Tline, hpar, ← dirTransvecGroup_conj g_SL]
+      simp only [Subgroup.map_map]
+      congr 1
+      refine MonoidHom.ext fun z => ?_
+      change (QuotientGroup.mk' (Subgroup.center _)) (g_SL * z * g_SL⁻¹)
+          = MulAut.conj g ((QuotientGroup.mk' (Subgroup.center _)) z)
+      rw [MulAut.conj_apply, map_mul, map_mul, map_inv, ← hg]; rfl
+    is_generator := Tline_iSup }
+
+/-- **`PSL(n,F)` acts faithfully on `ℙ^{n-1}`** as a `FaithfulSMul` instance (from
+`pslnPermHom_injective`) — packaging the Iwasawa `FaithfulSMul` obligation. -/
+@[reducible]
+noncomputable def pslnFaithful [Nonempty n] :
+    letI := pslnAction (n := n) (F := F)
+    FaithfulSMul (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F))
+      (Projectivization F (n → F)) :=
+  letI := pslnAction (n := n) (F := F)
+  { eq_of_smul_eq_smul := fun {g₁ g₂} hsmul => by
+      apply pslnPermHom_injective
+      ext x
+      exact hsmul x }
+
+/-- **`PSL(n,F) = SL(n,F)/Z` is simple for `3 ≤ |n|`** — the Iwasawa criterion
+(`IwasawaStructure.isSimpleGroup`) applied to the action on `ℙ^{n-1}`, with all six
+obligations assembled: perfect (`commutator_PSLn_eq_top`), nontrivial (`PSLn_nontrivial`),
+MulAction (`pslnAction`), faithful (`pslnFaithful`), quasi-preprimitive
+(`pslnQuasiPreprimitive`), and the `IwasawaStructure` (`pslnIwasawaStructure`). Discharges
+`PSL_isSimpleGroup_rank_ge_three` modulo the two disclosed geometric axioms
+`transvecSL_closure_eq_top` and `exists_sl_maps_two_points`. -/
+theorem PSLn_isSimpleGroup_of_rank [Nonempty n] (h3 : 3 ≤ Fintype.card n) :
+    IsSimpleGroup (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F)) := by
+  letI := pslnAction (n := n) (F := F)
+  haveI : Nontrivial (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F)) :=
+    PSLn_nontrivial (by omega)
+  haveI : FaithfulSMul (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F))
+      (Projectivization F (n → F)) := pslnFaithful
+  haveI : MulAction.IsQuasiPreprimitive
+      (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F))
+      (Projectivization F (n → F)) := pslnQuasiPreprimitive (by omega)
+  exact pslnIwasawaStructure.isSimpleGroup (commutator_PSLn_eq_top h3) pslnFaithful
 
 end FiniteSimpleGroups.SLn

@@ -44,3 +44,32 @@ a product of `transvection`s" first.
 4. Port onto `SLnPerfect.transvecSL_closure_eq_top` (drop the `axiom`, add the proof),
    confirm `commutator_SLn_eq_top` is now axiom-clean, commit. Then submit the next
    §E brick (the `SL(n,q) ↷ ℙ^{n-1}` action / 2-transitivity).
+
+---
+
+## UPDATE 2026-06-04 — the whole PSL(n≥3) thread is DISCHARGED modulo this + one more
+
+`PSL_isSimpleGroup_rank_ge_three` is GONE (deleted from LieType); `n≥3` simplicity is now
+the machine-checked `SLn.PSLn_isSimpleGroup_of_rank` (SLnIwasawa.lean). `#print axioms
+FiniteSimpleGroups.PSL_isSimpleGroup` = `[propext, Classical.choice, Quot.sound,
+SLn.exists_sl_maps_two_points, SLn.transvecSL_closure_eq_top]`.
+
+**Job `a4b84e9f` (slngen) was STILL RUNNING after >1h** at lap end. Next lap: `aristotle list`
+→ if done, harvest per "When it returns" above (verify `#print axioms` clean in our kernel,
+port onto `SLnPerfect.transvecSL_closure_eq_top`, drop the `axiom`). Statement byte-identical;
+ports directly.
+
+### NEXT BRICK to submit (when slngen returns) — `exists_sl_maps_two_points`
+`SLnSimple.lean`'s second disclosed axiom: **`SL(n,F)` is 2-transitive on `ℙ^{n-1}` for
+`2 ≤ |n|`**. Self-contained linear algebra:
+```lean
+theorem exists_sl_maps_two_points {n} [DecidableEq n] [Fintype n] {F} [Field F]
+    (h2 : 2 ≤ Fintype.card n)
+    (x0 x1 y0 y1 : Projectivization F (n → F)) (hx : x0 ≠ x1) (hy : y0 ≠ y1) :
+    ∃ g : SpecialLinearGroup n F, g • x0 = y0 ∧ g • x1 = y1
+```
+(`•` is the projective action from `SLnAction`/mathlib `Projectivization.Action`.) Proof:
+distinct points ⇒ l.i. reps; `Basis.extend {u,v}` to a basis; matrix with those as the first
+two columns is invertible; rescale the *second* column by `1/det` (projectively invariant) to
+land in `SL`; compose `B·A⁻¹` through the reference frame. `n=2` is the proved `SL2.sl2_two_trans`.
+Inline `transvecSL`/`dirTransSL` defs as `axiom`s if Aristotle needs them; goal = the `sorry`.

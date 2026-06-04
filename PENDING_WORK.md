@@ -205,10 +205,38 @@ axioms`-clean — `[propext, Classical.choice, Quot.sound]`):
   (`|PSL(2,q)|·2 = q(q²−1)`, i.e. `q(q²−1)/2`, via Lagrange + `card_SL2`). `SL2Card.lean`
   is now wired into the build (imported by `SL2.lean`; was orphaned).
 
-## E. ACTIVE THREAD — `PSL(n,q)` simplicity for `n ≥ 3` via Iwasawa (started 2026-06-04)
+## E. ✅ DISCHARGED — `PSL(n,q)` simplicity for `n ≥ 3` via Iwasawa (done 2026-06-04)
 
-Discharging `PSL_isSimpleGroup_rank_ge_three` (`LieType.lean`). Same Iwasawa pattern
-as `n = 2` but on `ℙ^{n-1}`. **Progress this lap** — `FiniteSimpleGroups/SLnPerfect.lean`:
+**`PSL_isSimpleGroup_rank_ge_three` is GONE** — deleted from `LieType.lean`; the `n ≥ 3` case
+is now a machine-checked theorem `SLn.PSLn_isSimpleGroup_of_rank` (`SLnIwasawa.lean`), wired
+into `SL2.PSL_isSimpleGroup`. `#print axioms FiniteSimpleGroups.PSL_isSimpleGroup` =
+`[propext, Classical.choice, Quot.sound, SLn.exists_sl_maps_two_points,
+SLn.transvecSL_closure_eq_top]`.
+
+**The entire Iwasawa criterion is assembled for general `n`** across `SLnAction/SLnSimple/
+SLnIwasawa.lean` (all general `n : Type*`, `F` a field; specialised at `(Fin n, ZMod q)`):
+perfect (`commutator_PSLn_eq_top`), nontrivial (`PSLn_nontrivial`), MulAction (`pslnAction`),
+faithful (`pslnFaithful`/`pslnPermHom_injective`), quasi-preprimitive (`pslnQuasiPreprimitive`,
+via `psln_two_pretransitive`), IwasawaStructure (`pslnIwasawaStructure`: the direction-`v`
+transvection unipotent-radical family `Tline`, abelian + `is_conj` via `dirTransvecGroup_conj`
++ `is_generator` via `Tline_iSup`).
+
+**ONLY TWO concrete geometric axioms remain** (both standard, both narrow):
+1. **`SLn.transvecSL_closure_eq_top`** — transvections generate `SL(n,F)` (Whitehead/Gaussian).
+   **OUT at Aristotle `a4b84e9f` (`slngen`)** — harvest next lap; mathlib has
+   `Matrix.diagonal_transvection_induction`, missing only "det-1 diagonal = product of
+   transvections". For `n=2` it's `SL2.transvections_generate`.
+2. **`SLn.exists_sl_maps_two_points`** (`SLnSimple.lean`) — `SL(n,F)` 2-transitive on `ℙ^{n-1}`
+   for `2 ≤ |n|`. Construction: distinct points → l.i. reps → `Basis.extend` to a basis →
+   matrix with those as first two columns → rescale 2nd column by `1/det` (projectively
+   invariant) ∈ SL. **NEXT Aristotle brick** (submit when `slngen` returns). `n=2` is
+   `SL2.sl2_two_trans` (proved).
+
+Discharging EITHER makes the corresponding obligation axiom-clean; discharging BOTH makes
+`PSL_isSimpleGroup` fully `[propext, Classical.choice, Quot.sound]`.
+
+### History (the build-up this lap)
+Same Iwasawa pattern as `n = 2` but on `ℙ^{n-1}`. **`FiniteSimpleGroups/SLnPerfect.lean`:**
 - ✅ `steinberg_comm` — the Steinberg/Chevalley relation `⁅t_{ik}(a),t_{kj}(b)⁆ =
   t_{ij}(ab)` (pairwise-distinct i,j,k), pure `Matrix.single` algebra, axiom-clean.
   (Cracked locally — beat the Aristotle job `4827df6e`, now ignored.)
@@ -239,15 +267,9 @@ would create instance diamonds at `Fin 2`. Fix: extract the general `mulVec` act
 into a shared file (e.g. `SLnAction.lean`) and have `SL2.lean` import/reuse them, then build the
 ℙ^{n-1} descent on top. Deliberate refactor — do fresh, not late-lap.
 
-**Next bricks for §E** (toward the full Iwasawa structure on `ℙ^{n-1}`):
-1. **`transvecSL_closure_eq_top`** (the one open axiom) — transvections generate `SL n F`.
-   mathlib has `Matrix.diagonal_transvection_induction` (matrices = products of diagonals
-   + transvections); missing step = det-1 diagonal is a product of transvections
-   (Whitehead). **OUT at Aristotle `a4b84e9f`** (see `ARISTOTLE-JOB-transvec-generate.md`).
-   For `n=2` it's `SL2.transvections_generate`.
-2. `SL(n,q) ↷ ℙ^{n-1}` action + 2-transitivity ⇒ quasi-preprimitive (mirror `pslQuasiPreprimitive`).
-3. center of `SL(n,q)` = scalar matrices `{λI : λⁿ=1}`; faithful `PSL` action on `ℙ^{n-1}`.
-4. the unipotent `IwasawaStructure` (transvection subgroups fixing a point of `ℙ^{n-1}`).
+All five Iwasawa obligations above the two residual geometric axioms are now ✅ DONE and
+committed (SLnAction action refactor; SLnSimple center-acts-trivially/faithful/quasi-prep;
+SLnIwasawa direction-`v` transvection algebra → subgroup → `Tline` → record → assembly).
 
 **OTHER candidate discharges, lower priority:**
 - **`alternatingGroup_isSimple`** — BLOCKED: bucket C (mathlib `Alternating/Simple.lean`

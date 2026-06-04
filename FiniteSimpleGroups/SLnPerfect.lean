@@ -142,4 +142,24 @@ theorem commutator_PSLn_eq_top (h3 : 3 ≤ Fintype.card n) :
     rw [Subgroup.map_commutator, Subgroup.map_top_of_surjective f hf]
   rw [hmap, commutator_SLn_eq_top h3, Subgroup.map_top_of_surjective f hf]
 
+/-- **`PSL(n,F)` is nontrivial for `2 ≤ |n|`** — the Iwasawa `Nontrivial` obligation
+for `PSL(n,q)` simplicity. A transvection `t_{ij}(1)` (`i ≠ j`) is not central — its
+off-diagonal `(i,j)` entry is `1`, while every central element is a scalar matrix
+(mathlib `SpecialLinearGroup.mem_center_iff`) — so its image in `SL/Z` is `≠ 1`.
+Axiom-clean (independent of the generation axiom). -/
+theorem PSLn_nontrivial (h2 : 2 ≤ Fintype.card n) :
+    Nontrivial (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F)) := by
+  have : Nontrivial n := Fintype.one_lt_card_iff_nontrivial.mp (by omega)
+  obtain ⟨i, j, hij⟩ := exists_pair_ne n
+  refine ⟨QuotientGroup.mk (transvecSL hij 1), 1, ?_⟩
+  rw [Ne, QuotientGroup.eq_one_iff]
+  intro hmem
+  rw [Matrix.SpecialLinearGroup.mem_center_iff] at hmem
+  obtain ⟨r, hr, hscal⟩ := hmem
+  have hentry := congr_fun₂ hscal i j
+  rw [transvecSL_val] at hentry
+  simp only [scalar_apply, diagonal_apply_ne _ hij, transvection, add_apply, one_apply_ne hij,
+    single_apply_same, zero_add] at hentry
+  exact one_ne_zero hentry.symm
+
 end FiniteSimpleGroups.SLn

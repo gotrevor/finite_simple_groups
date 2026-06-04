@@ -224,6 +224,20 @@ as `n = 2` but on `ℙ^{n-1}`. **Progress this lap** — `FiniteSimpleGroups/SLn
   `3 ≤ |n|` (modulo the generation axiom), by descending `commutator_SLn_eq_top` along
   `SL ↠ SL/Z` (mirrors `SL2.PSL2_perfect`). `#print axioms` adds only
   `transvecSL_closure_eq_top`.
+- ✅ **Iwasawa obligation 2 (nontrivial)** `PSLn_nontrivial` — `PSL(n,F)` nontrivial for
+  `2 ≤ |n|`, axiom-clean. A transvection `t_{ij}(1)` is non-central (off-diagonal `(i,j)`
+  entry `1`; central ⇒ scalar by mathlib `SpecialLinearGroup.mem_center_iff`).
+
+**NB — mathlib already has the center characterization:** `Matrix.SpecialLinearGroup.mem_center_iff`
+(`center = scalar matrices, scalars = n-th roots of unity`) and `center_equiv_rootsOfUnity'`.
+Do NOT re-derive (one rule); cite these for the faithfulness/order obligations.
+
+**⚠️ Action obligation needs a refactor:** the `SL(n,F) ↷ ℙ^{n-1}` action descends from the
+linear `mulVec` action, but `SL2.lean` already declares `SMul/MulAction/DistribMulAction/
+SMulCommClass (SL (Fin 2) F) (Fin 2 → F)` instances. Declaring the **general-`n`** versions
+would create instance diamonds at `Fin 2`. Fix: extract the general `mulVec` action instances
+into a shared file (e.g. `SLnAction.lean`) and have `SL2.lean` import/reuse them, then build the
+ℙ^{n-1} descent on top. Deliberate refactor — do fresh, not late-lap.
 
 **Next bricks for §E** (toward the full Iwasawa structure on `ℙ^{n-1}`):
 1. **`transvecSL_closure_eq_top`** (the one open axiom) — transvections generate `SL n F`.

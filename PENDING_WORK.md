@@ -474,8 +474,20 @@ This lap discharged BOTH former core axioms and wired into LieType:
     `def PSp` + `SpLieType.lean`; general `q=p^m` needs `GaloisField p (2m)` + `iterateFrobenius`).
 The whole PSp scaffold (`SpIwasawa`/`SpTransvection`/`SpSmallField`) remains the template to copy.
 
-**◆ THE REDUCTION IS COMPLETE (2026-06-04 late). PSU simplicity now bottoms out at FOUR clean
-Eichler/Witt atoms, all machine-checked surrounding them:**
+**◆◆ UPDATE (2026-06-04 latest): `hPP` DISCHARGED — only THREE atoms remain, all pure
+group-action (transitivity/generation). The separation/perp-partner content is FULLY machine-
+checked.** The feared `hPP` (∃ isotropic perp-partner) turned out NOT to be a Witt-extension fact:
+`exists_isotropic_perp_partner` (axiom-clean) builds `v = w₁ + t·x` where `w₁ = ⟨x,u⟩⁻¹·u`
+(`u ⊥ y`, `⟨x,u⟩≠0` from `exists_perp_nonperp` — pure linear algebra, NO isotropy), and
+`t + star t = -⟨w₁,w₁⟩` (Lemma T `exists_add_star_eq_neg_dotProduct_self`, trace surjectivity). The
+key: `v ∈ span{x,u} ⊆ y^⊥` so it stays perp to `y`, AND `⟨x,w₁⟩=1≠0` makes the `x`-correction
+*effective* for isotropy — the "subspace hyperbolic partner" worry was illusory. `psu_hPP` lifts to
+points; **`PSU_isSimpleGroup_of_generate_of_transitivity` (n≥3, p≥5) reduces PSU(n,p²) simple to just
+`{hgen, hT1, hT2}`.** REMAINING WALL is now only the GROUP-level Eichler/Witt content (generating SU
+and the two stabilizer-transitivities) — NOT the form geometry.
+
+**◆ (superseded by the above) Earlier this lap PSU bottomed out at FOUR atoms — keeping the list for
+the `n=3` story and the hT1/hT2 statements:**
 - **`PSU_isSimpleGroup_of_generate_of_eichler'` (n≥3, p≥5):** `IsSimpleGroup (PSUConcrete n p)` ⟸
   `{hgen, hT1, hT2, hPP}` — each a SINGLE clean statement. Axiom-clean.
 - **`psu3_isSimpleGroup_of_generate_of_T1` (n=3, p≥5):** ⟸ `{hgen, hT1}` ONLY (perp atoms vacuous in

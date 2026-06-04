@@ -605,6 +605,43 @@ theorem exists_su_maps_nonorth (v w : Fin n → UnitaryField p)
     show t * star β * β = t * Nβ by rw [hNdef]; ring, hcoef, neg_one_smul]
   abel
 
+/-- **Two-transvection move that ALSO fixes a vector `x` orthogonal to both centres** (the Eichler
+seed for stabilizer-transitivity `hT1`/`hT2`). For isotropic `v, w` with `⟨v,w⟩ ≠ 0`, and any `x`
+with `⟨v,x⟩ = 0` and `⟨w,x⟩ = 0`, the element `g = τ_{v,b}·τ_{w,a} ∈ SU` maps `v ↦ c·w` (`c ≠ 0`) AND
+fixes `x`. Each transvection acts by `z ↦ z + (·)⟨u,z⟩·u`, so a centre `u ⊥ x` leaves `x` fixed — i.e.
+transvections with centres in `x^⊥` lie in `Stab[x]`. Same `g`/`c` as `exists_su_maps_nonorth`. -/
+theorem exists_su_fixes_maps_nonorth (v w x : Fin n → UnitaryField p)
+    (hviso : star v ⬝ᵥ v = 0) (hwiso : star w ⬝ᵥ w = 0)
+    (hvw : star v ⬝ᵥ w ≠ 0) (hvx : star v ⬝ᵥ x = 0) (hwx : star w ⬝ᵥ x = 0) :
+    ∃ (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) (c : UnitaryField p),
+      c ≠ 0 ∧ (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ v = c • w ∧
+        (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x = x := by
+  have hβ : star w ⬝ᵥ v = star (star v ⬝ᵥ w) := dotProduct_star_swap v w
+  set β := star v ⬝ᵥ w with hβdef
+  set Nβ := star β * β with hNdef
+  have hNβ0 : Nβ ≠ 0 := mul_ne_zero (star_ne_zero.mpr hvw) hvw
+  have hNβH : star Nβ = Nβ := by rw [hNdef, star_mul', star_star, mul_comm]
+  obtain ⟨t, ht0, httr⟩ := UnitaryField.exists_traceZero_ne_zero p
+  have hstart : star t = -t := by linear_combination httr
+  set b := -(Nβ⁻¹ * t⁻¹) with hbdef
+  have hb_tr : b + star b = 0 := by
+    rw [hbdef, star_neg, star_mul', star_inv₀, star_inv₀, hNβH, hstart, inv_neg]
+    ring
+  have hcoef : b * (t * Nβ) = -1 := by
+    rw [hbdef, neg_mul,
+      show Nβ⁻¹ * t⁻¹ * (t * Nβ) = (Nβ⁻¹ * Nβ) * (t⁻¹ * t) by ring,
+      inv_mul_cancel₀ hNβ0, inv_mul_cancel₀ ht0, mul_one]
+  refine ⟨uTransvecSU v b hviso hb_tr * uTransvecSU w t hwiso httr, t * star β,
+    mul_ne_zero ht0 (star_ne_zero.mpr hvw), ?_, ?_⟩
+  · rw [Submonoid.coe_mul, uTransvecSU_coe, uTransvecSU_coe, ← Matrix.mulVec_mulVec,
+      uTransvection_mulVec w t v, hβ, uTransvection_mulVec v b,
+      dotProduct_add, dotProduct_smul, hviso, ← hβdef, smul_eq_mul, zero_add,
+      show t * star β * β = t * Nβ by rw [hNdef]; ring, hcoef, neg_one_smul]
+    abel
+  · rw [Submonoid.coe_mul, uTransvecSU_coe, uTransvecSU_coe, ← Matrix.mulVec_mulVec,
+      uTransvection_mulVec w t x, hwx, mul_zero, zero_smul, add_zero,
+      uTransvection_mulVec v b x, hvx, mul_zero, zero_smul, add_zero]
+
 /-- **`SU` is transitive on isotropic lines** (`n ≥ 3`, machine-checked, no Witt classification):
 for nonzero isotropic `v, w`, there is `g ∈ SU` with `g·v = c·w` (`c ≠ 0`), i.e. `g·[v] = [w]`.
 Route through a common non-orthogonal isotropic `u` (`exists_common_nonorth_isotropic`, diameter-2

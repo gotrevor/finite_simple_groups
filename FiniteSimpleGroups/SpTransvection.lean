@@ -53,6 +53,14 @@ theorem spForm_self (v : (l ⊕ l) → R) : v ⬝ᵥ ((Matrix.J l R) *ᵥ v) = 0
     dotProduct_comm (v ∘ Sum.inr) (v ∘ Sum.inl)]
   ring
 
+/-- **The symplectic form is skew-symmetric**: `ω(u,w) = -ω(w,u)`, i.e.
+`u ⬝ᵥ (J·w) = -(w ⬝ᵥ (J·u))` (from `Jᵀ = -J`). Needed for the orthogonal-case bridge of
+`Sp`-transitivity on vectors. -/
+theorem spForm_skew (u w : (l ⊕ l) → R) :
+    u ⬝ᵥ (Matrix.J l R *ᵥ w) = - (w ⬝ᵥ (Matrix.J l R *ᵥ u)) := by
+  rw [dotProduct_mulVec, ← mulVec_transpose, J_transpose, neg_mulVec, neg_dotProduct,
+    dotProduct_comm]
+
 /-- **A symplectic transvection lies in the symplectic group** (for every `v` and `c`):
 `M (J) Mᵀ = J`. The symplectic analogue of `det_transvection_of_ne` for `SL`. The two cross
 terms cancel (`J Nᵀ = -(N J)`) and the quadratic term vanishes by the alternating identity

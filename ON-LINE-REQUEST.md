@@ -18,13 +18,15 @@ Mathlib." All four atoms reduce to the same building block: **"in a nondegenerat
 dimension ≥ 2 over `F_{q²}`, every nonzero isotropic vector has a hyperbolic partner"** (and its
 relative/subspace form), i.e. Witt's theorem.
 
-**UPDATE 2026-06-04 (late):** The perp-partner / isotropic-separation atom (`hPP`) was DISCHARGED
-locally without Witt — it's pure linear algebra (rescale a perpendicular non-isotropic vector inside
-`y^⊥`, then an effective trace-correction). So the remaining wall is ONLY the **group-level** content:
-generating `SU` by transvections (`hgen`) and the two stabilizer-transitivities (`hT1` non-perp /
-`hT2` perp). The form-geometry asks below are now moot; **focus on items 1 and 3** (existing
-formalizations to port + a direct finite-field generation proof). Item 2 (point counts) is no longer
-needed.
+**UPDATE 2026-06-04 (latest):** Both form-geometry atoms `hPP` (perp-partner) AND `hT2` (perp
+transitivity) are now DISCHARGED locally without Witt — `hPP` is pure linear algebra (rescale a
+perpendicular vector in `y^⊥`, effective trace-correction); `hT2`'s only-needed (non-perp) case falls
+to a two-transvection move whose centres lie in `x^⊥` and so fix `x`. **PSU(n,p²) simplicity now needs
+only `{hgen, hT1}`** (same as n=3). So the remaining wall is purely: (a) `hgen` — transvections
+generate `SU_n(F_{q²})`, n≥3; (b) `hT1` — `Stab[line x]` transitive on isotropic points non-perp to
+`[x]` (the Eichler/Siegel transformation). **Focus on items 1 and 3 below** (existing Lean
+formalization to port + a direct/finite-field proof of unitary transvection generation and the
+Eichler line-stabilizer transitivity). Items 2 (point counts) and the separation asks are MOOT.
 
 **What I need (any subset helps, in priority order):**
 

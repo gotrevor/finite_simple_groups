@@ -474,9 +474,26 @@ This lap discharged BOTH former core axioms and wired into LieType:
     `def PSp` + `SpLieType.lean`; general `q=p^m` needs `GaloisField p (2m)` + `iterateFrobenius`).
 The whole PSp scaffold (`SpIwasawa`/`SpTransvection`/`SpSmallField`) remains the template to copy.
 
-**◆◆ UPDATE (2026-06-04 latest): `hPP` DISCHARGED — only THREE atoms remain, all pure
-group-action (transitivity/generation). The separation/perp-partner content is FULLY machine-
-checked.** The feared `hPP` (∃ isotropic perp-partner) turned out NOT to be a Witt-extension fact:
+**◆◆◆ UPDATE (2026-06-04 latest+1): `hT2` ALSO DISCHARGED — PSU(n,p²) simplicity now needs only
+`{hgen, hT1}` for ALL n≥3 (the SAME two atoms as n=3).** `PSU_isSimpleGroup_of_generate_of_T1`
+(n≥3, p≥5) is the headline. The key: block-triviality only ever invokes perp-transitivity on a
+NON-perpendicular pair (separator `S` has `⟨y,S⟩≠0`), so `hT2` weakens to the non-perp case, which the
+**Eichler seed `exists_su_fixes_maps_nonorth`** discharges directly — a two-transvection move whose
+centres `y,y' ∈ x^⊥` automatically fix `x` (`τ_{u,a}` fixes `x` iff `⟨u,x⟩=0`). `psu_hT2_nonperp`
+lifts it to points. So BOTH `hT2` and `hPP` are theorems now; the ONLY remaining atoms are:
+  - **`hgen`** — unitary transvections generate `SU` (the Witt generation theorem; Aristotle `ugen`
+    confirmed this is the genuine multi-hundred-line core).
+  - **`hT1`** — `Stab[line x]` transitive on isotropic points NON-perp to `[x]`. This is the genuine
+    remaining geometry: the source `y` is non-perp to `x` so its transvection centre is NOT in `x^⊥`;
+    the move must use centres in `x^⊥` (or `x` itself, which fixes the LINE since `⟨x,x⟩=0`) — the
+    full Eichler/Siegel computation. AT ARISTOTLE (`19b0b4a0`, IN_PROGRESS). The `exists_su_fixes_*`
+    seed + the `uScale`/`uTransvection`-centred-at-`x` moves are the local building blocks if t1
+    returns Witt-blocked.
+NOTE on hT1: `g•x=x` is at the LINE level (projective), so `g` may SCALE `x` (`g·x.rep ∝ x.rep`) —
+transvections centred at `x` itself qualify (`τ_{x,a}·x = x`, and `τ_{x,a}·y = y + a⟨x,y⟩·x` moves `y`
+within `span{x,y}`). Combine with `x^⊥`-centred transvections for the full stabilizer action.
+
+**◆◆ (prior) `hPP` DISCHARGED — the separation/perp-partner content is FULLY machine-checked.** The feared `hPP` (∃ isotropic perp-partner) turned out NOT to be a Witt-extension fact:
 `exists_isotropic_perp_partner` (axiom-clean) builds `v = w₁ + t·x` where `w₁ = ⟨x,u⟩⁻¹·u`
 (`u ⊥ y`, `⟨x,u⟩≠0` from `exists_perp_nonperp` — pure linear algebra, NO isotropy), and
 `t + star t = -⟨w₁,w₁⟩` (Lemma T `exists_add_star_eq_neg_dotProduct_self`, trace surjectivity). The

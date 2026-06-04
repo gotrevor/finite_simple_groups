@@ -112,6 +112,91 @@ theorem exists_sp_transvecGen_maps {u w : (l ⊕ l) → F} (hu : u ≠ 0) (hw : 
       rw [spTransvecSp_coe]; exact spTransvection_maps_of_form_ne hz2
     rw [Submonoid.coe_mul, ← mulVec_mulVec, e1, e2]
 
+/-- **One transvection step fixing `e`**: if `ω(a,b) ≠ 0` and `ω(e, b-a) = 0`, the single
+transvection `τ_{b-a, ω(a,b)⁻¹}` lies in `⨆_v spTransvecGroup v`, **fixes `e`** (its centre
+`b-a ∈ e⊥`) and **maps `a → b`**. The reusable atom of the relative-transitivity argument. -/
+theorem sp_transvecFixing_step {e a b : (l ⊕ l) → F}
+    (hne : a ⬝ᵥ (Matrix.J l F *ᵥ b) ≠ 0) (horth : e ⬝ᵥ (Matrix.J l F *ᵥ (b - a)) = 0) :
+    ∃ t : symplecticGroup l F,
+      t ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) ∧
+        (t : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e ∧
+        (t : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ a = b := by
+  refine ⟨spTransvecSp (b - a) (a ⬝ᵥ (Matrix.J l F *ᵥ b))⁻¹,
+    le_iSup spTransvecGroup (b - a) (mem_spTransvecGroup.mpr ⟨_, rfl⟩), ?_, ?_⟩
+  · rw [spTransvecSp_coe]; exact spTransvection_apply_of_orth _ horth
+  · rw [spTransvecSp_coe]; exact spTransvection_maps_of_form_ne hne
+
+/-- **Transvections fixing `e` act transitively on the hyperbolic mates of `e`** — the
+relative-transitivity / stabilizer step of symplectic generation. Given `ω(e,f) = ω(e,f') = 1`
+there is a product of (at most two) transvections, each **fixing `e`**, mapping `f → f'`.
+
+Two cases, **no field-size hypothesis** (the classical small-field obstruction is dodged by
+an explicit intermediate): if `ω(f,f') ≠ 0`, the single transvection `τ_{f'-f,·}` works; if
+`ω(f,f') = 0`, route through `f'' = f' + e`, for which `ω(f,f'') = -1` and `ω(f'',f') = 1`
+are automatically non-zero, composing two `e`-fixing transvections `f → f'' → f'`. With
+`exists_sp_transvecGen_maps` (transitivity on vectors) this gives transitivity on hyperbolic
+pairs — the inductive engine of `sp_transvec_closure_eq_top`. -/
+theorem exists_sp_transvecFixing_maps_mate {e f f' : (l ⊕ l) → F}
+    (hef : e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1) (hef' : e ⬝ᵥ (Matrix.J l F *ᵥ f') = 1) :
+    ∃ g : symplecticGroup l F,
+      g ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) ∧
+        (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e ∧
+        (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f' := by
+  by_cases hff' : f ⬝ᵥ (Matrix.J l F *ᵥ f') = 0
+  · -- degenerate case: route through `f'' = f' + e`
+    set f'' := f' + e with hf''
+    have hfe : f ⬝ᵥ (Matrix.J l F *ᵥ e) = -1 := by rw [spForm_skew, hef]
+    have h1 : f ⬝ᵥ (Matrix.J l F *ᵥ f'') ≠ 0 := by
+      rw [hf'', mulVec_add, dotProduct_add, hff', hfe, zero_add]; norm_num
+    have h2 : f'' ⬝ᵥ (Matrix.J l F *ᵥ f') ≠ 0 := by
+      rw [hf'', add_dotProduct, spForm_self f', hef', zero_add]; norm_num
+    have h3 : e ⬝ᵥ (Matrix.J l F *ᵥ (f'' - f)) = 0 := by
+      rw [mulVec_sub, dotProduct_sub, hf'', mulVec_add, dotProduct_add, hef', spForm_self e, hef]
+      ring
+    have h4 : e ⬝ᵥ (Matrix.J l F *ᵥ (f' - f'')) = 0 := by
+      rw [mulVec_sub, dotProduct_sub, hf'', mulVec_add, dotProduct_add, hef', spForm_self e]
+      ring
+    obtain ⟨t1, ht1, ht1e, ht1f⟩ := sp_transvecFixing_step h1 h3
+    obtain ⟨t2, ht2, ht2e, ht2f⟩ := sp_transvecFixing_step h2 h4
+    refine ⟨t2 * t1, mul_mem ht2 ht1, ?_, ?_⟩
+    · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1e, ht2e]
+    · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1f, ht2f]
+  · -- direct case: a single transvection `τ_{f'-f,·}`
+    obtain ⟨t, ht, hte, htf⟩ := sp_transvecFixing_step hff'
+      (by rw [mulVec_sub, dotProduct_sub, hef', hef, sub_self])
+    exact ⟨t, ht, hte, htf⟩
+
+/-- **`Sp(2n,F)` is transitive on hyperbolic pairs, via transvections** — the inductive
+engine of symplectic generation. Given two hyperbolic pairs `(e,f)` and `(e',f')`
+(`ω(e,f) = ω(e',f') = 1`) there is an element of `⨆_v spTransvecGroup v` mapping
+`e → e'` and `f → f'` simultaneously.
+
+Two moves: first map `e → e'` by `exists_sp_transvecGen_maps` (transitivity on vectors,
+`e, e' ≠ 0` since `ω(·) = 1`); this carries `f` to some `t₁·f` with `ω(e', t₁·f) = ω(e,f) = 1`
+(`sp_preserves_form`), a hyperbolic mate of `e'`. Then fix `e'` and map `t₁·f → f'` by
+`exists_sp_transvecFixing_maps_mate`. The composite is the required transvection product.
+
+The remaining gap to `sp_transvec_closure_eq_top` is the **dimension induction**: an element
+`g ∈ Sp` agreeing with a transvection product on a hyperbolic plane `⟨e,f⟩` restricts to `Sp`
+on the orthogonal complement `⟨e,f⟩⊥` (a symplectic space of dimension `2n-2`), where
+transvections generate by induction and extend back. That step needs an
+orthogonal-complement / restriction-of-form development not yet in scope. -/
+theorem exists_sp_transvecGen_maps_pair {e f e' f' : (l ⊕ l) → F}
+    (hef : e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1) (he'f' : e' ⬝ᵥ (Matrix.J l F *ᵥ f') = 1) :
+    ∃ g : symplecticGroup l F,
+      g ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) ∧
+        (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e' ∧
+        (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f' := by
+  have he0 : e ≠ 0 := by rintro rfl; rw [zero_dotProduct] at hef; exact zero_ne_one hef
+  have he'0 : e' ≠ 0 := by rintro rfl; rw [zero_dotProduct] at he'f'; exact zero_ne_one he'f'
+  obtain ⟨t1, ht1, ht1e⟩ := exists_sp_transvecGen_maps he0 he'0
+  have hmate : e' ⬝ᵥ (Matrix.J l F *ᵥ ((t1 : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f)) = 1 := by
+    rw [← ht1e, sp_preserves_form t1.2 e f, hef]
+  obtain ⟨t2, ht2, ht2e, ht2f⟩ := exists_sp_transvecFixing_maps_mate hmate he'f'
+  refine ⟨t2 * t1, mul_mem ht2 ht1, ?_, ?_⟩
+  · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1e, ht2e]
+  · rw [Submonoid.coe_mul, ← mulVec_mulVec]; exact ht2f
+
 /-- **DISCLOSED AXIOM (generation).** The symplectic transvections generate `Sp(2n,F)`:
 `⨆_v {τ_{v,c} : c} = ⊤`. The symplectic analogue of `SLn.transvecSL_closure_eq_top` (which
 Aristotle discharged for `SL`); mathlib has no symplectic Witt/Eichler infrastructure, so this

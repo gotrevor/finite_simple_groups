@@ -61,6 +61,17 @@ theorem spForm_skew (u w : (l ⊕ l) → R) :
   rw [dotProduct_mulVec, ← mulVec_transpose, J_transpose, neg_mulVec, neg_dotProduct,
     dotProduct_comm]
 
+/-- **The symplectic group preserves the form**: for `g ∈ Sp` and all `u, w`,
+`ω(g·u, g·w) = ω(u,w)`, i.e. `(g·u) ⬝ᵥ (J·(g·w)) = u ⬝ᵥ (J·w)`. The bilinear-form version
+of the defining relation `gᵀ J g = J` (`mem_iff'`), via the adjoint identity
+`(g·x) ᵥ* B = x ᵥ* (gᵀ·B)`. Used to keep a hyperbolic pair hyperbolic under transvections. -/
+theorem sp_preserves_form {g : Matrix (l ⊕ l) (l ⊕ l) R} (hg : g ∈ symplecticGroup l R)
+    (u w : (l ⊕ l) → R) :
+    (g *ᵥ u) ⬝ᵥ (Matrix.J l R *ᵥ (g *ᵥ w)) = u ⬝ᵥ (Matrix.J l R *ᵥ w) := by
+  have key : gᵀ * (Matrix.J l R * g) = Matrix.J l R := by
+    rw [← Matrix.mul_assoc]; exact SymplecticGroup.mem_iff'.mp hg
+  rw [mulVec_mulVec, dotProduct_mulVec, vecMul_mulVec, key, ← dotProduct_mulVec]
+
 /-- **A symplectic transvection lies in the symplectic group** (for every `v` and `c`):
 `M (J) Mᵀ = J`. The symplectic analogue of `det_transvection_of_ne` for `SL`. The two cross
 terms cancel (`J Nᵀ = -(N J)`) and the quadratic term vanishes by the alternating identity
@@ -105,6 +116,18 @@ theorem spTransvection_mulVec (v : (l ⊕ l) → R) (c : R) (w : (l ⊕ l) → R
     spTransvection v c *ᵥ w = w + (c * (w ⬝ᵥ (Matrix.J l R *ᵥ v))) • v := by
   rw [spTransvection, Matrix.add_mulVec, Matrix.one_mulVec, Matrix.smul_mulVec,
     Matrix.vecMulVec_mulVec, op_smul_eq_smul, smul_smul, dotProduct_comm]
+
+/-- **A transvection fixes its own centre**: `τ_{v,c}(v) = v` (since `ω(v,v) = 0`). -/
+theorem spTransvection_apply_self (v : (l ⊕ l) → R) (c : R) :
+    spTransvection v c *ᵥ v = v := by
+  rw [spTransvection_mulVec, spForm_self, mul_zero, zero_smul, add_zero]
+
+/-- **A transvection fixes everything orthogonal to its centre**: if `ω(e,v) = 0` then
+`τ_{v,c}(e) = e`. The transvections centred on `v ∈ e⊥` form the subgroup fixing `e`, the
+key to the stabilizer/hyperbolic-pair step of symplectic generation. -/
+theorem spTransvection_apply_of_orth {e v : (l ⊕ l) → R} (c : R)
+    (h : e ⬝ᵥ (Matrix.J l R *ᵥ v) = 0) : spTransvection v c *ᵥ e = e := by
+  rw [spTransvection_mulVec, h, mul_zero, zero_smul, add_zero]
 
 /-- The symplectic transvection packaged as an element of `symplecticGroup l R`. -/
 noncomputable def spTransvecSp (v : (l ⊕ l) → R) (c : R) : symplecticGroup l R :=

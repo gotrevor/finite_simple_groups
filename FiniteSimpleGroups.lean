@@ -14,6 +14,7 @@ import FiniteSimpleGroups.ClassifiedSmallOrders
 import FiniteSimpleGroups.Adjacent.PrimeMul
 import FiniteSimpleGroups.FittingSubgroup
 import FiniteSimpleGroups.PSLIwasawa
+import FiniteSimpleGroups.SLnAction
 import FiniteSimpleGroups.SL2
 import FiniteSimpleGroups.SLnPerfect
 import FiniteSimpleGroups.Wielandt

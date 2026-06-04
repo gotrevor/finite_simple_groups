@@ -2,6 +2,7 @@ import Mathlib
 import FiniteSimpleGroups.LieType
 import FiniteSimpleGroups.PSLIwasawa
 import FiniteSimpleGroups.SL2Card
+import FiniteSimpleGroups.SLnAction
 
 /-!
 # `PSL(2,q)` is simple for prime `q ≥ 4` — all Iwasawa obligations, machine-checked
@@ -67,6 +68,7 @@ namespace FiniteSimpleGroups
 namespace SL2
 
 open Matrix
+open SLn
 open scoped commutatorElement
 open scoped Pointwise
 
@@ -349,29 +351,10 @@ an action on `ℙ¹(F) = Projectivization F (Fin 2 → F)`. The descent to
 `PSL = SL/center` (the center `{±1}` fixes every line — `center_SL2`) is the next
 step; see `PENDING_WORK §D`. -/
 
-/-- `SL(2,F)` acts on the vector space `Fin 2 → F` by matrix-vector product. -/
-instance : SMul (SpecialLinearGroup (Fin 2) F) (Fin 2 → F) where
-  smul g v := g.val.mulVec v
-
-@[simp] theorem smul_vec_def (g : SpecialLinearGroup (Fin 2) F) (v : Fin 2 → F) :
-    g • v = g.val.mulVec v := rfl
-
-instance : MulAction (SpecialLinearGroup (Fin 2) F) (Fin 2 → F) where
-  one_smul v := by show (1 : SpecialLinearGroup (Fin 2) F).val.mulVec v = v; simp
-  mul_smul g h v := by
-    change (g.val * h.val).mulVec v = g.val.mulVec (h.val.mulVec v)
-    rw [← Matrix.mulVec_mulVec]
-
-instance : DistribMulAction (SpecialLinearGroup (Fin 2) F) (Fin 2 → F) where
-  smul_zero g := by show g.val.mulVec 0 = 0; simp
-  smul_add g v w := by
-    show g.val.mulVec (v + w) = g.val.mulVec v + g.val.mulVec w
-    simp [Matrix.mulVec_add]
-
-instance : SMulCommClass (SpecialLinearGroup (Fin 2) F) F (Fin 2 → F) where
-  smul_comm g c v := by
-    show g.val.mulVec (c • v) = c • g.val.mulVec v
-    simp [Matrix.mulVec_smul]
+-- The linear `mulVec` action instances of `SL(n,F)` on `n → F` (and the simp
+-- lemma `smul_vec_def`, here in scope via `open SLn`) now live once, for general
+-- `n`, in `FiniteSimpleGroups.SLnAction`; `Fin 2`-specialised copies here would
+-- create instance diamonds at `n = Fin 2`.
 
 /-- **`SL(2,F)` acts on the projective line `ℙ¹(F)`** (via the mathlib
 projective-space action instance, fed by the linear `mulVec` action above). The

@@ -93,6 +93,10 @@ theorem spTransvection_det (v : (l ⊕ l) → R) (c : R) : (spTransvection v c).
 noncomputable def spTransvecSp (v : (l ⊕ l) → R) (c : R) : symplecticGroup l R :=
   ⟨spTransvection v c, spTransvection_mem v c⟩
 
+/-- `τ_{v,0} = 1` — the unit of the one-parameter subgroup at `v`. -/
+@[simp] theorem spTransvection_zero (v : (l ⊕ l) → R) : spTransvection v 0 = 1 := by
+  simp [spTransvection]
+
 /-- **The transvections at a fixed `v` form an abelian one-parameter subgroup** isomorphic
 to `(R, +)`: `τ_{v,c₁} · τ_{v,c₂} = τ_{v, c₁+c₂}`. The nilpotency `(v ⊗ J·v)² = 0` follows
 from the alternating identity `spForm_self`. This is the abelian "root subgroup" feeding the

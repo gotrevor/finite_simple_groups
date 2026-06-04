@@ -300,4 +300,73 @@ theorem exists_isotropic_uRootSubgroup_ne_bot (p : ℕ) [Fact p.Prime] (n : ℕ)
   obtain ⟨v, hv, hiso⟩ := UnitaryField.exists_isotropic p n hn
   exact ⟨v, hiso, hv, uRootSubgroup_ne_bot hv hiso (UnitaryField.exists_traceZero_ne_zero p)⟩
 
+/-! ### The unitary scaling element on a hyperbolic pair
+
+For the perfectness half of `PSU`-simplicity we need, for every isotropic `v`, an element of `SU`
+that scales `v` by a scalar `λ` with `N(λ) ≠ 1` (then the commutator collapse
+`uTransvection_commutator` turns every transvection into a commutator). Unlike `PSL`/`PSp`, the
+unitary group preserves the form-type of a vector, so we cannot scale a standard basis vector and
+conjugate; instead we build the scaling directly on the hyperbolic pair `(v, w)` supplied by
+`exists_hyperbolic_partner`. This is the unitary analogue of the symplectic `spDiag`. -/
+
+section Scaling
+
+variable {N : Type*} [DecidableEq N] [Fintype N] {F : Type*} [Field F] [StarRing F]
+
+/-- **Unitary scaling element on a hyperbolic pair `(v,w)`** (`⟨v,w⟩ = 1`, both isotropic): the
+rank-2 update `1 + (λ-1)·(v ⊗ star w) + ((star λ)⁻¹-1)·(w ⊗ star v)` of the identity. It acts as
+`v ↦ λ·v`, `w ↦ (star λ)⁻¹·w`, identity on `⟨v,w⟩^⊥`. -/
+noncomputable def uScale (v w : N → F) (lam : F) : Matrix N N F :=
+  1 + (lam - 1) • Matrix.vecMulVec v (star w) + ((star lam)⁻¹ - 1) • Matrix.vecMulVec w (star v)
+
+/-- **The geometric action of the scaling element**:
+`uScale v w λ (x) = x + (λ-1)·⟨w,x⟩·v + ((star λ)⁻¹-1)·⟨v,x⟩·w`. -/
+theorem uScale_mulVec (v w : N → F) (lam : F) (x : N → F) :
+    uScale v w lam *ᵥ x = x + ((lam - 1) * (star w ⬝ᵥ x)) • v
+      + (((star lam)⁻¹ - 1) * (star v ⬝ᵥ x)) • w := by
+  rw [uScale, Matrix.add_mulVec, Matrix.add_mulVec, Matrix.one_mulVec, Matrix.smul_mulVec,
+    Matrix.smul_mulVec, Matrix.vecMulVec_mulVec, Matrix.vecMulVec_mulVec, op_smul_eq_smul,
+    op_smul_eq_smul, smul_smul, smul_smul]
+
+/-- `uScale v w λ` scales `v` by `λ` (given the hyperbolic-pair relation `⟨w,v⟩ = 1` and `v`
+isotropic). -/
+theorem uScale_mulVec_self (v w : N → F) (lam : F) (hwv : star w ⬝ᵥ v = 1)
+    (hviso : star v ⬝ᵥ v = 0) : uScale v w lam *ᵥ v = lam • v := by
+  rw [uScale_mulVec, hwv, hviso, mul_one, mul_zero, zero_smul, add_zero,
+    show (lam - 1) • v = lam • v - v by rw [sub_smul, one_smul], add_sub_cancel]
+
+/-- `uScale v w λ` scales `w` by `(star λ)⁻¹` (given `⟨v,w⟩ = 1` and `w` isotropic). -/
+theorem uScale_mulVec_partner (v w : N → F) (lam : F) (hvw : star v ⬝ᵥ w = 1)
+    (hwiso : star w ⬝ᵥ w = 0) : uScale v w lam *ᵥ w = (star lam)⁻¹ • w := by
+  rw [uScale_mulVec, hvw, hwiso, mul_one, mul_zero, zero_smul, add_zero,
+    show ((star lam)⁻¹ - 1) • w = (star lam)⁻¹ • w - w by rw [sub_smul, one_smul], add_sub_cancel]
+
+/-- **The scaling element is unitary** (`λ ≠ 0`, hyperbolic pair `(v,w)`). The rank-one factors
+satisfy `A² = A`, `B² = B`, `AB = BA = 0` (where `A = v ⊗ star w`, `B = w ⊗ star v`), so
+`uScale * star (uScale)` collapses to `1` with the two cross-coefficients vanishing identically. -/
+theorem uScale_mem (v w : N → F) (lam : F) (hlam : lam ≠ 0)
+    (hvw : star v ⬝ᵥ w = 1) (hwv : star w ⬝ᵥ v = 1)
+    (hviso : star v ⬝ᵥ v = 0) (hwiso : star w ⬝ᵥ w = 0) :
+    uScale v w lam ∈ Matrix.unitaryGroup N F := by
+  have hAA : Matrix.vecMulVec v (star w) * Matrix.vecMulVec v (star w)
+      = Matrix.vecMulVec v (star w) := by rw [vecMulVec_mul_vecMulVec, hwv, one_smul]
+  have hBB : Matrix.vecMulVec w (star v) * Matrix.vecMulVec w (star v)
+      = Matrix.vecMulVec w (star v) := by rw [vecMulVec_mul_vecMulVec, hvw, one_smul]
+  have hAB : Matrix.vecMulVec v (star w) * Matrix.vecMulVec w (star v) = 0 := by
+    rw [vecMulVec_mul_vecMulVec, hwiso, zero_smul, vecMulVec_zero]
+  have hBA : Matrix.vecMulVec w (star v) * Matrix.vecMulVec v (star w) = 0 := by
+    rw [vecMulVec_mul_vecMulVec, hviso, zero_smul, vecMulVec_zero]
+  have hstar : star (uScale v w lam) = 1 + (star lam - 1) • Matrix.vecMulVec w (star v)
+      + (lam⁻¹ - 1) • Matrix.vecMulVec v (star w) := by
+    rw [uScale]
+    simp only [star_add, star_one, star_eq_conjTranspose, conjTranspose_smul,
+      conjTranspose_vecMulVec, star_star, star_sub, star_inv₀]
+  have hlam' : star lam ≠ 0 := star_ne_zero.mpr hlam
+  rw [Matrix.mem_unitaryGroup_iff, hstar, uScale]
+  simp only [add_mul, mul_add, one_mul, mul_one, smul_mul_assoc, mul_smul_comm,
+    hAA, hBB, hAB, hBA, smul_zero, add_zero]
+  match_scalars <;> field_simp <;> ring
+
+end Scaling
+
 end FiniteSimpleGroups.PSU

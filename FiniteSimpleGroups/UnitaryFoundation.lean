@@ -118,6 +118,35 @@ theorem exists_isotropic (n : ℕ) (hn : 2 ≤ n) :
     rw [mul_comm (star c) c, hc]
     ring
 
+/-- **The trace-zero (skew-Hermitian) scalars are nontrivial**: there is a nonzero `a` with
+`a + star a = 0`. The Frobenius `star` is nontrivial (`orderOf = finrank = 2 ≠ 1`), so some `b`
+has `star b ≠ b`; then `a = b − star b ≠ 0` is trace-zero (`star a = star b − b = −a`). This makes
+the unitary root subgroup `uRootSubgroup` nontrivial — the nondegeneracy input to the `PSU`
+Iwasawa structure (step 3). -/
+theorem exists_traceZero_ne_zero : ∃ a : UnitaryField p, a ≠ 0 ∧ a + star a = 0 := by
+  have hfin : Module.finrank (ZMod p) (UnitaryField p) = 2 :=
+    GaloisField.finrank p (by norm_num)
+  have horder : orderOf (FiniteField.frobeniusAlgHom (ZMod p) (UnitaryField p)) = 2 := by
+    rw [FiniteField.orderOf_frobeniusAlgHom, hfin]
+  have hfrob : ∀ b : UnitaryField p,
+      FiniteField.frobeniusAlgHom (ZMod p) (UnitaryField p) b = star b := by
+    intro b
+    show b ^ (Fintype.card (ZMod p)) = star b
+    rw [ZMod.card, star_pow]
+  have hne1 : FiniteField.frobeniusAlgHom (ZMod p) (UnitaryField p) ≠ 1 := by
+    intro h
+    rw [h, orderOf_one] at horder
+    exact absurd horder (by norm_num)
+  obtain ⟨b, hb⟩ : ∃ b : UnitaryField p, star b ≠ b := by
+    by_contra hcon
+    simp only [not_exists, ne_eq, not_not] at hcon
+    exact hne1 (AlgHom.ext fun x => by rw [AlgHom.one_apply, hfrob, hcon])
+  refine ⟨b - star b, ?_, ?_⟩
+  · intro h
+    rw [sub_eq_zero] at h
+    exact hb h.symm
+  · rw [star_sub, star_star]; ring
+
 end UnitaryField
 
 /-- **The concrete special unitary group `SU_n(F_p)`** — now well-formed because `UnitaryField p`

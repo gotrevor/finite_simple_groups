@@ -339,12 +339,23 @@ theorem exists_hyperbolic_partner (_hn : 3 ≤ n) :
     linear_combination ht
   · rw [dotProduct_add, dotProduct_smul, hzw1, hziso, smul_eq_mul, mul_zero, add_zero]
 
-/-- **GEOMETRY AXIOM — diameter-2 connectivity.** Any two nonzero isotropic vectors `z₁, z₂` in
-`(F_{p²})ⁿ`, `n ≥ 3`, have a common non-orthogonal isotropic `u` (`⟨z₁,u⟩ ≠ 0`, `⟨z₂,u⟩ ≠ 0`).
-This fails in `n = 2` (a hyperbolic plane has only two isotropic points, mutually the only
-non-orthogonal ones), matching the exclusion of `PSU(2)`. TODO(discharge): the isotropic points
-non-orthogonal to a fixed `zᵢ` are a Zariski-dense / large subset of the Hermitian variety, and
-two such intersect for `n ≥ 3`. -/
+/-- **GEOMETRY AXIOM — diameter-2 connectivity** (the ONE remaining PSU-faithfulness axiom).
+Any two nonzero isotropic vectors `z₁, z₂` in `(F_{p²})ⁿ`, `n ≥ 3`, have a common non-orthogonal
+isotropic `u` (`⟨z₁,u⟩ ≠ 0`, `⟨z₂,u⟩ ≠ 0`). Fails in `n = 2` (a hyperbolic plane has only two
+isotropic points, mutually the only non-orthogonal ones), matching the exclusion of `PSU(2)`.
+
+TODO(discharge) — the case analysis is worked out; take `w₁ = ` a hyperbolic partner of `z₁`
+(`exists_hyperbolic_partner`, `⟨z₁,w₁⟩ = 1`, `w₁` isotropic):
+* **Case `⟨z₂,w₁⟩ ≠ 0`:** `u = w₁` works directly (`⟨z₁,w₁⟩ = 1 ≠ 0`).
+* **Case `⟨z₂,w₁⟩ = 0`, `⟨z₂,z₁⟩ ≠ 0`:** `u = w₁ + c·z₁` for a trace-zero `c ≠ 0`
+  (`exists_traceZero_ne_zero`): isotropic (`⟨u,u⟩ = c + star c = 0`), `⟨z₁,u⟩ = 1`,
+  `⟨z₂,u⟩ = c·⟨z₂,z₁⟩ ≠ 0`. (Cases 1–2 are elementary, ~40 lines, machine-checkable now.)
+* **Case `z₂ ⊥ z₁` and `z₂ ⊥ w₁`:** `z₂ ∈ H^⊥` where `H = ⟨z₁,w₁⟩` is a hyperbolic plane. For
+  `n = 3`, `H^⊥` is 1-dim nondegenerate, hence anisotropic — so this case is **vacuous**. For
+  `n ≥ 4`, take a hyperbolic partner `w₂` of `z₂` **inside `H^⊥`** (exists since `dim H^⊥ ≥ 2`);
+  then `u = w₁ + w₂` is isotropic (`w₁ ⊥ w₂`, both isotropic), `⟨z₁,u⟩ = 1`, `⟨z₂,u⟩ = 1`.
+  This case needs the orthogonal-complement / partner-within-subspace machinery (a small
+  geometry development) — the genuine remaining work. -/
 axiom exists_common_nonorth_isotropic (hn : 3 ≤ n) :
     ∀ z₁ z₂ : Fin n → UnitaryField p, z₁ ≠ 0 → z₂ ≠ 0 →
       star z₁ ⬝ᵥ z₁ = 0 → star z₂ ⬝ᵥ z₂ = 0 →

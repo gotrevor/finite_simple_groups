@@ -366,11 +366,28 @@ This lap discharged BOTH former core axioms and wired into LieType:
   - `exists_traceZero_ne_zero : ∃ a≠0, a+star a=0` (Frobenius nontrivial via
     `orderOf_frobeniusAlgHom=finrank=2`) — `uRootSubgroup` NONTRIVIALITY.
 
-**REMAINING (the genuine multi-lap cores):**
-- **Step 2 proper — the action + primitivity.** Define the SU-action on isotropic ℙ-points
-  (lift `u_isotropic_of_mem`); faithfulness mod center; **quasi-preprimitivity** (the deep
-  geometric core, mirrors SpIwasawa's `psp_isTrivialBlock_of_isBlock` — point-stabilizer
-  maximal/parabolic). Mathlib has `IsPreprimitive.isQuasiPreprimitive`.
+- ✅ **Step 2 FAITHFULNESS (kernel = center) — DONE up to ONE geometry axiom** (2026-06-04 PM,
+  `UnitarySimple.lean`). The crux `g∈SU fixing every isotropic line ⟹ scalar` is machine-checked:
+  - `su_fixes_isotropic_imp_scalar` (AXIOM-CLEAN): proved from geometry facts as hypotheses, via
+    the form-relation engine `lambda_form_relation` + the **hyperbolic-pair collapse**
+    `lambda_eq_norm_one_of_hyperbolic` (trace-zero sum trick: `v+s·w` isotropic ⟹ `λ_v=λ_w` AND
+    `N(λ_v)=1`) + `lambda_eq_of_nonorth`, propagating one scalar `μ` through connectivity and
+    across the spanning set.
+  - `su_central_fixes_isotropic_line` (center⊆fixes, via `uTransvecSU_conj`),
+    `su_center_le_scalar` / `su_scalar_mem_center` / `su_mem_center_iff_scalar` (center = scalars,
+    `n≥3`), `su_fixes_isotropic_imp_central` (ker⊆center half), `PSU_nontrivial` (Iwasawa
+    `Nontrivial` obligation), and the SU-action on `n→F` / `ℙ(Fⁿ)`.
+  - Geometry facts: `isotropic_span` and `exists_hyperbolic_partner` **DISCHARGED** this lap
+    (axiom-clean; new `UnitaryFoundation` lemmas: `exists_star_ne_self`, `exists_two_norm_neg_one`,
+    `algebraMap_trace_eq_add_star`, `exists_add_star_eq_neg_norm`). **ONE axiom remains**:
+    `exists_common_nonorth_isotropic` (diameter-2 connectivity; full case-analysis in its
+    docstring — cases 1–2 elementary ~40 lines, case 3 needs `H^⊥` partner-within-subspace,
+    vacuous for `n=3`). `su_center_le_scalar` `#print axioms` = `[…, exists_common_nonorth_isotropic]`.
+- **Step 2 REMAINING — the action on isotropic points + primitivity.** Define the SU-action on the
+  ISOTROPIC ℙ-points subtype (not full ℙ — PSU isn't transitive on full ℙ); wire
+  `su_fixes_isotropic_imp_central` + `su_central_fixes_isotropic_line` into `FaithfulSMul` (mirror
+  `SpN.pspFaithful`/`pspPermHom`). Then **quasi-preprimitivity** (the deep geometric core, mirrors
+  SpIwasawa's `psp_isTrivialBlock_of_isBlock`). Mathlib has `IsPreprimitive.isQuasiPreprimitive`.
 - **Step 3a — generation.** Unitary transvections generate `SU` (the unitary Eichler/Witt
   theorem). DEEP core, mirrors `sp_stab_hyperbolic_le` / the ambient-induction generation proof.
 - **Step 3b — perfectness assembly.** Engine done (`uTransvection_commutator`). NEED: a scaling

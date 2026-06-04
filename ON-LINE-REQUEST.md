@@ -18,15 +18,25 @@ Mathlib." All four atoms reduce to the same building block: **"in a nondegenerat
 dimension ≥ 2 over `F_{q²}`, every nonzero isotropic vector has a hyperbolic partner"** (and its
 relative/subspace form), i.e. Witt's theorem.
 
-**UPDATE 2026-06-04 (latest):** Both form-geometry atoms `hPP` (perp-partner) AND `hT2` (perp
-transitivity) are now DISCHARGED locally without Witt — `hPP` is pure linear algebra (rescale a
-perpendicular vector in `y^⊥`, effective trace-correction); `hT2`'s only-needed (non-perp) case falls
-to a two-transvection move whose centres lie in `x^⊥` and so fix `x`. **PSU(n,p²) simplicity now needs
-only `{hgen, hT1}`** (same as n=3). So the remaining wall is purely: (a) `hgen` — transvections
-generate `SU_n(F_{q²})`, n≥3; (b) `hT1` — `Stab[line x]` transitive on isotropic points non-perp to
-`[x]` (the Eichler/Siegel transformation). **Focus on items 1 and 3 below** (existing Lean
-formalization to port + a direct/finite-field proof of unitary transvection generation and the
-Eichler line-stabilizer transitivity). Items 2 (point counts) and the separation asks are MOOT.
+**UPDATE 2026-06-04 (latest):** `hPP`, `hT2`, AND now **`hT1`** are ALL DISCHARGED locally without
+Witt. `hT1` fell to an **explicit Eichler/Siegel transformation matrix** `E = 1 + h⊗x̄ − x⊗h̄ − μ·x⊗x̄`
+(`uEichler`, `UnitaryTransvection.lean`): a rank-≤2 update, `star E·E=1` by direct expansion, `det E=1`
+by Weinstein–Aronszajn, and the correction transvection's scalar is automatically trace-zero because
+the points are isotropic. **PSU(n,p²) simplicity (n≥3, p≥5) now needs the SINGLE atom `hgen`**
+(`PSU_isSimpleGroup_modulo_generation`, axiom-clean). The remaining wall is purely **`hgen`** —
+unitary transvections generate `SU_n(F_{q²})`, n≥3. **Only item 3 below is live** (a direct /
+finite-field proof of unitary transvection generation, or an existing Lean formalization to port).
+Items 1 (general Witt/orthogonal-complement search — still useful for the dimension induction in
+`hgen`), 2 (point counts), and all Eichler/separation asks are MOOT or subsumed.
+
+**The `hgen` ask, sharpened:** the standard proof is the Dieudonné/Eichler **dimension induction**:
+a `g∈SU` fixing a hyperbolic pair `(e,f)` pointwise restricts to `SU` on the orthogonal complement
+`⟨e,f⟩^⊥` (a nondegenerate Hermitian space of dim n−2), where transvections generate by induction
+and lift back (centred in `⟨e,f⟩^⊥`, so they fix `e,f`). The SAME gap blocks the symplectic
+`sp_stab_hyperbolic_le`. **What would unblock fastest:** (i) any mathlib/Lean machinery for the
+orthogonal complement of a hyperbolic plane under a NONdegenerate sesquilinear form and its
+`finrank = n−2` (so I can set up the induction); (ii) a clean textbook statement of the
+reduction-to-pair-stabilizer step (Grove §6, Taylor Ch. 8/11) I can port move-by-move.
 
 **What I need (any subset helps, in priority order):**
 

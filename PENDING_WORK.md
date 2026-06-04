@@ -343,6 +343,18 @@ This lap discharged BOTH former core axioms and wired into LieType:
 `axiom PSU_isSimpleGroup (n q)(3≤n)` is vacuous-ish. Discharging it is genuinely multi-lap.
 **Steps 0, 1, and the step-2 number-theory prereqs are DONE (2026-06-04 PM).**
 
+**★★ UPDATE 2026-06-04 (Eichler lap):** `hT1` is **DISCHARGED** — `PSU_n(F_{p²})` simplicity
+(n≥3, p≥5) now follows from the **single** atom `hgen` (Witt generation). The capstone is
+**`PSU_isSimpleGroup_modulo_generation`** (`UnitarySimple.lean §Iwasawa`, axiom-clean). The
+Eichler/Siegel transformation `uEichler x h μ := 1 + h⊗x̄ − x⊗h̄ − μ·x⊗x̄` is an explicit rank-≤2
+matrix update (`UnitaryTransvection.lean`): `uEichler_mem_unitary` (`star E·E=1`), `uEichler_det`
+(=1 via Weinstein–Aronszajn), `uEichler_apply_self` (fixes isotropic `x`). The geometric assembly
+`exists_su_fixes_maps_isotropic_mate` builds `g = τ_{x,c}·E` mapping mate `y↦y'` while fixing `x`;
+the correction `c = ⟨h,y⟩+μ` is **automatically trace-zero** (because `y,y'` isotropic), so
+`τ_{x,c}∈SU`. `psu_hT1` lifts to the IsoPoint level. **NO Witt's-extension-theorem needed** — the
+"requires Witt" diagnosis from the `ugen`/`t1` Aristotle runs was wrong for hT1. The t1 Aristotle
+job (`19b0b4a0`) is now MOOT. **Only `hgen` remains (Step 3a below).**
+
 - ✅ **Step 0 (foundation)** — `UnitaryFoundation.lean`. `UnitaryField p := GaloisField p 2`,
   `star = frobenius` (`star x = x^p`), `StarRing` on the type synonym; `SU n p`, `PSUConcrete`.
 - ✅ **Step 1 (transvections) — COMPLETE** in `UnitaryTransvection.lean` (general `[CommRing α]

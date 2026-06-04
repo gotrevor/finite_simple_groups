@@ -438,6 +438,39 @@ theorem su_mem_center_iff_scalar (hn : 3 ≤ n)
       ∃ μ : UnitaryField p, (g : Matrix (Fin n) (Fin n) (UnitaryField p)) = μ • 1 :=
   ⟨su_center_le_scalar p hn g, fun ⟨_, hμ⟩ => su_scalar_mem_center hμ⟩
 
+/-- **`PSU_n(F_{p²}) = SU/Z` is nontrivial** (`n ≥ 3`) — the Iwasawa `Nontrivial` obligation. A
+transvection `τ_{v,a}` (`v` isotropic `≠ 0`, `a` trace-zero `≠ 0`) is non-central: were it central
+it would be a scalar `μ • 1` (`su_center_le_scalar`), but its off-diagonal `(i,k)` entries
+`a·vᵢ·star(v_k)` then vanish, forcing `v` supported at a single coordinate `k` — impossible for an
+isotropic vector (`⟨v,v⟩ = N(v_k) ≠ 0`). -/
+theorem PSU_nontrivial (hn : 3 ≤ n) : Nontrivial (PSUConcrete n p) := by
+  obtain ⟨v, hv, hiso⟩ := UnitaryField.exists_isotropic p n (by omega)
+  obtain ⟨a, ha0, ha⟩ := UnitaryField.exists_traceZero_ne_zero p
+  obtain ⟨k, hk⟩ := Function.ne_iff.mp hv
+  rw [Pi.zero_apply] at hk
+  refine ⟨QuotientGroup.mk (uTransvecSU v a hiso ha), 1, ?_⟩
+  rw [Ne, QuotientGroup.eq_one_iff]
+  intro hmem
+  obtain ⟨μ, hμ⟩ := su_center_le_scalar p hn _ hmem
+  rw [uTransvecSU_coe] at hμ
+  have hsk : (star v) k ≠ 0 := by rw [Pi.star_apply]; exact star_ne_zero.mpr hk
+  -- off-diagonal entries vanish ⟹ `v` is supported only at `k`
+  have hvi : ∀ i, i ≠ k → v i = 0 := by
+    intro i hik
+    have hentry := congr_fun₂ hμ i k
+    rw [uTransvection, Matrix.add_apply, Matrix.one_apply_ne hik, Matrix.smul_apply,
+      vecMulVec_apply, Matrix.smul_apply, Matrix.one_apply_ne hik, smul_zero, smul_eq_mul,
+      zero_add] at hentry
+    rcases mul_eq_zero.mp hentry with h | h
+    · exact absurd h ha0
+    · exact (mul_eq_zero.mp h).resolve_right hsk
+  -- then `⟨v,v⟩ = star(v_k)·v_k`, which is nonzero — contradicting isotropy
+  have hsum : star v ⬝ᵥ v = star (v k) * v k := by
+    rw [dotProduct, Finset.sum_eq_single k (fun i _ hik => by rw [hvi i hik, mul_zero])
+      (fun h => absurd (Finset.mem_univ k) h), Pi.star_apply]
+  rw [hsum] at hiso
+  exact hk ((mul_eq_zero.mp hiso).resolve_left (by rwa [Pi.star_apply] at hsk))
+
 end Concrete
 
 end FiniteSimpleGroups.PSU

@@ -115,4 +115,86 @@ theorem su_central_fixes_isotropic_line
   refine ⟨((star w) j0)⁻¹ * (star v) j0, ?_⟩
   rw [← smul_smul, ← hcol, smul_smul, inv_mul_cancel₀ hcw, one_smul]
 
+/-! ### `ker ⊆ center`: the geometric crux — fixing every isotropic line forces scalar
+
+The engine is the interplay of two facts about an isometry `g` (i.e. `g ∈ unitaryGroup`) that
+fixes isotropic lines (`g·z = λ_z·z` for isotropic `z`):
+
+* **Form relation** (`lambda_form_relation`): for isotropic `v, w` with `⟨v,w⟩ ≠ 0`,
+  `star(λ_v)·λ_w = 1`. Pure isometry bookkeeping.
+* **Hyperbolic-pair collapse** (`lambda_eq_norm_one_of_hyperbolic`): if `w` is a hyperbolic
+  partner of `v` (`⟨v,w⟩ = 1`, both isotropic) then `λ_v = λ_w` **and** `N(λ_v) = λ_v·star(λ_v) = 1`.
+  The key trick: for a trace-zero `s ≠ 0`, `v + s·w` is again isotropic, and reading off the
+  `v`- and `w`-coordinates of `g·(v + s·w) = μ·(v + s·w)` pins `λ_v = μ = λ_w`.
+
+Then `N = 1` upgrades the form relation `star(λ_v)λ_w = 1` to `λ_v = λ_w` for any non-orthogonal
+isotropic pair, and connectivity + spanning of the isotropic vectors propagate a single scalar `μ`
+to all of `Fⁿ`. -/
+
+/-- **Isometry form relation.** If `g ∈ unitaryGroup` scales `v` by `λ_v` and `w` by `λ_w`, then
+`star(λ_v)·λ_w·⟨v,w⟩ = ⟨v,w⟩`. So whenever `⟨v,w⟩ = star v ⬝ᵥ w ≠ 0`, `star(λ_v)·λ_w = 1`. -/
+theorem lambda_form_relation {g : Matrix n n F} (hg : g ∈ Matrix.unitaryGroup n F)
+    {v w : n → F} {lv lw : F} (hv : g *ᵥ v = lv • v) (hw : g *ᵥ w = lw • w) :
+    star lv * lw * (star v ⬝ᵥ w) = star v ⬝ᵥ w := by
+  have hpf := u_preserves_form hg v w
+  rw [hv, hw] at hpf
+  have hsv : star (lv • v) = star lv • star v := by
+    funext i; simp only [Pi.smul_apply, Pi.star_apply, smul_eq_mul, star_mul']
+  rw [hsv, smul_dotProduct, dotProduct_smul, smul_eq_mul, smul_eq_mul, ← mul_assoc] at hpf
+  exact hpf
+
+omit [DecidableEq n] in
+/-- `⟨w,v⟩ = star (⟨v,w⟩)` (the Hermitian symmetry of the standard form). -/
+theorem dotProduct_star_swap (v w : n → F) : star w ⬝ᵥ v = star (star v ⬝ᵥ w) := by
+  simp only [dotProduct, star_sum, Pi.star_apply, star_mul', star_star, mul_comm]
+
+/-- **Hyperbolic-pair collapse.** Let `g ∈ unitaryGroup` fix the isotropic lines `[v]` and `[w]`
+(`g·v = λ_v·v`, `g·w = λ_w·w`) where `(v,w)` is a hyperbolic pair (`⟨v,w⟩ = 1`, both isotropic).
+Given a trace-zero `s ≠ 0`, the vector `v + s·w` is again isotropic, so `g·(v+s·w) = μ·(v+s·w)`;
+reading off its `v`- and `w`-coordinates forces `λ_v = μ = λ_w`, and the form relation at
+`⟨v,w⟩ = 1` then gives `N(λ_v) = λ_v·star(λ_v) = 1`. -/
+theorem lambda_eq_norm_one_of_hyperbolic {g : Matrix n n F} (hg : g ∈ Matrix.unitaryGroup n F)
+    {v w : n → F} {lv lw : F} (hv : g *ᵥ v = lv • v) (hw : g *ᵥ w = lw • w)
+    (hviso : star v ⬝ᵥ v = 0) (hwiso : star w ⬝ᵥ w = 0) (hvw : star v ⬝ᵥ w = 1)
+    {s : F} (hs0 : s ≠ 0)
+    {μ : F} (hμ : g *ᵥ (v + s • w) = μ • (v + s • w)) :
+    lv = lw ∧ lv * star lv = 1 := by
+  have hwv : star w ⬝ᵥ v = 1 := by rw [dotProduct_star_swap, hvw, star_one]
+  have hgvsw : g *ᵥ (v + s • w) = lv • v + (s * lw) • w := by
+    rw [Matrix.mulVec_add, Matrix.mulVec_smul, hv, hw, smul_smul]
+  have heq : lv • v + (s * lw) • w = μ • v + (μ * s) • w := by
+    rw [← hgvsw, hμ, smul_add, smul_smul]
+  -- pair with `star v` (kills the `v`-coordinate via `⟨v,v⟩=0`, reads `w`-coordinate)
+  have e1 : s * lw = μ * s := by
+    have := congrArg (fun u => star v ⬝ᵥ u) heq
+    simpa only [dotProduct_add, dotProduct_smul, smul_eq_mul, hviso, hvw, mul_zero, mul_one,
+      zero_add] using this
+  -- pair with `star w` (kills the `w`-coordinate via `⟨w,w⟩=0`, reads `v`-coordinate)
+  have e2 : lv = μ := by
+    have := congrArg (fun u => star w ⬝ᵥ u) heq
+    simpa only [dotProduct_add, dotProduct_smul, smul_eq_mul, hwiso, hwv, mul_zero, mul_one,
+      add_zero] using this
+  have hlw : lw = μ := by
+    have : s * lw = s * μ := by rw [e1]; ring
+    exact mul_left_cancel₀ hs0 this
+  have hlvw : lw = lv := by rw [hlw, e2]
+  refine ⟨hlvw.symm, ?_⟩
+  -- `N(λ_v) = 1` from the form relation at `⟨v,w⟩ = 1`
+  have hfr := lambda_form_relation hg hv hw
+  rw [hvw, mul_one, hlvw, mul_comm] at hfr
+  exact hfr
+
+/-- **Non-orthogonal isotropic lines share the scalar.** If `g ∈ unitaryGroup` scales `v` by
+`λ_v` (with `N(λ_v) = λ_v·star(λ_v) = 1`) and `w` by `λ_w`, and `⟨v,w⟩ ≠ 0`, then `λ_v = λ_w`.
+The form relation gives `star(λ_v)·λ_w = 1`; combined with `star(λ_v)·λ_v = 1` and the cancellation
+`star(λ_v) ≠ 0`, this forces `λ_w = λ_v`. -/
+theorem lambda_eq_of_nonorth {g : Matrix n n F} (hg : g ∈ Matrix.unitaryGroup n F)
+    {v w : n → F} {lv lw : F} (hv : g *ᵥ v = lv • v) (hw : g *ᵥ w = lw • w)
+    (hN : lv * star lv = 1) (hvw : star v ⬝ᵥ w ≠ 0) : lv = lw := by
+  have hfr := lambda_form_relation hg hv hw
+  have h1 : star lv * lw = 1 := mul_right_cancel₀ hvw (by rw [one_mul]; exact hfr)
+  have hN' : star lv * lv = 1 := by rw [mul_comm]; exact hN
+  have : star lv * lw = star lv * lv := by rw [h1, hN']
+  exact (mul_left_cancel₀ (left_ne_zero_of_mul_eq_one hN') this).symm
+
 end FiniteSimpleGroups.PSU

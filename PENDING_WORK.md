@@ -388,11 +388,32 @@ Developing in scratch `/tmp/spgen` (imports SpIwasawa), port + replace axiom whe
    at a time". Aristotle job `8522edf3-fdae-4924-9549-2eb53e1a8f50` (bare-statement stub, no infra)
    still IN_PROGRESS at lap end — POLL `aristotle tasks <uuid>`; if it walled, RESUBMIT with the
    complement lemmas above inlined as a richer stub.
-2. **`pspQuasiPreprimitive`** — `PSp` quasi-preprimitive on ℙ²ⁿ⁻¹. `Sp` is transitive on points
-   (`exists_sp_transvecGen_maps` gives it) but **NOT 2-transitive** (preserves `ω`), so the SLn
-   2-transitivity→primitive route is unavailable. Needs the maximal-parabolic /
-   isotropic-line-stabilizer primitivity argument (point-stab of a projective line = a maximal
-   parabolic ⟹ primitive ⟹ quasi-preprimitive via `IsPreprimitive.isQuasiPreprimitive`).
+2. **`psp_isTrivialBlock_of_isBlock`** (primitivity core — THE only remaining PSp axiom). `PSp`
+   transitive on ℙ²ⁿ⁻¹ (`psp_isPretransitive`, proven) but **NOT 2-transitive** (preserves `ω`),
+   so blocks-trivial needs the rank-3 / maximal-parabolic argument. **Concrete attack plan
+   (2026-06-04):**
+   - **Reduce** to the based form via mathlib `IsPreprimitive.of_isTrivialBlock_base a₀`: suffices
+     blocks `B ∋ a₀` are trivial (`a₀ = [single(inl i₀)]`). A block `B ∋ a₀` is automatically
+     `Stab(a₀)`-invariant (mathlib `IsBlock.smul_eq_of_mem`: `a₀ = g•a₀ ∈ g•B ∩ B ⟹ g•B = B`).
+   - **Orbit structure of `Stab([v₀])` on ℙ(V)** (rank 3, n≥2): `{[v₀]}`, `Δ₀ = {[u] : ω(v₀,u)=0}`
+     (perp lines ≠ [v₀]), `Δ₁ = {[w] : ω(v₀,w)≠0}` (non-perp). So a `Stab`-invariant `B ∋ [v₀]` is
+     a union of these. Need: (i) **`Δ₁` transitivity** — EASY, already available: it is exactly
+     `exists_sp_transvecFixing_maps_mate` (e=v₀,f=w,f'=w' after scaling ω=1, g fixes v₀, g·w=w').
+     (ii) **`Δ₀` transitivity** — the perp-line Witt transitivity (stabiliser of v₀ transitive on
+     lines in v₀⊥∖⟨v₀⟩). **OUT at Aristotle `91082bf9` (`aristotle-perpwitt`, vector-level stub
+     with the offS/pair transitivity inlined as axioms).** Or prove locally via the offS toolkit:
+     extend v₀ to a hyperbolic pair (v₀,w), decompose u = α·v₀ + u_perp (ω(v₀,u)=0 ⟹ no w-part),
+     map u_perp→u'_perp within ⟨v₀,w⟩⊥ by pair-fixing transvecs, fix the α via τ_{v₀,·}.
+   - **Bootstrap to univ** (rank-3 connectivity): if `B ⊋ {[v₀]}` then B ⊇ Δ₀ or Δ₁; show either
+     forces B=univ. From a non-perp [w]∈B (w=g·v₀ for some g, [w]∈Δ₁⊆B) get g·B=B (block + [w]∈B),
+     so B is invariant under {g : g·[v₀]∈B}; the non-perp graph (and perp graph) on ℙ(V) is
+     connected for n≥2 (any two lines joined by a chain of perp/non-perp steps), forcing B=univ.
+     This combinatorial bootstrap is the genuine remaining content — good next-lap local target,
+     OR an Aristotle brick once Δ₀ transitivity lands. `n=1` (PSp(2,q)=PSL(2,q)) is 2-transitive
+     hence primitive trivially (separate easy case if needed).
+   - Tools: mathlib `GroupTheory/GroupAction/Primitive.lean` (`of_isTrivialBlock_base`,
+     `isCoatom_stabilizer_iff_preprimitive`) + `Blocks.lean` (`IsBlock.smul_eq_of_mem`, `IsBlock.orbit`).
+     The repo already has `pspPreprimitive_iff_isCoatom_stabilizer` (maximal-subgroup form).
 
 **Files** — `SpTransvection.lean` (transvection algebra + `sp_preserves_form`,
 `spTransvecSp_commutator`, `spTransvecSp_inv`, `_apply_self`/`_apply_of_orth`),
@@ -400,12 +421,16 @@ Developing in scratch `/tmp/spgen` (imports SpIwasawa), port + replace axiom whe
 lemmas, perfectness chain, `spDiag`+`sp_scaling_exists`, generation reduction, the 2 axioms,
 assembly). All machine-checked except the 2 axioms.
 
-**NEXT LAP:** (a) harvest the Aristotle stabilizer-core result if it returned (verify in-kernel
-+ `#print axioms`, port onto repo defs); (b) if it walled, start the orthogonal-complement
-layer for `sp_stab_hyperbolic_le`, OR pivot to `pspQuasiPreprimitive` (maximal-parabolic
-primitivity); (c) eventually WIRE `PSpn_isSimpleGroup_of_iwasawa` into LieType's
-`PSp_isSimpleGroup` (specialise `l:=Fin n`, `F:=ZMod q`, supply `hlam` from `q≥4`, handle the
-`n≥2`/`(2,2)` exclusion).
+**NEXT LAP:** the ONLY remaining PSp core is `psp_isTrivialBlock_of_isBlock` (primitivity).
+(a) Harvest Aristotle `91082bf9` (`aristotle-perpwitt`, the Δ₀ perp-line transitivity) if returned
+— verify in-kernel + `#print axioms`, port onto repo defs; if it walled, prove Δ₀ transitivity
+locally via the offS toolkit (decompose `u = α·v₀ + u_perp`, see §F.2). (b) Then build the
+rank-3 **bootstrap** (block ∋ [v₀] containing a perp/non-perp neighbour ⟹ univ) using mathlib's
+block API — the genuine remaining content. (c) AFTER primitivity lands, WIRE
+`PSpn_isSimpleGroup_of_iwasawa` into LieType's `PSp_isSimpleGroup` (specialise `l:=Fin n`,
+`F:=ZMod q`, supply `hlam` from `q≥5`; the `hlam`/|F|≥4 route MISSES `q∈{2,3}` — PSp(2n,3) is
+simple but needs a separate perfectness argument, so leave a `q∈{2,3}` residual axiom, mirroring
+the PSL n=2/n≥3 split).
 
 ## C. Soundness-audit TODO (cheap, valuable — flagged 2026-06-03)
 

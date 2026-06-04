@@ -1347,10 +1347,9 @@ non-simple `PSp(4,2) ≅ S₆`**), **modulo the two remaining geometric axioms**
 `sp_scaling_exists`. Perfectness is now machine-checked (`commutator_PSp_eq_top`). The Iwasawa
 criterion (`IwasawaStructure.isSimpleGroup`) applied to the faithful action on `ℙ²ⁿ⁻¹` with all
 six obligations. The symplectic analogue of `SLn.PSLn_isSimpleGroup_of_rank`. -/
-theorem PSpn_isSimpleGroup_of_iwasawa [Nonempty l]
-    (hlam : ∃ lam : F, lam ≠ 0 ∧ lam * lam ≠ 1) :
+theorem PSpn_isSimpleGroup_of_perfect [Nonempty l]
+    (hperf : commutator (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) = ⊤) :
     IsSimpleGroup (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) := by
-  obtain ⟨lam, hlam0, hlam1⟩ := hlam
   letI := pspAction (l := l) (F := F)
   haveI : Nontrivial (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) :=
     PSp_nontrivial
@@ -1359,6 +1358,12 @@ theorem PSpn_isSimpleGroup_of_iwasawa [Nonempty l]
   haveI : MulAction.IsQuasiPreprimitive
       (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F))
       (Projectivization F ((l ⊕ l) → F)) := pspQuasiPreprimitive
-  exact pspIwasawaStructure.isSimpleGroup (commutator_PSp_eq_top hlam0 hlam1) pspFaithful
+  exact pspIwasawaStructure.isSimpleGroup hperf pspFaithful
+
+theorem PSpn_isSimpleGroup_of_iwasawa [Nonempty l]
+    (hlam : ∃ lam : F, lam ≠ 0 ∧ lam * lam ≠ 1) :
+    IsSimpleGroup (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) := by
+  obtain ⟨lam, hlam0, hlam1⟩ := hlam
+  exact PSpn_isSimpleGroup_of_perfect (commutator_PSp_eq_top hlam0 hlam1)
 
 end FiniteSimpleGroups.SpN

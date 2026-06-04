@@ -41,13 +41,28 @@ theorem exists_sq_ne_one (q : ℕ) [Fact (Nat.Prime q)] (hq : 3 < q) :
     have h30 : (3 : ZMod q) = 0 := by linear_combination hc
     simpa using h30
 
-/-- **Residual axiom for small fields `q ∈ {2,3}`.** `PSp(2n,q)` is simple for prime `q ∈ {2,3}`
-(excluding the non-simple `PSp(4,2) ≅ S₆`). The Iwasawa route used for `q ≥ 5` needs a scalar
-`λ ≠ 0`, `λ² ≠ 1` (i.e. `|F| ≥ 4`), which `ZMod 2`, `ZMod 3` lack; perfectness for these small
-fields needs a separate commutator argument. Mirrors the `q ∈ {2,3}` gap in the PSL thread. -/
-axiom PSp_isSimpleGroup_small_field (n q : ℕ) [Fact (Nat.Prime q)]
+/-- **Residual axiom for small fields `q ∈ {2,3}` — narrowed to PERFECTNESS.** For prime
+`q ∈ {2,3}` and `2 ≤ n` (excluding `PSp(4,2) ≅ S₆`), `PSp(2n,q)` is perfect (`commutator = ⊤`).
+This is the *true* remaining core: the Iwasawa route for `q ≥ 5` only used `|F| ≥ 4` for
+perfectness (the commutator engine `[g, τ_{v,a}] = τ_{v,(λ²-1)a}` needs `λ²≠1`); faithfulness and
+quasi-primitivity (hence the whole simplicity assembly via `PSpn_isSimpleGroup_of_perfect`) hold
+over **any** field, including `ZMod 2`, `ZMod 3`. For `q ∈ {2,3}`, `n ≥ 2`, perfectness needs the
+symplectic short-root (Steinberg) commutator relations not yet formalized — the genuinely separate
+piece. (`PSp(4,2)≅S₆` is correctly excluded: it fails *here*, at perfectness, not at primitivity.)
+Mirrors the `q ∈ {2,3}` gap in the PSL thread. -/
+axiom PSp_perfect_small_field (n q : ℕ) [Fact (Nat.Prime q)]
     (h_n : 2 ≤ n) (hq : q ≤ 3) (h_skip : ¬ (n = 2 ∧ q = 2)) :
-    IsSimpleGroup (PSp n q)
+    commutator (PSp n q) = ⊤
+
+/-- `PSp(2n,q)` simple for prime `q ∈ {2,3}` (excluding `PSp(4,2)`), from the perfectness residual
+`PSp_perfect_small_field` fed through `PSpn_isSimpleGroup_of_perfect` (faithfulness + quasi-
+primitivity hold over any field). -/
+theorem PSp_isSimpleGroup_small_field (n q : ℕ) [Fact (Nat.Prime q)]
+    (h_n : 2 ≤ n) (hq : q ≤ 3) (h_skip : ¬ (n = 2 ∧ q = 2)) :
+    IsSimpleGroup (PSp n q) := by
+  haveI : Nonempty (Fin n) := ⟨⟨0, by omega⟩⟩
+  exact SpN.PSpn_isSimpleGroup_of_perfect (l := Fin n) (F := ZMod q)
+    (PSp_perfect_small_field n q h_n hq h_skip)
 
 /-- **`PSp(2n,q)` is simple** for `2 ≤ n`, prime `q`, excluding `PSp(4,2) ≅ S₆` (`h_skip`).
 Discharges the former monolithic LieType axiom `PSp_isSimpleGroup`.

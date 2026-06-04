@@ -851,6 +851,88 @@ theorem psu_isPretransitive (hn : 3 ≤ n) :
   rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff']
   exact ⟨c, by rw [su_smul_vec_def]; exact hg.symm⟩
 
+/-! ### Block-combinatorics scaffold (the non-perpendicular connectivity half of primitivity)
+
+The unitary analogue of `SpN.block_mem_of_nonperp` / `block_univ_of_nonperp_pair`, reducing the
+non-perpendicular part of block-triviality to the **T1** transitivity input (`Stab[x]` transitive on
+isotropic points non-orthogonal to `[x]` — the Eichler atom, at Aristotle). The diameter-2
+connectivity of the non-orthogonality graph (`exists_common_nonorth_isotropic`, already proven) does
+the rest. The "non-perp" relation `⟨x,y⟩ = star x.rep ⬝ᵥ y.rep ≠ 0` is line-invariant. -/
+
+/-- Form-value line-invariance, right slot: `⟨x, [z]⟩` is a nonzero multiple of `⟨x, z⟩`. -/
+theorem form_rep_mk_right_smul (x : IsoPoint p n) {z : Fin n → UnitaryField p}
+    (hz : z ≠ 0) :
+    ∃ a : UnitaryField p, a ≠ 0 ∧
+      star x.1.rep ⬝ᵥ (Projectivization.mk (UnitaryField p) z hz).rep
+        = a * (star x.1.rep ⬝ᵥ z) := by
+  obtain ⟨a, ha⟩ := Projectivization.exists_smul_eq_mk_rep (UnitaryField p) z hz
+  exact ⟨a, a.ne_zero, by rw [← ha, Units.smul_def, dotProduct_smul, smul_eq_mul]⟩
+
+/-- Form-value line-invariance, left slot: `⟨[z], t⟩` is a nonzero multiple of `⟨z, t⟩`. -/
+theorem form_rep_mk_left_smul {z : Fin n → UnitaryField p} (hz : z ≠ 0) (t : IsoPoint p n) :
+    ∃ a : UnitaryField p, a ≠ 0 ∧
+      star (Projectivization.mk (UnitaryField p) z hz).rep ⬝ᵥ t.1.rep
+        = a * (star z ⬝ᵥ t.1.rep) := by
+  obtain ⟨a, ha⟩ := Projectivization.exists_smul_eq_mk_rep (UnitaryField p) z hz
+  refine ⟨star a, star_ne_zero.mpr a.ne_zero, ?_⟩
+  rw [← ha, Units.smul_def]
+  have hs : star ((a : UnitaryField p) • z) = (star (a : UnitaryField p)) • star z := by
+    funext i; simp only [Pi.smul_apply, Pi.star_apply, smul_eq_mul, star_mul']
+  rw [hs, smul_dotProduct, smul_eq_mul]
+
+/-- **Block expansion via a non-perpendicular partner** (modulo T1). If `q, p' ∈ B` are
+non-perpendicular and `w` is non-perpendicular to `q`, then `w ∈ B`: T1 makes `Stab[q]` transitive
+on points non-perp to `[q]`, and `B` is `Stab[q]`-invariant since `q ∈ B`. -/
+theorem block_mem_of_nonperp
+    (hT1 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep ≠ 0 → star x.1.rep ⬝ᵥ y'.1.rep ≠ 0 →
+        ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+    {B : Set (IsoPoint p n)}
+    (hB : letI := psuAction p n; MulAction.IsBlock (PSUConcrete n p) B)
+    {q p' w : IsoPoint p n} (hq : q ∈ B) (hp' : p' ∈ B)
+    (hqp' : star q.1.rep ⬝ᵥ p'.1.rep ≠ 0) (hqw : star q.1.rep ⬝ᵥ w.1.rep ≠ 0) :
+    w ∈ B := by
+  letI := psuAction p n
+  obtain ⟨g, hgq, hgp'⟩ := hT1 hqp' hqw
+  have hgB : g • B = B := hB.smul_eq_of_mem hq (by rw [hgq]; exact hq)
+  rw [← hgp', ← hgB]
+  exact Set.smul_mem_smul_set hp'
+
+/-- **A block with a non-perpendicular pair is everything** (modulo T1). Connectivity of the
+non-orthogonality graph (diameter ≤ 2, `exists_common_nonorth_isotropic`) plus
+`block_mem_of_nonperp`. Unitary analogue of `SpN.block_univ_of_nonperp_pair`. -/
+theorem block_univ_of_nonperp_pair (hn : 3 ≤ n)
+    (hT1 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep ≠ 0 → star x.1.rep ⬝ᵥ y'.1.rep ≠ 0 →
+        ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+    {B : Set (IsoPoint p n)}
+    (hB : letI := psuAction p n; MulAction.IsBlock (PSUConcrete n p) B)
+    {q r : IsoPoint p n} (hq : q ∈ B) (hr : r ∈ B)
+    (hqr : star q.1.rep ⬝ᵥ r.1.rep ≠ 0) :
+    B = Set.univ := by
+  letI := psuAction p n
+  rw [Set.eq_univ_iff_forall]
+  intro t
+  by_cases hqt : star q.1.rep ⬝ᵥ t.1.rep ≠ 0
+  · exact block_mem_of_nonperp p n hT1 hB hq hr hqr hqt
+  · obtain ⟨z, hz0, hziso, hqz, htz⟩ := exists_common_nonorth_isotropic p hn q.1.rep t.1.rep
+      (Projectivization.rep_nonzero q.1) (Projectivization.rep_nonzero t.1) q.2 t.2
+    set Z : IsoPoint p n :=
+      ⟨Projectivization.mk (UnitaryField p) z hz0, (isIso_mk_iff p n hz0).mpr hziso⟩ with hZ
+    -- `⟨q, Z⟩ ≠ 0`, so `Z ∈ B`
+    obtain ⟨a, ha0, haeq⟩ := form_rep_mk_right_smul p n q hz0
+    have hqZ : star q.1.rep ⬝ᵥ Z.1.rep ≠ 0 := by rw [hZ, haeq]; exact mul_ne_zero ha0 hqz
+    have hZB : Z ∈ B := block_mem_of_nonperp p n hT1 hB hq hr hqr hqZ
+    -- `⟨Z, q⟩ ≠ 0` (skew/star of `⟨q, Z⟩`) and `⟨Z, t⟩ ≠ 0`, so `t ∈ B`
+    have hZq : star Z.1.rep ⬝ᵥ q.1.rep ≠ 0 := by
+      rw [dotProduct_star_swap q.1.rep Z.1.rep]; exact star_ne_zero.mpr hqZ
+    obtain ⟨b, hb0, hbeq⟩ := form_rep_mk_left_smul p n hz0 t
+    have hzt' : star z ⬝ᵥ t.1.rep ≠ 0 := by
+      rw [dotProduct_star_swap t.1.rep z]; exact star_ne_zero.mpr htz
+    have hZt : star Z.1.rep ⬝ᵥ t.1.rep ≠ 0 := by
+      rw [hZ, hbeq]; exact mul_ne_zero hb0 hzt'
+    exact block_mem_of_nonperp p n hT1 hB hZB hq hZq hZt
+
 /-- **The `PSU`-level root subgroup along the isotropic line `x`** — the image in `SU/Z` of
 `uRootSubgroup x.rep`. The Iwasawa family `T`. By `uRootSubgroup_rep`/`_smul` it depends only on
 the line `x`. -/

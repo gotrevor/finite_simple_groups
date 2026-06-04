@@ -52,6 +52,66 @@ theorem spTransvection_maps_of_form_ne {u w : (l ⊕ l) → F}
   rw [hform, inv_mul_cancel₀ h, one_smul]
   abel
 
+/-- **Two non-zero vectors are simultaneously non-orthogonal to some vector** (over any
+field): for `u, w ≠ 0` there is a `y` with `u ⬝ᵥ y ≠ 0` and `w ⬝ᵥ y ≠ 0`. Elementary — a
+vector space is never the union of two proper subspaces: take standard-basis witnesses `y₁`
+(for `u`) and `y₂` (for `w`); one of `y₁, y₂, y₁+y₂` avoids both kernels. Works in
+characteristic 2. The kernel of "`Sp` transitive on non-zero vectors". -/
+theorem exists_dotProduct_both_ne {u w : (l ⊕ l) → F} (hu : u ≠ 0) (hw : w ≠ 0) :
+    ∃ y : (l ⊕ l) → F, u ⬝ᵥ y ≠ 0 ∧ w ⬝ᵥ y ≠ 0 := by
+  obtain ⟨a, ha⟩ := Function.ne_iff.mp hu
+  obtain ⟨b, hb⟩ := Function.ne_iff.mp hw
+  rw [Pi.zero_apply] at ha
+  rw [Pi.zero_apply] at hb
+  have hu1 : u ⬝ᵥ Pi.single a (1 : F) ≠ 0 := by rw [dotProduct_single, mul_one]; exact ha
+  have hw2 : w ⬝ᵥ Pi.single b (1 : F) ≠ 0 := by rw [dotProduct_single, mul_one]; exact hb
+  by_cases hw1 : w ⬝ᵥ Pi.single a (1 : F) = 0
+  · by_cases hu2 : u ⬝ᵥ Pi.single b (1 : F) = 0
+    · exact ⟨Pi.single a 1 + Pi.single b 1, by rwa [dotProduct_add, hu2, add_zero],
+        by rwa [dotProduct_add, hw1, zero_add]⟩
+    · exact ⟨Pi.single b 1, hu2, hw2⟩
+  · exact ⟨Pi.single a 1, hu1, hw1⟩
+
+/-- **The symplectic form is non-degenerate enough to separate a pair**: for `u, w ≠ 0`
+there is a `z` with `ω(u,z) = u ⬝ᵥ (J·z) ≠ 0` and `ω(z,w) = z ⬝ᵥ (J·w) ≠ 0`. Got from
+`exists_dotProduct_both_ne` by transporting along the invertible `J` (`J·z = y`, via
+`J² = -1`) and the skew identity `ω(z,w) = -ω(w,z)`. The two non-orthogonality conditions
+that let a single transvection move `u → z` and another move `z → w`. -/
+theorem exists_form_both_ne {u w : (l ⊕ l) → F} (hu : u ≠ 0) (hw : w ≠ 0) :
+    ∃ z : (l ⊕ l) → F,
+      u ⬝ᵥ (Matrix.J l F *ᵥ z) ≠ 0 ∧ z ⬝ᵥ (Matrix.J l F *ᵥ w) ≠ 0 := by
+  obtain ⟨y, hyu, hyw⟩ := exists_dotProduct_both_ne hu hw
+  have hJz : Matrix.J l F *ᵥ (-(Matrix.J l F *ᵥ y)) = y := by
+    rw [mulVec_neg, mulVec_mulVec, J_squared, neg_mulVec, one_mulVec, neg_neg]
+  refine ⟨-(Matrix.J l F *ᵥ y), ?_, ?_⟩
+  · rw [hJz]; exact hyu
+  · rw [spForm_skew, hJz]; exact neg_ne_zero.mpr hyw
+
+/-- **`Sp(2n,F)` is transitive on non-zero vectors, via transvections** (the orthogonal-case
+bridge of the generation argument). For `u, w ≠ 0` there is a product of (at most two)
+symplectic transvections — hence an element of `⨆_v spTransvecGroup v` — mapping `u` to `w`.
+Pick `z` non-orthogonal to both `u` and `w` (`exists_form_both_ne`); then `τ_{z-u,·}` maps
+`u → z` and `τ_{w-z,·}` maps `z → w` (`spTransvection_maps_of_form_ne`), and their product
+maps `u → w`. This is the base step feeding the Witt/Eichler induction toward
+`sp_transvec_closure_eq_top`. -/
+theorem exists_sp_transvecGen_maps {u w : (l ⊕ l) → F} (hu : u ≠ 0) (hw : w ≠ 0) :
+    ∃ g : symplecticGroup l F,
+      g ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) ∧
+        (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ u = w := by
+  obtain ⟨z, hz1, hz2⟩ := exists_form_both_ne hu hw
+  refine ⟨spTransvecSp (w - z) (z ⬝ᵥ (Matrix.J l F *ᵥ w))⁻¹
+            * spTransvecSp (z - u) (u ⬝ᵥ (Matrix.J l F *ᵥ z))⁻¹, ?_, ?_⟩
+  · exact mul_mem
+      (le_iSup spTransvecGroup (w - z) (mem_spTransvecGroup.mpr ⟨_, rfl⟩))
+      (le_iSup spTransvecGroup (z - u) (mem_spTransvecGroup.mpr ⟨_, rfl⟩))
+  · have e1 : (spTransvecSp (z - u) (u ⬝ᵥ (Matrix.J l F *ᵥ z))⁻¹
+        : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ u = z := by
+      rw [spTransvecSp_coe]; exact spTransvection_maps_of_form_ne hz1
+    have e2 : (spTransvecSp (w - z) (z ⬝ᵥ (Matrix.J l F *ᵥ w))⁻¹
+        : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ z = w := by
+      rw [spTransvecSp_coe]; exact spTransvection_maps_of_form_ne hz2
+    rw [Submonoid.coe_mul, ← mulVec_mulVec, e1, e2]
+
 /-- **DISCLOSED AXIOM (generation).** The symplectic transvections generate `Sp(2n,F)`:
 `⨆_v {τ_{v,c} : c} = ⊤`. The symplectic analogue of `SLn.transvecSL_closure_eq_top` (which
 Aristotle discharged for `SL`); mathlib has no symplectic Witt/Eichler infrastructure, so this

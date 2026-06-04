@@ -735,6 +735,13 @@ noncomputable def psuFaithful (hn : 3 ≤ n) :
       show g₁ • x = g₂ • x
       exact hsmul x }
 
+/-- **The isotropic-point action set is nonempty** (`n ≥ 2`) — an isotropic vector exists
+(`exists_isotropic`), giving an isotropic projective point. This is the Iwasawa primitivity/
+pretransitivity nonemptiness input for `PSUConcrete`. -/
+theorem nonempty_isoPoint (hn : 2 ≤ n) : Nonempty (IsoPoint p n) := by
+  obtain ⟨v, hv, hiso⟩ := UnitaryField.exists_isotropic p n hn
+  exact ⟨⟨Projectivization.mk (UnitaryField p) v hv, (isIso_mk_iff p n hv).mpr hiso⟩⟩
+
 end Faithful
 
 end FiniteSimpleGroups.PSU

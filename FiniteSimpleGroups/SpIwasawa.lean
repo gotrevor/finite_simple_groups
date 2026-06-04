@@ -37,6 +37,21 @@ namespace FiniteSimpleGroups.SpN
 
 variable {l : Type*} [DecidableEq l] [Fintype l] {F : Type*} [Field F]
 
+/-- **First brick toward `sp_transvec_closure_eq_top`** (transitivity-on-vectors, the
+non-orthogonal case): if `ω(u,w) = u ⬝ᵥ (J·w) ≠ 0`, the single transvection `τ_{w-u, 1/ω(u,w)}`
+maps `u` to `w`. From `spTransvection_mulVec` (geometric action) + `spForm_self` (`ω(u,u)=0`):
+`τ_{w-u,c}(u) = u + c·ω(u,w-u)·(w-u) = u + c·ω(u,w)·(w-u)`, and `c = ω(u,w)⁻¹` gives `u+(w-u)=w`.
+This is the easy half of "Sp transitive on nonzero vectors"; the orthogonal case bridges
+through a `z` with `ω(u,z),ω(z,w)≠0`, then generation follows by the Eichler/Witt induction. -/
+theorem spTransvection_maps_of_form_ne {u w : (l ⊕ l) → F}
+    (h : u ⬝ᵥ (Matrix.J l F *ᵥ w) ≠ 0) :
+    spTransvection (w - u) (u ⬝ᵥ (Matrix.J l F *ᵥ w))⁻¹ *ᵥ u = w := by
+  rw [spTransvection_mulVec]
+  have hform : u ⬝ᵥ (Matrix.J l F *ᵥ (w - u)) = u ⬝ᵥ (Matrix.J l F *ᵥ w) := by
+    rw [mulVec_sub, dotProduct_sub, spForm_self, sub_zero]
+  rw [hform, inv_mul_cancel₀ h, one_smul]
+  abel
+
 /-- **DISCLOSED AXIOM (generation).** The symplectic transvections generate `Sp(2n,F)`:
 `⨆_v {τ_{v,c} : c} = ⊤`. The symplectic analogue of `SLn.transvecSL_closure_eq_top` (which
 Aristotle discharged for `SL`); mathlib has no symplectic Witt/Eichler infrastructure, so this

@@ -147,6 +147,39 @@ theorem uTransvection_conj {g : Matrix n n α} (hg : g ∈ Matrix.unitaryGroup n
     rwa [Matrix.star_eq_conjTranspose] at h
   rw [Matrix.inv_eq_right_inv hggH, uTransvection_conjH hg]
 
+omit [Fintype n] in
+/-- **Scaling the centre reparametrizes the transvection**: `τ_{c·v, a} = τ_{v, a·(c·star c)}`,
+where `c·star c = N(c)` is the norm to the fixed field. (`vecMulVec (c·v) (star (c·v)) =
+(c·star c)·(v ⊗ star v)`.) Hence `uRootSubgroup` depends only on the line `[v]` — the
+well-definedness for the projective transvection family — and the norm appears where the square
+appeared symplectically. Holds for every `c, a` (no isotropy needed). -/
+theorem uTransvection_smul_vec (c a : α) (v : n → α) :
+    uTransvection (c • v) a = uTransvection v (a * (c * star c)) := by
+  have hstar : star (c • v) = star c • star v := by
+    funext i; simp [Pi.smul_apply, star_mul']
+  rw [uTransvection, uTransvection, hstar, smul_vecMulVec, vecMulVec_smul, smul_smul, smul_smul,
+    mul_assoc]
+
+/-- **Matrix inverse of a unitary transvection** at isotropic `v`: `τ_{v,a}⁻¹ = τ_{v,-a}`, since
+`τ_{v,a}·τ_{v,-a} = τ_{v,0} = 1`. Holds at the matrix level for any `a` (isotropy gives `N²=0`). -/
+theorem uTransvection_inv_eq {v : n → α} (hv : star v ⬝ᵥ v = 0) (a : α) :
+    (uTransvection v a)⁻¹ = uTransvection v (-a) :=
+  Matrix.inv_eq_right_inv (by rw [uTransvection_mul v a (-a) hv, add_neg_cancel, uTransvection_zero])
+
+/-- **The commutator collapse for unitary transvections** — the perfectness engine. If `g ∈
+unitaryGroup` scales the isotropic centre `v` by `λ` (`g·v = λ·v`), then
+`[g, τ_{v,a}] = g τ_{v,a} g⁻¹ τ_{v,a}⁻¹ = τ_{v, (N(λ)−1)·a}` where `N(λ) = λ·star λ`. So whenever
+`N(λ) ≠ 1`, every `τ_{v,b}` is such a commutator (`a = b/(N(λ)−1)`) — the unitary analogue of
+`spTransvecSp_commutator`, with the **norm** `λ·star λ` replacing the square `λ²`. -/
+theorem uTransvection_commutator {g : Matrix n n α} (hg : g ∈ Matrix.unitaryGroup n α)
+    {v : n → α} {lam : α} (hgv : g *ᵥ v = lam • v) (hv : star v ⬝ᵥ v = 0) (a : α) :
+    g * uTransvection v a * g⁻¹ * (uTransvection v a)⁻¹
+      = uTransvection v ((lam * star lam - 1) * a) := by
+  rw [uTransvection_conj hg, hgv, uTransvection_smul_vec, uTransvection_inv_eq hv,
+    uTransvection_mul v _ _ hv]
+  congr 1
+  ring
+
 /-- The unitary transvection packaged as an element of `specialUnitaryGroup n α` (for isotropic
 `v` and trace-zero `a`). -/
 noncomputable def uTransvecSU (v : n → α) (a : α) (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0) :

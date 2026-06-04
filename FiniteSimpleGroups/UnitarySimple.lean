@@ -197,4 +197,141 @@ theorem lambda_eq_of_nonorth {g : Matrix n n F} (hg : g ∈ Matrix.unitaryGroup 
   have : star lv * lw = star lv * lv := by rw [h1, hN']
   exact (mul_left_cancel₀ (left_ne_zero_of_mul_eq_one hN') this).symm
 
+/-- **The geometric crux — fixing every isotropic line forces a scalar.** Let `g ∈ unitaryGroup`
+fix every isotropic projective line (`hfix`). From three standard facts about the Hermitian
+geometry — every nonzero isotropic vector has a **hyperbolic partner** (`hHyp`), any two isotropic
+points have a **common non-orthogonal** isotropic point (`hConn`, diameter-2 connectivity), and the
+isotropic vectors **span** `Fⁿ` (`hSpan`) — plus the existence of a trace-zero scalar (`htz`) and
+of some isotropic vector (`hex`), `g` is a scalar matrix `μ • 1`.
+
+The geometry hypotheses are exactly the finite-Hermitian-geometry facts that hold for the standard
+form on `(F_{q²})ⁿ`, `n ≥ 3` (to be supplied/discharged separately); everything else — the
+propagation of a single scalar `μ` through the connectivity graph and across the spanning set — is
+machine-checked here. -/
+theorem su_fixes_isotropic_imp_scalar {g : Matrix n n F} (hg : g ∈ Matrix.unitaryGroup n F)
+    (hfix : ∀ z : n → F, star z ⬝ᵥ z = 0 → ∃ l : F, g *ᵥ z = l • z)
+    (hHyp : ∀ z : n → F, z ≠ 0 → star z ⬝ᵥ z = 0 → ∃ w : n → F, star w ⬝ᵥ w = 0 ∧ star z ⬝ᵥ w = 1)
+    (hConn : ∀ z₁ z₂ : n → F, z₁ ≠ 0 → z₂ ≠ 0 → star z₁ ⬝ᵥ z₁ = 0 → star z₂ ⬝ᵥ z₂ = 0 →
+      ∃ u : n → F, u ≠ 0 ∧ star u ⬝ᵥ u = 0 ∧ star z₁ ⬝ᵥ u ≠ 0 ∧ star z₂ ⬝ᵥ u ≠ 0)
+    (hSpan : Submodule.span F {z : n → F | star z ⬝ᵥ z = 0} = ⊤)
+    (htz : ∃ s : F, s ≠ 0 ∧ s + star s = 0)
+    (hex : ∃ v₀ : n → F, v₀ ≠ 0 ∧ star v₀ ⬝ᵥ v₀ = 0) :
+    ∃ μ : F, (g : Matrix n n F) = μ • 1 := by
+  obtain ⟨s, hs0, hstr⟩ := htz
+  -- For each nonzero isotropic `z`: a scaling factor of norm one.
+  have key : ∀ z : n → F, z ≠ 0 → star z ⬝ᵥ z = 0 → ∃ l : F, g *ᵥ z = l • z ∧ l * star l = 1 := by
+    intro z hz hziso
+    obtain ⟨w, hwiso, hzw⟩ := hHyp z hz hziso
+    obtain ⟨lz, hlz⟩ := hfix z hziso
+    obtain ⟨lw, hlw⟩ := hfix w hwiso
+    have hwz : star w ⬝ᵥ z = 1 := by rw [dotProduct_star_swap, hzw, star_one]
+    have hsw_iso : star (z + s • w) ⬝ᵥ (z + s • w) = 0 := by
+      have hss : star (z + s • w) = star z + star s • star w := by
+        funext i
+        simp only [Pi.add_apply, Pi.smul_apply, Pi.star_apply, smul_eq_mul, star_add, star_mul']
+      rw [hss]
+      simp only [add_dotProduct, dotProduct_add, smul_dotProduct, dotProduct_smul, smul_eq_mul,
+        hziso, hzw, hwz, hwiso, mul_zero, mul_one, add_zero, zero_add]
+      linear_combination hstr
+    obtain ⟨μ, hμ⟩ := hfix (z + s • w) hsw_iso
+    obtain ⟨-, hN⟩ := lambda_eq_norm_one_of_hyperbolic hg hlz hlw hziso hwiso hzw hs0 hμ
+    exact ⟨lz, hlz, hN⟩
+  -- Reference isotropic vector and its (norm-one) scalar `μ`.
+  obtain ⟨v₀, hv₀, hv₀iso⟩ := hex
+  obtain ⟨μ, hμ, hμN⟩ := key v₀ hv₀ hv₀iso
+  -- Every nonzero isotropic `z` is scaled by the *same* `μ`.
+  have hconst : ∀ z : n → F, z ≠ 0 → star z ⬝ᵥ z = 0 → g *ᵥ z = μ • z := by
+    intro z hz hziso
+    obtain ⟨lz, hlz, hlzN⟩ := key z hz hziso
+    obtain ⟨u, hu0, huiso, h0u, hzu⟩ := hConn v₀ z hv₀ hz hv₀iso hziso
+    obtain ⟨lu, hlu, -⟩ := key u hu0 huiso
+    have e1 : μ = lu := lambda_eq_of_nonorth hg hμ hlu hμN h0u
+    have e2 : lz = lu := lambda_eq_of_nonorth hg hlz hlu hlzN hzu
+    rw [hlz, e2, ← e1]
+  -- Extend `g·z = μ•z` from isotropic `z` to all of `Fⁿ` via spanning.
+  set M : Matrix n n F := (g : Matrix n n F) - μ • 1 with hM_def
+  have hMiso : ∀ z : n → F, star z ⬝ᵥ z = 0 → M *ᵥ z = 0 := by
+    intro z hziso
+    rcases eq_or_ne z 0 with h0 | h0
+    · subst h0; simp [hM_def]
+    · rw [hM_def, Matrix.sub_mulVec, hconst z h0 hziso, Matrix.smul_mulVec,
+        Matrix.one_mulVec, sub_self]
+  have hMall : ∀ x : n → F, M *ᵥ x = 0 := by
+    have hsub : Submodule.span F {z : n → F | star z ⬝ᵥ z = 0} ≤
+        LinearMap.ker (Matrix.mulVecLin M) := by
+      rw [Submodule.span_le]
+      intro z hz
+      exact LinearMap.mem_ker.mpr (by simpa [Matrix.mulVecLin_apply] using hMiso z hz)
+    rw [hSpan, top_le_iff] at hsub
+    intro x
+    have : x ∈ LinearMap.ker (Matrix.mulVecLin M) := by rw [hsub]; exact Submodule.mem_top
+    simpa [Matrix.mulVecLin_apply] using LinearMap.mem_ker.mp this
+  have hM0 : M = 0 := by
+    ext i j
+    have hcol := congrFun (hMall (Pi.single j 1)) i
+    rw [mulVec_single_one, Matrix.col_apply] at hcol
+    simpa using hcol
+  exact ⟨μ, by rw [← sub_eq_zero, ← hM_def, hM0]⟩
+
+/-! ### The center of `SU_n(F_{p²})` is the scalar matrices (`n ≥ 3`)
+
+Instantiating the geometric crux over the concrete Hermitian field `F_{p²} = UnitaryField p`.
+Three finite-Hermitian-geometry existence facts remain as **disclosed axioms** — each is standard
+and true for the standard form on `(F_{p²})ⁿ`, `n ≥ 3` — feeding the fully machine-checked
+`su_fixes_isotropic_imp_scalar`. The trace-zero scalar and an isotropic vector are already
+discharged (`UnitaryField.exists_traceZero_ne_zero`, `UnitaryField.exists_isotropic`). -/
+
+section Concrete
+
+variable (p : ℕ) [Fact p.Prime] {n : ℕ}
+
+open UnitaryField
+
+/-- **GEOMETRY AXIOM — hyperbolic partner.** Every nonzero isotropic `z` in `(F_{p²})ⁿ` has an
+isotropic `w` with `⟨z,w⟩ = 1` (the standard hyperbolic-pair completion of a nondegenerate
+Hermitian space). True for `n ≥ 2`; stated with `n ≥ 3` for the unitary simplicity range.
+TODO(discharge): build `w` from any `w'` with `⟨z,w'⟩ ≠ 0`, rescale and add an isotropic
+correction `t·z` (trace surjectivity onto `F_p`). -/
+axiom exists_hyperbolic_partner (hn : 3 ≤ n) :
+    ∀ z : Fin n → UnitaryField p, z ≠ 0 → star z ⬝ᵥ z = 0 →
+      ∃ w : Fin n → UnitaryField p, star w ⬝ᵥ w = 0 ∧ star z ⬝ᵥ w = 1
+
+/-- **GEOMETRY AXIOM — diameter-2 connectivity.** Any two nonzero isotropic vectors `z₁, z₂` in
+`(F_{p²})ⁿ`, `n ≥ 3`, have a common non-orthogonal isotropic `u` (`⟨z₁,u⟩ ≠ 0`, `⟨z₂,u⟩ ≠ 0`).
+This fails in `n = 2` (a hyperbolic plane has only two isotropic points, mutually the only
+non-orthogonal ones), matching the exclusion of `PSU(2)`. TODO(discharge): the isotropic points
+non-orthogonal to a fixed `zᵢ` are a Zariski-dense / large subset of the Hermitian variety, and
+two such intersect for `n ≥ 3`. -/
+axiom exists_common_nonorth_isotropic (hn : 3 ≤ n) :
+    ∀ z₁ z₂ : Fin n → UnitaryField p, z₁ ≠ 0 → z₂ ≠ 0 →
+      star z₁ ⬝ᵥ z₁ = 0 → star z₂ ⬝ᵥ z₂ = 0 →
+      ∃ u : Fin n → UnitaryField p, u ≠ 0 ∧ star u ⬝ᵥ u = 0 ∧
+        star z₁ ⬝ᵥ u ≠ 0 ∧ star z₂ ⬝ᵥ u ≠ 0
+
+/-- **GEOMETRY AXIOM — isotropic vectors span.** The isotropic vectors of the standard Hermitian
+form on `(F_{p²})ⁿ`, `n ≥ 3`, span the whole space. TODO(discharge): each `eᵢ + c·eⱼ`
+(`N(c) = -1`, available via `exists_norm_neg_one`) is isotropic, and these span. -/
+axiom isotropic_span (hn : 3 ≤ n) :
+    Submodule.span (UnitaryField p) {z : Fin n → UnitaryField p | star z ⬝ᵥ z = 0} = ⊤
+
+/-- **The center of `SU_n(F_{p²})` consists of scalar matrices** (`n ≥ 3`). A central element fixes
+every isotropic line (`su_central_fixes_isotropic_line`, using a nonzero trace-zero scalar), so by
+the geometric crux `su_fixes_isotropic_imp_scalar` it is `μ • 1`. This is the algebraic heart of
+the faithfulness of the `PSU = SU/Z` action; combined with the (easy) converse it pins
+`center = scalars`. -/
+theorem su_center_le_scalar (hn : 3 ≤ n)
+    (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))
+    (hg : g ∈ Subgroup.center (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))) :
+    ∃ μ : UnitaryField p, (g : Matrix (Fin n) (Fin n) (UnitaryField p)) = μ • 1 := by
+  obtain ⟨a, ha0, ha⟩ := UnitaryField.exists_traceZero_ne_zero p
+  refine su_fixes_isotropic_imp_scalar (Matrix.specialUnitaryGroup_le_unitaryGroup g.2) ?_
+    (exists_hyperbolic_partner p hn) (exists_common_nonorth_isotropic p hn) (isotropic_span p hn)
+    ⟨a, ha0, ha⟩ (UnitaryField.exists_isotropic p n (by omega))
+  intro z hziso
+  rcases eq_or_ne z 0 with h0 | h0
+  · exact ⟨1, by subst h0; simp⟩
+  · exact su_central_fixes_isotropic_line g hg h0 hziso a ha0 ha
+
+end Concrete
+
 end FiniteSimpleGroups.PSU

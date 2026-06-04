@@ -339,28 +339,61 @@ theorem exists_hyperbolic_partner (_hn : 3 ≤ n) :
     linear_combination ht
   · rw [dotProduct_add, dotProduct_smul, hzw1, hziso, smul_eq_mul, mul_zero, add_zero]
 
-/-- **GEOMETRY AXIOM — diameter-2 connectivity** (the ONE remaining PSU-faithfulness axiom).
-Any two nonzero isotropic vectors `z₁, z₂` in `(F_{p²})ⁿ`, `n ≥ 3`, have a common non-orthogonal
-isotropic `u` (`⟨z₁,u⟩ ≠ 0`, `⟨z₂,u⟩ ≠ 0`). Fails in `n = 2` (a hyperbolic plane has only two
-isotropic points, mutually the only non-orthogonal ones), matching the exclusion of `PSU(2)`.
+/-- **GEOMETRY AXIOM — connectivity, the perpendicular case** (the ONE remaining PSU-faithfulness
+axiom, now narrowed to `z₂ ⊥ z₁`). For nonzero isotropic `z₁, z₂` with `⟨z₂,z₁⟩ = 0`, `n ≥ 3`,
+there is a common non-orthogonal isotropic `u`. Take a hyperbolic partner `w₁` of `z₁`
+(`⟨z₁,w₁⟩ = 1`, `w₁` isotropic); if `⟨z₂,w₁⟩ ≠ 0` then `u = w₁` works, so the genuine content is
+`z₂ ⊥ z₁` **and** `z₂ ⊥ w₁`, i.e. `z₂ ∈ H^⊥` for the hyperbolic plane `H = ⟨z₁,w₁⟩`. For `n = 3`
+this is **vacuous** (`H^⊥` is 1-dim nondegenerate, hence anisotropic, so has no isotropic `z₂`);
+for `n ≥ 4`, a hyperbolic partner `w₂` of `z₂` inside `H^⊥` gives `u = w₁ + w₂` (isotropic since
+`w₁ ⊥ w₂`, `⟨z₁,u⟩ = ⟨z₂,u⟩ = 1`). TODO(discharge): needs the orthogonal-complement /
+partner-within-subspace machinery. The non-perpendicular case (`⟨z₂,z₁⟩ ≠ 0`) is machine-checked in
+`exists_common_nonorth_isotropic` below. -/
+axiom common_nonorth_isotropic_perp (hn : 3 ≤ n) :
+    ∀ z₁ z₂ : Fin n → UnitaryField p, z₁ ≠ 0 → z₂ ≠ 0 →
+      star z₁ ⬝ᵥ z₁ = 0 → star z₂ ⬝ᵥ z₂ = 0 → star z₂ ⬝ᵥ z₁ = 0 →
+      ∃ u : Fin n → UnitaryField p, u ≠ 0 ∧ star u ⬝ᵥ u = 0 ∧
+        star z₁ ⬝ᵥ u ≠ 0 ∧ star z₂ ⬝ᵥ u ≠ 0
 
-TODO(discharge) — the case analysis is worked out; take `w₁ = ` a hyperbolic partner of `z₁`
-(`exists_hyperbolic_partner`, `⟨z₁,w₁⟩ = 1`, `w₁` isotropic):
-* **Case `⟨z₂,w₁⟩ ≠ 0`:** `u = w₁` works directly (`⟨z₁,w₁⟩ = 1 ≠ 0`).
-* **Case `⟨z₂,w₁⟩ = 0`, `⟨z₂,z₁⟩ ≠ 0`:** `u = w₁ + c·z₁` for a trace-zero `c ≠ 0`
-  (`exists_traceZero_ne_zero`): isotropic (`⟨u,u⟩ = c + star c = 0`), `⟨z₁,u⟩ = 1`,
-  `⟨z₂,u⟩ = c·⟨z₂,z₁⟩ ≠ 0`. (Cases 1–2 are elementary, ~40 lines, machine-checkable now.)
-* **Case `z₂ ⊥ z₁` and `z₂ ⊥ w₁`:** `z₂ ∈ H^⊥` where `H = ⟨z₁,w₁⟩` is a hyperbolic plane. For
-  `n = 3`, `H^⊥` is 1-dim nondegenerate, hence anisotropic — so this case is **vacuous**. For
-  `n ≥ 4`, take a hyperbolic partner `w₂` of `z₂` **inside `H^⊥`** (exists since `dim H^⊥ ≥ 2`);
-  then `u = w₁ + w₂` is isotropic (`w₁ ⊥ w₂`, both isotropic), `⟨z₁,u⟩ = 1`, `⟨z₂,u⟩ = 1`.
-  This case needs the orthogonal-complement / partner-within-subspace machinery (a small
-  geometry development) — the genuine remaining work. -/
-axiom exists_common_nonorth_isotropic (hn : 3 ≤ n) :
+/-- **Diameter-2 connectivity of the isotropic non-orthogonality graph** (`n ≥ 3`). Any two nonzero
+isotropic `z₁, z₂` have a common non-orthogonal isotropic `u`. The non-perpendicular case
+(`⟨z₂,z₁⟩ ≠ 0`) is machine-checked here: with a hyperbolic partner `w₁` of `z₁`, either `u = w₁`
+(if `⟨z₂,w₁⟩ ≠ 0`) or `u = w₁ + c·z₁` for a trace-zero `c ≠ 0` (then `⟨u,u⟩ = c + star c = 0`,
+`⟨z₁,u⟩ = 1`, `⟨z₂,u⟩ = c·⟨z₂,z₁⟩ ≠ 0`). The perpendicular case delegates to
+`common_nonorth_isotropic_perp`. -/
+theorem exists_common_nonorth_isotropic (hn : 3 ≤ n) :
     ∀ z₁ z₂ : Fin n → UnitaryField p, z₁ ≠ 0 → z₂ ≠ 0 →
       star z₁ ⬝ᵥ z₁ = 0 → star z₂ ⬝ᵥ z₂ = 0 →
       ∃ u : Fin n → UnitaryField p, u ≠ 0 ∧ star u ⬝ᵥ u = 0 ∧
-        star z₁ ⬝ᵥ u ≠ 0 ∧ star z₂ ⬝ᵥ u ≠ 0
+        star z₁ ⬝ᵥ u ≠ 0 ∧ star z₂ ⬝ᵥ u ≠ 0 := by
+  intro z₁ z₂ h1 h2 h1iso h2iso
+  rcases eq_or_ne (star z₂ ⬝ᵥ z₁) 0 with hperp | hnp
+  · exact common_nonorth_isotropic_perp p hn z₁ z₂ h1 h2 h1iso h2iso hperp
+  · obtain ⟨w₁, hw1iso, hzw1⟩ := exists_hyperbolic_partner p hn z₁ h1 h1iso
+    have hw1z : star w₁ ⬝ᵥ z₁ = 1 := by rw [dotProduct_star_swap, hzw1, star_one]
+    rcases eq_or_ne (star z₂ ⬝ᵥ w₁) 0 with hc1 | hc1
+    · -- `z₂ ⊥ w₁` but `⟨z₂,z₁⟩ ≠ 0`: use `u = w₁ + c·z₁`, `c` trace-zero `≠ 0`
+      obtain ⟨c, hc0, hctr⟩ := UnitaryField.exists_traceZero_ne_zero p
+      refine ⟨w₁ + c • z₁, ?_, ?_, ?_, ?_⟩
+      · intro h0
+        have hz : star z₁ ⬝ᵥ (w₁ + c • z₁) = 0 := by rw [h0, dotProduct_zero]
+        rw [dotProduct_add, dotProduct_smul, hzw1, h1iso, smul_eq_mul, mul_zero, add_zero] at hz
+        exact one_ne_zero hz
+      · have hss : star (w₁ + c • z₁) = star w₁ + star c • star z₁ := by
+          funext i
+          simp only [Pi.add_apply, Pi.smul_apply, Pi.star_apply, smul_eq_mul, star_add, star_mul']
+        rw [hss]
+        simp only [add_dotProduct, dotProduct_add, smul_dotProduct, dotProduct_smul, smul_eq_mul,
+          hw1iso, h1iso, hzw1, hw1z, mul_zero, mul_one, add_zero, zero_add]
+        linear_combination hctr
+      · rw [dotProduct_add, dotProduct_smul, hzw1, h1iso, smul_eq_mul, mul_zero, add_zero]
+        exact one_ne_zero
+      · rw [dotProduct_add, dotProduct_smul, hc1, smul_eq_mul, zero_add]
+        exact mul_ne_zero hc0 hnp
+    · -- `⟨z₂,w₁⟩ ≠ 0`: `u = w₁`
+      refine ⟨w₁, ?_, hw1iso, ?_, hc1⟩
+      · intro h0; rw [h0, dotProduct_zero] at hzw1; exact one_ne_zero hzw1.symm
+      · rw [hzw1]; exact one_ne_zero
 
 /-- **Isotropic vectors span** (`n ≥ 3`, machine-checked). For each `i` pick `j ≠ i`; with two
 distinct `c, c'` of norm `-1` (`exists_two_norm_neg_one`), `eᵢ + c·eⱼ` and `eᵢ + c'·eⱼ` are

@@ -1449,6 +1449,122 @@ theorem exists_hyperbolic_partner_offSU {C : Finset (Fin n)} {z : Fin n → Unit
     linear_combination ht
   · rw [dotProduct_add, dotProduct_smul, hzw1, hziso, smul_eq_mul, mul_zero, add_zero]
 
+/-- **Connectivity, perpendicular case, relative to `offSU C`.** The construction of
+`common_nonorth_isotropic_perp` builds `u` from `z₁, z₂` and their hyperbolic partners by linear
+combinations, so with the relative partner `exists_hyperbolic_partner_offSU` it stays in `offSU C`. -/
+theorem common_nonorth_isotropic_perp_offSU {C : Finset (Fin n)}
+    (z₁ z₂ : Fin n → UnitaryField p) (h1 : z₁ ≠ 0) (h2 : z₂ ≠ 0)
+    (h1iso : star z₁ ⬝ᵥ z₁ = 0) (h2iso : star z₂ ⬝ᵥ z₂ = 0) (hperp : star z₂ ⬝ᵥ z₁ = 0)
+    (hz1off : offSU p C z₁) (hz2off : offSU p C z₂) :
+    ∃ u : Fin n → UnitaryField p, u ≠ 0 ∧ star u ⬝ᵥ u = 0 ∧
+      star z₁ ⬝ᵥ u ≠ 0 ∧ star z₂ ⬝ᵥ u ≠ 0 ∧ offSU p C u := by
+  obtain ⟨w₁, hw1iso, hzw1, hw1off⟩ := exists_hyperbolic_partner_offSU p h1 h1iso hz1off
+  have hw1z : star w₁ ⬝ᵥ z₁ = 1 := by rw [dotProduct_star_swap, hzw1, star_one]
+  rcases eq_or_ne (star z₂ ⬝ᵥ w₁) 0 with hc1 | hc1
+  · obtain ⟨w₂, hw2iso, hzw2, hw2off⟩ := exists_hyperbolic_partner_offSU p h2 h2iso hz2off
+    set α : UnitaryField p := star w₁ ⬝ᵥ w₂ with hα
+    set β : UnitaryField p := star z₁ ⬝ᵥ w₂ with hβ
+    set t : UnitaryField p := α * star β with ht
+    have hAw1z2 : star w₁ ⬝ᵥ z₂ = 0 := by rw [dotProduct_star_swap, hc1, star_zero]
+    have hAw2w1 : star w₂ ⬝ᵥ w₁ = star α := by rw [dotProduct_star_swap, ← hα]
+    have hAw2z1 : star w₂ ⬝ᵥ z₁ = star β := by rw [dotProduct_star_swap, ← hβ]
+    have hAw2z2 : star w₂ ⬝ᵥ z₂ = 1 := by rw [dotProduct_star_swap, hzw2, star_one]
+    have hAz1z2 : star z₁ ⬝ᵥ z₂ = 0 := by rw [dotProduct_star_swap, hperp, star_zero]
+    have hstart : star t = β * star α := by rw [ht, star_mul', star_star, mul_comm]
+    set u : Fin n → UnitaryField p := w₁ + w₂ - α • z₁ - β • w₁ + t • z₂ with hu
+    have hstar : star u =
+        star w₁ + star w₂ - star α • star z₁ - star β • star w₁ + star t • star z₂ := by
+      rw [hu]; funext i
+      simp only [Pi.add_apply, Pi.sub_apply, Pi.smul_apply, Pi.star_apply, smul_eq_mul,
+        star_add, star_sub, star_mul', mul_comm]
+    have hz1u : star z₁ ⬝ᵥ u = 1 := by
+      rw [hu]
+      simp only [dotProduct_add, dotProduct_sub, dotProduct_smul, smul_eq_mul, hzw1, h1iso,
+        hAz1z2, ← hβ]
+      ring
+    have hz2u : star z₂ ⬝ᵥ u = 1 := by
+      rw [hu]
+      simp only [dotProduct_add, dotProduct_sub, dotProduct_smul, smul_eq_mul, hc1, hzw2, hperp,
+        h2iso]
+      ring
+    have huoff : offSU p C u := by
+      rw [hu]
+      exact offSU_add p (offSU_sub p (offSU_sub p (offSU_add p hw1off hw2off)
+        (offSU_smul p α hz1off)) (offSU_smul p β hw1off)) (offSU_smul p t hz2off)
+    refine ⟨u, ?_, ?_, ?_, ?_, huoff⟩
+    · intro h0
+      rw [h0, dotProduct_zero] at hz2u
+      exact one_ne_zero hz2u.symm
+    · rw [hstar, hu]
+      simp only [add_dotProduct, sub_dotProduct, smul_dotProduct, dotProduct_add, dotProduct_sub,
+        dotProduct_smul, smul_eq_mul, hw1iso, hw2iso, hw1z, hzw1, h1iso, h2iso, hzw2,
+        hAw1z2, hAw2w1, hAw2z1, hAw2z2, hAz1z2, hc1, hperp, ← hα, ← hβ]
+      rw [ht, hstart]
+      ring
+    · rw [hz1u]; exact one_ne_zero
+    · rw [hz2u]; exact one_ne_zero
+  · exact ⟨w₁, by intro h0; rw [h0, dotProduct_zero] at hzw1; exact one_ne_zero hzw1.symm,
+      hw1iso, by rw [hzw1]; exact one_ne_zero, hc1, hw1off⟩
+
+/-- **Diameter-2 connectivity relative to `offSU C`.** Two nonzero isotropic `z₁, z₂ ∈ offSU C` have
+a common non-orthogonal isotropic `u ∈ offSU C`. With the relative partner/perp-case lemmas this is
+the verbatim relativisation of `exists_common_nonorth_isotropic`. **This + `offSU_maps_nonorth_gen`
+reduce `UExactLineTrans` to the bare scalar-kill** (the `F_{q²}*` torus `exists_scale`). -/
+theorem exists_common_nonorth_isotropic_offSU {C : Finset (Fin n)}
+    (z₁ z₂ : Fin n → UnitaryField p) (h1 : z₁ ≠ 0) (h2 : z₂ ≠ 0)
+    (h1iso : star z₁ ⬝ᵥ z₁ = 0) (h2iso : star z₂ ⬝ᵥ z₂ = 0)
+    (hz1off : offSU p C z₁) (hz2off : offSU p C z₂) :
+    ∃ u : Fin n → UnitaryField p, u ≠ 0 ∧ star u ⬝ᵥ u = 0 ∧
+      star z₁ ⬝ᵥ u ≠ 0 ∧ star z₂ ⬝ᵥ u ≠ 0 ∧ offSU p C u := by
+  rcases eq_or_ne (star z₂ ⬝ᵥ z₁) 0 with hperp | hnp
+  · exact common_nonorth_isotropic_perp_offSU p z₁ z₂ h1 h2 h1iso h2iso hperp hz1off hz2off
+  · obtain ⟨w₁, hw1iso, hzw1, hw1off⟩ := exists_hyperbolic_partner_offSU p h1 h1iso hz1off
+    have hw1z : star w₁ ⬝ᵥ z₁ = 1 := by rw [dotProduct_star_swap, hzw1, star_one]
+    rcases eq_or_ne (star z₂ ⬝ᵥ w₁) 0 with hc1 | hc1
+    · obtain ⟨c, hc0, hctr⟩ := UnitaryField.exists_traceZero_ne_zero p
+      refine ⟨w₁ + c • z₁, ?_, ?_, ?_, ?_, offSU_add p hw1off (offSU_smul p c hz1off)⟩
+      · intro h0
+        have hz : star z₁ ⬝ᵥ (w₁ + c • z₁) = 0 := by rw [h0, dotProduct_zero]
+        rw [dotProduct_add, dotProduct_smul, hzw1, h1iso, smul_eq_mul, mul_zero, add_zero] at hz
+        exact one_ne_zero hz
+      · have hss : star (w₁ + c • z₁) = star w₁ + star c • star z₁ := by
+          funext i
+          simp only [Pi.add_apply, Pi.smul_apply, Pi.star_apply, smul_eq_mul, star_add, star_mul']
+        rw [hss]
+        simp only [add_dotProduct, dotProduct_add, smul_dotProduct, dotProduct_smul, smul_eq_mul,
+          hw1iso, h1iso, hzw1, hw1z, mul_zero, mul_one, add_zero, zero_add]
+        linear_combination hctr
+      · rw [dotProduct_add, dotProduct_smul, hzw1, h1iso, smul_eq_mul, mul_zero, add_zero]
+        exact one_ne_zero
+      · rw [dotProduct_add, dotProduct_smul, hc1, smul_eq_mul, zero_add]
+        exact mul_ne_zero hc0 hnp
+    · exact ⟨w₁, by intro h0; rw [h0, dotProduct_zero] at hzw1; exact one_ne_zero hzw1.symm,
+        hw1iso, by rw [hzw1]; exact one_ne_zero, hc1, hw1off⟩
+
+/-- **Within-`offSU C` line-transitivity (to a scalar), in `⟨transvections⟩`.** Two nonzero isotropic
+`e, e' ∈ offSU C` are connected: `∃ g ∈ uTransvecGen`, `FixSU C g`, `g·e = c·e'` (`c ≠ 0`). Routes
+through a common non-orthogonal isotropic `u ∈ offSU C` (`exists_common_nonorth_isotropic_offSU`) by
+two non-orthogonal moves (`offSU_maps_nonorth_gen`). **`UExactLineTrans` is now exactly this minus the
+scalar `c`** — i.e. `UExactLineTrans ⟸` a `uTransvecGen`/`FixSU C` element scaling `e' ↦ c⁻¹·e'`
+(the `F_{q²}*` line-stabiliser torus `exists_scale`, the sole remaining deep wall). -/
+theorem offSU_maps_isotropic_gen {C : Finset (Fin n)} {e e' : Fin n → UnitaryField p}
+    (he : offSU p C e) (he' : offSU p C e') (h0 : e ≠ 0) (h0' : e' ≠ 0)
+    (heiso : star e ⬝ᵥ e = 0) (he'iso : star e' ⬝ᵥ e' = 0) :
+    ∃ (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) (c : UnitaryField p),
+      g ∈ uTransvecGen p (n := n) ∧ FixSU p C g ∧ c ≠ 0 ∧
+        (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ e = c • e' := by
+  obtain ⟨u, _hu0, huiso, heu, he'u, huoff⟩ :=
+    exists_common_nonorth_isotropic_offSU p e e' h0 h0' heiso he'iso he he'
+  obtain ⟨g1, c1, hg1mem, hg1fix, hc1, hg1⟩ :=
+    offSU_maps_nonorth_gen p he huoff heiso huiso heu
+  have hue' : star u ⬝ᵥ e' ≠ 0 := by
+    rw [dotProduct_star_swap e' u, star_ne_zero]; exact he'u
+  obtain ⟨g2, c2, hg2mem, hg2fix, hc2, hg2⟩ :=
+    offSU_maps_nonorth_gen p huoff he' huiso he'iso hue'
+  refine ⟨g2 * g1, c1 * c2, mul_mem hg2mem hg1mem, FixSU_mul p hg2fix hg1fix,
+    mul_ne_zero hc1 hc2, ?_⟩
+  rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, hg1, Matrix.mulVec_smul, hg2, smul_smul]
+
 /-! ### Explicit coordinate hyperbolic pair (with span recovery) for the generation induction
 
 The genAux dimension induction peels a pair of unfixed coordinates `{i,j}` at a time. The isotropic
@@ -1745,6 +1861,43 @@ theorem hgen_of_line_mate (h2 : (2 : UnitaryField p) ≠ 0)
       ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p)
         (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤ :=
   hgen_of_hpair p h2 (UExactPairTrans_of_line_mate p hline hmate)
+
+/-- **The pure scalar-kill (`F_{q²}*` line-stabiliser torus).** For isotropic `e' ∈ offSU C` and any
+`c ≠ 0`, a `uTransvecGen`/`FixSU C` element scaling `e' ↦ c·e'`. This is the SOLE remaining deep wall
+of unitary transvection-generation: it needs the third-dimension determinant balance `exists_scale`
+(`n ≥ 3` essential), i.e. `SU₃` generation. All connectivity and bookkeeping around it are
+machine-checked (`offSU_maps_isotropic_gen`). -/
+def UScaleKill : Prop :=
+  ∀ (C : Finset (Fin n)) (e' : Fin n → UnitaryField p) (c : UnitaryField p),
+    offSU p C e' → star e' ⬝ᵥ e' = 0 → e' ≠ 0 → c ≠ 0 →
+    ∃ g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p), g ∈ uTransvecGen p (n := n) ∧
+      FixSU p C g ∧ (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ e' = c • e'
+
+/-- **`UExactLineTrans ⟸ UScaleKill`** — the connectivity is fully discharged, so exact
+single-vector line-transitivity reduces to the bare scalar correction. Route `e ↦ c·e'`
+(`offSU_maps_isotropic_gen`), then scale `e' ↦ c⁻¹·e'` (`UScaleKill`), composing to `e ↦ e'`. **This
+collapses the deep content of `hgen` to exactly `UScaleKill` (the `SU₃`/`exists_scale` torus) plus the
+torus-free mate step `UExactMateTrans`.** -/
+theorem UExactLineTrans_of_scaleKill (hsk : UScaleKill p (n := n)) :
+    UExactLineTrans p (n := n) := by
+  intro C e e' he he' heiso he'iso h0 h0'
+  obtain ⟨g1, c, hg1mem, hg1fix, hc, hg1⟩ :=
+    offSU_maps_isotropic_gen p he he' h0 h0' heiso he'iso
+  obtain ⟨g2, hg2mem, hg2fix, hg2⟩ := hsk C e' c⁻¹ he' he'iso h0' (inv_ne_zero hc)
+  refine ⟨g2 * g1, mul_mem hg2mem hg1mem, FixSU_mul p hg2fix hg1fix, ?_⟩
+  rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, hg1, Matrix.mulVec_smul, hg2, smul_smul,
+    mul_inv_cancel₀ hc, one_smul]
+
+/-- **`hgen` reduced to the scalar-kill + mate steps**: `hgen ⟸ UScaleKill + UExactMateTrans + (2≠0)`.
+The cleanest form of the remaining wall — all the genAux induction, connectivity, and line-to-scalar
+transitivity are machine-checked; what remains is the `F_{q²}*` line-stabiliser torus (`UScaleKill`,
+= `SU₃` generation / `exists_scale`) and the Eichler mate step (`UExactMateTrans`). -/
+theorem hgen_of_scaleKill_mate (h2 : (2 : UnitaryField p) ≠ 0)
+    (hsk : UScaleKill p (n := n)) (hmate : UExactMateTrans p (n := n)) :
+    Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p)
+        (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤ :=
+  hgen_of_line_mate p h2 (UExactLineTrans_of_scaleKill p hsk) hmate
 
 /-- **`SU_n(F_{p²})` is perfect, modulo the unitary Witt generation theorem** (`n ≥ 3`, `p ≥ 5`).
 Assembles `commutator_specialUnitaryGroup_eq_top` with the concrete fixed-field scalar
@@ -2623,6 +2776,16 @@ theorem PSU_isSimpleGroup_modulo_line_mate (hn : 3 ≤ n) (hp : 5 ≤ p)
       intro hdvd; have := Nat.le_of_dvd (by norm_num) hdvd; omega
     simpa using h2'
   exact PSU_isSimpleGroup_modulo_generation p n hn hp (hgen_of_line_mate p h2 hline hmate)
+
+/-- **`PSU(n,q)` is simple, modulo the scalar-kill torus + the mate step** (`n ≥ 3`, `p ≥ 5`) — the
+cleanest top-level reduction. All of: the genAux dimension induction, the base case, the within-
+`offSU` connectivity, and the line-to-scalar transitivity are machine-checked; PSU simplicity now
+rests on exactly `UScaleKill` (the `F_{q²}*` line-stabiliser torus / `SU₃` generation) and
+`UExactMateTrans` (Eichler as a transvection product). -/
+theorem PSU_isSimpleGroup_modulo_scaleKill_mate (hn : 3 ≤ n) (hp : 5 ≤ p)
+    (hsk : UScaleKill p (n := n)) (hmate : UExactMateTrans p (n := n)) :
+    IsSimpleGroup (PSUConcrete n p) :=
+  PSU_isSimpleGroup_modulo_line_mate p n hn hp (UExactLineTrans_of_scaleKill p hsk) hmate
 
 end Iwasawa
 

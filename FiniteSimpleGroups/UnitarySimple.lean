@@ -1287,6 +1287,108 @@ theorem FixSU_univ_eq_one {g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField 
   · have hne : q ≠ r := fun hh => h hh.symm
     simp [hne]
 
+/-- **The transvection subgroup `⟨transvections⟩` of `SU`** — the object of `hgen`
+(`hgen ⟺ uTransvecGen = ⊤`). Closure of all unitary transvections (isotropic centre, trace-zero
+scalar). -/
+noncomputable def uTransvecGen :
+    Subgroup (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) :=
+  Subgroup.closure {h | ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p)
+    (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0), h = uTransvecSU v a hv ha}
+
+theorem uTransvecSU_mem_gen (v : Fin n → UnitaryField p) (a : UnitaryField p)
+    (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0) :
+    uTransvecSU v a hv ha ∈ uTransvecGen p (n := n) :=
+  Subgroup.subset_closure ⟨v, a, hv, ha, rfl⟩
+
+/-! ### Explicit coordinate hyperbolic pair (with span recovery) for the generation induction
+
+The genAux dimension induction peels a pair of unfixed coordinates `{i,j}` at a time. The isotropic
+hyperbolic pair on those coordinates is `hpA = e_i + c·e_j`, `hpB = 2⁻¹·(e_i − c·e_j)` (`N(c) = −1`),
+which together span `span{e_i, e_j}` (`hpA + 2·hpB = 2·e_i`, `hpA − 2·hpB = 2c·e_j`). Hence a matrix
+fixing both `hpA` and `hpB` fixes both `e_i` and `e_j` — the step that converts "fix the peeled
+pair" into "fix the two coordinates" (`FixSU`). -/
+
+/-- First vector of the coordinate hyperbolic pair on `{i,j}`: `e_i + c·e_j`. -/
+noncomputable def hpA (i j : Fin n) (c : UnitaryField p) : Fin n → UnitaryField p :=
+  Pi.single i 1 + Pi.single j c
+
+/-- Second vector of the coordinate hyperbolic pair on `{i,j}`: `2⁻¹·(e_i − c·e_j)`. -/
+noncomputable def hpB (i j : Fin n) (c : UnitaryField p) : Fin n → UnitaryField p :=
+  (2⁻¹ : UnitaryField p) • (Pi.single i 1 + Pi.single j (-c))
+
+theorem hpA_iso {i j : Fin n} (hij : i ≠ j) {c : UnitaryField p} (hc : c * star c = -1) :
+    star (hpA p i j c) ⬝ᵥ hpA p i j c = 0 := isotropic_single_pair hij hc
+
+theorem hpB_iso {i j : Fin n} (hij : i ≠ j) {c : UnitaryField p} (hc : c * star c = -1) :
+    star (hpB p i j c) ⬝ᵥ hpB p i j c = 0 := by
+  have hcn : (-c) * star (-c) = -1 := by rw [star_neg, neg_mul_neg]; exact hc
+  rw [hpB, star_smul, smul_dotProduct, dotProduct_smul, isotropic_single_pair hij hcn,
+    smul_zero, smul_zero]
+
+theorem hpA_hpB_hyperbolic {i j : Fin n} (hij : i ≠ j) (h2 : (2 : UnitaryField p) ≠ 0)
+    {c : UnitaryField p} (hc : c * star c = -1) :
+    star (hpA p i j c) ⬝ᵥ hpB p i j c = 1 := by
+  have hcross : star ((Pi.single i 1 : Fin n → UnitaryField p) + Pi.single j c) ⬝ᵥ
+      ((Pi.single i 1 : Fin n → UnitaryField p) + Pi.single j (-c)) = 2 := by
+    rw [star_add, ← Pi.single_star, ← Pi.single_star, star_one]
+    simp only [add_dotProduct, dotProduct_add, single_dotProduct, Pi.single_eq_same,
+      Pi.single_eq_of_ne hij, Pi.single_eq_of_ne hij.symm, mul_one, mul_zero, add_zero, zero_add,
+      mul_neg]
+    rw [mul_comm (star c) c, hc]; ring
+  rw [hpA, hpB, dotProduct_smul, hcross, smul_eq_mul, inv_mul_cancel₀ h2]
+
+theorem hpA_offSU {C : Finset (Fin n)} {i j : Fin n} (hi : i ∉ C) (hj : j ∉ C)
+    (c : UnitaryField p) : offSU p C (hpA p i j c) :=
+  offSU_add p (offSU_single p hi 1) (offSU_single p hj c)
+
+theorem hpB_offSU {C : Finset (Fin n)} {i j : Fin n} (hi : i ∉ C) (hj : j ∉ C)
+    (c : UnitaryField p) : offSU p C (hpB p i j c) :=
+  offSU_smul p _ (offSU_add p (offSU_single p hi 1) (offSU_single p hj (-c)))
+
+/-- Span recovery: `hpA + 2·hpB = 2·e_i`. -/
+theorem hpA_add_two_hpB (i j : Fin n) (h2 : (2 : UnitaryField p) ≠ 0) (c : UnitaryField p) :
+    hpA p i j c + (2 : UnitaryField p) • hpB p i j c
+      = (2 : UnitaryField p) • (Pi.single i 1 : Fin n → UnitaryField p) := by
+  rw [hpA, hpB, smul_smul, mul_inv_cancel₀ h2, one_smul, two_smul, Pi.single_neg]
+  abel
+
+/-- Span recovery: `hpA − 2·hpB = 2·(c·e_j)`. -/
+theorem hpA_sub_two_hpB (i j : Fin n) (h2 : (2 : UnitaryField p) ≠ 0) (c : UnitaryField p) :
+    hpA p i j c - (2 : UnitaryField p) • hpB p i j c
+      = (2 : UnitaryField p) • (Pi.single j c : Fin n → UnitaryField p) := by
+  rw [hpA, hpB, smul_smul, mul_inv_cancel₀ h2, one_smul, two_smul, Pi.single_neg]
+  abel
+
+/-- **Fixing the coordinate hyperbolic pair fixes the two coordinates.** Since `hpA, hpB` span
+`span{e_i, e_j}` (`hpA ± 2·hpB`), a matrix `M` fixing both `hpA` and `hpB` fixes `e_i` and `e_j`.
+The step of the genAux induction that converts "fix the peeled pair" into `FixSU` on the two
+coordinates. -/
+theorem fixes_coords_of_fixes_hpAB {i j : Fin n} (h2 : (2 : UnitaryField p) ≠ 0)
+    {c : UnitaryField p} (hc0 : c ≠ 0)
+    {M : Matrix (Fin n) (Fin n) (UnitaryField p)}
+    (hA : M *ᵥ hpA p i j c = hpA p i j c) (hB : M *ᵥ hpB p i j c = hpB p i j c) :
+    M *ᵥ (Pi.single i 1 : Fin n → UnitaryField p) = Pi.single i 1 ∧
+      M *ᵥ (Pi.single j 1 : Fin n → UnitaryField p) = Pi.single j 1 := by
+  have cancel : ∀ (a : UnitaryField p), a ≠ 0 → ∀ x y : Fin n → UnitaryField p,
+      a • x = a • y → x = y := fun a ha x y h => by
+    have h' := congrArg (fun z => a⁻¹ • z) h
+    simpa [smul_smul, inv_mul_cancel₀ ha] using h'
+  refine ⟨cancel 2 h2 _ _ ?_, ?_⟩
+  · rw [← Matrix.mulVec_smul, ← hpA_add_two_hpB p i j h2 c, Matrix.mulVec_add,
+      Matrix.mulVec_smul, hA, hB, hpA_add_two_hpB p i j h2 c]
+  · have hjc : M *ᵥ (Pi.single j c : Fin n → UnitaryField p) = Pi.single j c :=
+      cancel 2 h2 _ _ (by
+        rw [← Matrix.mulVec_smul, ← hpA_sub_two_hpB p i j h2 c, Matrix.mulVec_sub,
+          Matrix.mulVec_smul, hA, hB, hpA_sub_two_hpB p i j h2 c])
+    have hce : (Pi.single j c : Fin n → UnitaryField p)
+        = c • (Pi.single j 1 : Fin n → UnitaryField p) := by
+      funext m
+      by_cases hm : j = m
+      · subst hm; simp [Pi.single_eq_same, smul_eq_mul]
+      · simp [Pi.single_eq_of_ne (Ne.symm hm)]
+    rw [hce, Matrix.mulVec_smul] at hjc
+    exact cancel c hc0 _ _ hjc
+
 /-- **`SU_n(F_{p²})` is perfect, modulo the unitary Witt generation theorem** (`n ≥ 3`, `p ≥ 5`).
 Assembles `commutator_specialUnitaryGroup_eq_top` with the concrete fixed-field scalar
 (`exists_fixedField_norm_ne_one`, `p ≥ 5`) and hyperbolic partners (`exists_hyperbolic_partner`).

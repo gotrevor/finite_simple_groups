@@ -403,20 +403,32 @@ This lap discharged BOTH former core axioms and wired into LieType:
   Needs: SU transitive on isotropic points (Witt) + blocks are trivial.
 - **Step 3a — generation.** Unitary transvections generate `SU` (the unitary Eichler/Witt
   theorem). DEEP core, mirrors `sp_stab_hyperbolic_le` / the ambient-induction generation proof.
-- **Step 3b — perfectness assembly.** Engine done (`uTransvection_commutator`). NEED: a scaling
-  element `g∈SU` with `g·v=λ·v`, `N(λ)≠1`, `v` isotropic (unitary `spDiag` analogue) so every
-  transvection is a commutator; lift to group level with `traceZero` bookkeeping; `commutator=⊤`.
-  CAUTION: like PSp(4,2), small unitary groups have exceptions (e.g. SU(2,2)≅?, SU(3,2) not
-  perfect) — `N(λ)≠1` needs a field/dimension hypothesis; defer the exact exclusion.
+  **Submitted to Aristotle 2026-06-04 eve (project `a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`)** as a
+  self-contained `import Mathlib` stub (`/tmp/aristotle-ugen/UGen.lean`): transvections generate
+  `SU_n(F)` for `3 ≤ card n`, with `uTransvection_mem_su` as the one supplied axiom.
+- ✅ **Step 3b — SCALING ELEMENT DONE** (2026-06-04 eve, `UnitaryTransvection.lean` §Scaling). The
+  `spDiag` analogue is fully machine-checked (all `[propext, Classical.choice, Quot.sound]`):
+  `uScale v w λ := 1 + (λ-1)·(v⊗star w) + ((star λ)⁻¹-1)·(w⊗star v)` on a hyperbolic pair `(v,w)`;
+  `uScale_mulVec_self` (`v↦λ·v`), `uScale_mem` (`∈ U`, via `A²=A,B²=B,AB=BA=0`), `uScale_det`
+  (`det = λ·(star λ)⁻¹`, via Weinstein–Aronszajn `det_one_add_mul_comm` + 2×2 `det_fin_two`),
+  `uScale_mem_su` (`∈ SU` when `star λ = λ`, the fixed field, so `det = λ·λ⁻¹ = 1`). The hyperbolic
+  partner `w` comes from the proven `exists_hyperbolic_partner` — no generation needed for the
+  element. **REMAINING for perfectness:** (i) `uTransvecSU_mem_commutator` (each transvection is a
+  commutator, mirror `spTransvecSp_mem_commutator`, uses `uScale_mem_su` + `uTransvection_commutator`
+  + a fixed-field `λ` with `λ²≠1`); (ii) lift to `commutator (SU) = ⊤` via Step-3a generation;
+  (iii) descend to `PSUConcrete`. CAUTION: small exceptions (e.g. SU(3,2) not perfect) — the
+  fixed-field `λ²≠1` needs `|F₀| ≥ 4`; defer the exact exclusion. For general (non-fixed-field) `λ`,
+  multiply `uScale` by a norm-1 scalar `μ=(star λ)λ⁻¹` on the complement to fix `det` (n≥3, TODO).
 - **Step 3c — assemble** `MulAction.IwasawaStructure` (same mathlib criterion as PSL/PSp/PSU) ⟹
   `IsSimpleGroup (PSUConcrete n p)`, then **connect `LieType.PSU`** (replace `opaque` carrier;
   CAUTION: `PSU` used in `classicalLieTypeCarrier` + `PSU_isSimpleGroup`; general `q=p^m` needs
   `GaloisField p (2m)` + `iterateFrobenius`).
 The whole PSp scaffold (`SpIwasawa`/`SpTransvection`/`SpSmallField`) remains the template to copy.
 
-**Ready Aristotle brick (submit when account frees):** unitary scaling element — given `v`
-isotropic and `λ` with `N(λ)=λ·star λ≠1`, construct `g∈specialUnitaryGroup` with `g·v=λ·v`
-(inline `uTransvection`/membership facts as axioms; the unitary analogue of `spDiag`).
+**Aristotle in flight (2026-06-04 eve):** unitary Witt generation (project
+`a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`, stub `/tmp/aristotle-ugen/UGen.lean`). Poll with
+`aristotle tasks a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`. (The scaling-element brick is now DONE
+locally — see Step 3b.)
 
 **Other open classical axiom:** `POmega_isSimpleGroup` (n≥7) — also opaque, orthogonal geometry,
 hardest of the four (ε-type quadratic forms). After PSU.

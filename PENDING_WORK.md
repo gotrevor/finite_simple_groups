@@ -398,9 +398,24 @@ This lap discharged BOTH former core axioms and wired into LieType:
   **`psuFaithful : FaithfulSMul (PSUConcrete n p) (IsoPoint p n)`** — the Iwasawa `FaithfulSMul`
   obligation. `#print axioms psuFaithful` = `[propext, Classical.choice, Quot.sound]`. Mirrors
   `SpN.pspFaithful`/`pspPermHom`/`pspAction` line-for-line.
-- **Step 2c REMAINING — quasi-preprimitivity** of the `IsoPoint` action (the deep geometric core,
-  mirrors SpIwasawa's `psp_isTrivialBlock_of_isBlock`). Mathlib has `IsPreprimitive.isQuasiPreprimitive`.
-  Needs: SU transitive on isotropic points (Witt) + blocks are trivial.
+- **Step 2c — quasi-preprimitivity** of the `IsoPoint` action. Decomposed (mathlib
+  `IsPreprimitive.isQuasiPreprimitive`) into **(a) pretransitivity ✅ DONE** + **(b) block-triviality
+  (REMAINING)**.
+  - ✅ **(a) `psu_isPretransitive` PROVEN** (2026-06-04 night, `UnitarySimple.lean §Concrete/§Iwasawa`,
+    axiom-clean). The geometric core needs **NO Witt classification**: `exists_su_maps_nonorth`
+    (non-orthogonal isotropic `v,w`, `⟨v,w⟩=β≠0` ⇒ the two-transvection product `g=τ_{v,b}·τ_{w,t}∈SU`
+    maps `v↦(t·star β)·w`; `b=-(N(β)·t)⁻¹` auto trace-zero) + the already-proven diameter-2 connectivity
+    `exists_common_nonorth_isotropic` ⇒ `exists_su_maps_isotropic` (SU transitive on isotropic lines)
+    ⇒ `psu_isPretransitive` (descended to PSU↷IsoPoint). This was the worry-piece; it fell to the
+    elementary Eichler move.
+  - **(b) block-triviality `psu_isTrivialBlock_of_isBlock` (REMAINING)** — the maximal-parabolic
+    primitivity core. Mirrors SpIwasawa's `psp_isTrivialBlock_of_isBlock` (T1 non-perp transitivity +
+    connectivity + assembly). The atom is **T1**: `Stab[x]` transitive on isotropic points non-orth to
+    `[x]`, which needs the unitary **Eichler/Siegel transformation** `E(x,h)` (fix `x`, translate the
+    hyperbolic partner by `h∈x^⊥`) — the same Eichler theory as generation. Connectivity
+    (`exists_common_nonorth_isotropic`) and the block-combinatorics template are already in hand;
+    once T1 lands the assembly is mechanical (copy `block_mem_of_nonperp`/`block_univ_of_nonperp_pair`).
+    GOOD ARISTOTLE CANDIDATE.
 - **Step 3a — generation.** Unitary transvections generate `SU` (the unitary Eichler/Witt
   theorem). DEEP core, mirrors `sp_stab_hyperbolic_le` / the ambient-induction generation proof.
   **Submitted to Aristotle 2026-06-04 eve (project `a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`)** as a
@@ -425,22 +440,29 @@ This lap discharged BOTH former core axioms and wired into LieType:
   `PSUConcrete` (quotient is perfect if `SU` is — `commutator` surjects). CAUTION: small exceptions
   (e.g. SU(3,2) not perfect) handled by the `p≥5` hyp; the exact exclusion is deferred. For general
   (non-fixed-field) `λ`, multiply `uScale` by a norm-1 `μ=(star λ)λ⁻¹` on the complement (n≥3, TODO).
-- **Step 3c — assemble** `MulAction.IwasawaStructure` (same mathlib criterion) ⟹
-  `IsSimpleGroup (PSUConcrete n p)`. **HAVE (this lap):** `psuFaithful` (FaithfulSMul on
-  `IsoPoint p n`), `PSU_nontrivial` (Nontrivial), `nonempty_isoPoint` (action set nonempty),
-  perfectness engine (above). **NEED:** the `IwasawaStructure` T-family `Tline : IsoPoint → Subgroup
-  PSUConcrete` (= `uRootSubgroup` descended through center) with `is_comm` (abelian — `uRootSubgroup`
-  is `IsMulCommutative`), `is_conj` (conjugation-equivariant — mirror `pspIwasawaStructure.is_conj`
-  using `uTransvecSU_conj`), `is_generator` (= generation, Step 3a); and **`IsQuasiPreprimitive`**
-  of the `IsoPoint` action (DEEP — unitary Witt transitivity + trivial blocks, mirror SpIwasawa
-  `pspQuasiPreprimitive`). Then **connect `LieType.PSU`** (replace `opaque` carrier; general `q=p^m`
-  needs `GaloisField p (2m)` + `iterateFrobenius`).
+- ✅ **Step 3c — IWASAWA STRUCTURE ASSEMBLED** (2026-06-04 night, `UnitarySimple.lean §Iwasawa`,
+  all axiom-clean). The full criterion is built:
+  - Group-level inputs in `UnitaryTransvection.lean`: `mem_uRootSubgroup`, `uRootSubgroup_congr`,
+    `uRootSubgroup_conj` (the `is_conj` engine), `uRootSubgroup_smul`/`_rep` (line-invariance).
+  - `psuIwasawaStructure (hgen)` : the `IwasawaStructure` with `T := Tline` (`uRootSubgroup` descended
+    through center), `is_comm` (IsMulCommutative), `is_conj` (mirrors SpIwasawa via `uRootSubgroup_conj`
+    + line-invariance), `is_generator = Tline_iSup` (modulo generation hyp).
+  - `commutator_PSU_eq_top_of_generate` : perfectness descended `SU↠SU/Z`.
+  - **`PSU_isSimpleGroup_of_generate_of_qpp` (n≥3, p≥5)** : the Iwasawa criterion assembled from
+    `PSU_nontrivial` + `psuFaithful` + perfectness + `psuIwasawaStructure`, taking generation `hgen`
+    and quasi-preprimitivity `hqpp` as hyps. AXIOM-CLEAN.
+  - **`PSU_isSimpleGroup_of_generate` (n≥3, p≥5)** : the headline reduction. With pretransitivity now
+    proven (Step 2c-a), needs only **TWO** inputs: Witt generation `hgen` (Step 3a) + block-triviality
+    `hblk` (Step 2c-b). AXIOM-CLEAN.
+  - **REMAINING for full discharge:** (1) generation (Step 3a, Aristotle); (2) block-triviality
+    (Step 2c-b, Eichler). Then **connect `LieType.PSU`** (replace `opaque` carrier — mirror PSp's
+    `def PSp` + `SpLieType.lean`; general `q=p^m` needs `GaloisField p (2m)` + `iterateFrobenius`).
 The whole PSp scaffold (`SpIwasawa`/`SpTransvection`/`SpSmallField`) remains the template to copy.
 
-**Aristotle in flight (2026-06-04 eve):** unitary Witt generation (project
-`a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`, stub `/tmp/aristotle-ugen/UGen.lean`). Poll with
-`aristotle tasks a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`. (The scaling-element brick is now DONE
-locally — see Step 3b.)
+**Aristotle in flight:** unitary Witt generation (project
+`a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`). Poll with
+`aristotle tasks a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`. **Next Aristotle candidate:** the unitary
+Eichler/Siegel transformation + T1 (block-triviality atom).
 
 **Other open classical axiom:** `POmega_isSimpleGroup` (n≥7) — also opaque, orthogonal geometry,
 hardest of the four (ε-type quadratic forms). After PSU.

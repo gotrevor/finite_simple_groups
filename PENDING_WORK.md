@@ -459,10 +459,17 @@ This lap discharged BOTH former core axioms and wired into LieType:
     `def PSp` + `SpLieType.lean`; general `q=p^m` needs `GaloisField p (2m)` + `iterateFrobenius`).
 The whole PSp scaffold (`SpIwasawa`/`SpTransvection`/`SpSmallField`) remains the template to copy.
 
-**Aristotle in flight:** unitary Witt generation (project
-`a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`). Poll with
-`aristotle tasks a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`. **Next Aristotle candidate:** the unitary
-Eichler/Siegel transformation + T1 (block-triviality atom).
+**Aristotle in flight (2 jobs, 2026-06-04 night):**
+1. unitary Witt **generation** — project `a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4` (IN_PROGRESS >1h).
+2. unitary **T1** (Eichler transitivity, block-triviality atom) — project
+   `19b0b4a0-94ac-43c7-849b-e0fd7b9c255f`, stub `/tmp/aristotle-t1/T1.lean`. Goal: `Stab[x]`
+   transitive on non-orth isotropic lines (`g·x = c·x ∧ g·y = d·y'`), supplied
+   `uTransvection_mem_su`/`exists_hyperbolic_partner`/`exists_traceZero_ne_zero`.
+Poll: `aristotle tasks <uuid>`. When T1 lands, the block-combinatorics scaffold (mirror SpIwasawa
+`block_mem_of_nonperp`/`block_univ_of_nonperp_pair`, reusing `exists_common_nonorth_isotropic`) gives
+`psu_isTrivialBlock_of_isBlock`; with generation that closes `PSU_isSimpleGroup_of_generate` →
+unconditional. NOTE: block-triviality also needs a PERP-case transitivity (two distinct perpendicular
+isotropic block points) — a second small Eichler lemma, or handle via connectivity in the assembly.
 
 **Other open classical axiom:** `POmega_isSimpleGroup` (n≥7) — also opaque, orthogonal geometry,
 hardest of the four (ε-type quadratic forms). After PSU.

@@ -228,4 +228,30 @@ noncomputable def pspFaithful [Nonempty l] :
       ext x
       exact hsmul x }
 
+/-- **`PSp(2n,F) = Sp/Z` is nontrivial** (for `Nonempty l`, i.e. dimension `2n ≥ 2`) — the
+Iwasawa `Nontrivial` obligation. The transvection `τ_{e_{inl i₀}, 1}` is non-central: were it
+central it would be a scalar matrix (`sp_center_fixes_line` + `eq_scalar_of_fixes`), but its
+`(inl i₀, inr i₀)` entry is `1` (`J·e_{inl i₀} = e_{inr i₀}`) while a scalar matrix's
+off-diagonal entries vanish. -/
+theorem PSp_nontrivial [Nonempty l] :
+    Nontrivial (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) := by
+  obtain ⟨i0⟩ := (inferInstance : Nonempty l)
+  set v : (l ⊕ l) → F := Pi.single (Sum.inl i0) 1 with hv_def
+  refine ⟨QuotientGroup.mk (spTransvecSp v 1), 1, ?_⟩
+  rw [Ne, QuotientGroup.eq_one_iff]
+  intro hmem
+  obtain ⟨r, hr⟩ :=
+    eq_scalar_of_fixes (spTransvecSp v 1) (fun x => sp_center_fixes_line _ hmem x)
+  rw [spTransvecSp_coe] at hr
+  have hne : (Sum.inl i0 : l ⊕ l) ≠ Sum.inr i0 := by simp
+  have hvi : v (Sum.inl i0) = 1 := by rw [hv_def, Pi.single_eq_same]
+  have hJ : (Matrix.J l F *ᵥ v) (Sum.inr i0) = 1 := by
+    rw [hv_def, mulVec_single_one, Matrix.col_apply, Matrix.J, Matrix.fromBlocks_apply₂₁,
+      Matrix.one_apply_eq]
+  have hentry := congr_fun₂ hr (Sum.inl i0) (Sum.inr i0)
+  rw [spTransvection, Matrix.add_apply, Matrix.one_apply_ne hne, Matrix.smul_apply, one_smul,
+    vecMulVec_apply, hvi, hJ, mul_one, zero_add, Matrix.scalar_apply,
+    Matrix.diagonal_apply_ne _ hne] at hentry
+  exact one_ne_zero hentry
+
 end FiniteSimpleGroups.SpN

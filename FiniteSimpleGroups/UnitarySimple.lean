@@ -1389,6 +1389,150 @@ theorem fixes_coords_of_fixes_hpAB {i j : Fin n} (h2 : (2 : UnitaryField p) ≠ 
     rw [hce, Matrix.mulVec_smul] at hjc
     exact cancel c hc0 _ _ hjc
 
+/-! ### The generation dimension induction (`genAux`), modulo exact pair-transitivity
+
+The unitary analogue of the symplectic `genAux_le` (`SpIwasawa.lean:681`). Strong induction peeling a
+pair of unfixed coordinates `{i,j}` at a time: map the (preserved) hyperbolic pair
+`(g·hpA, g·hpB)` back to `(hpA, hpB)` by a transvection product `t` fixing `C`, so `t·g` fixes the two
+new coordinates (`fixes_coords_of_fixes_hpAB`); recurse on `C ∪ {i,j}`; `g = t⁻¹·(t·g)`. Base
+`Cᶜ.card ≤ 1`: `g` fixes every standard basis vector but (at most) one, so `g = 1` (`det` base case
+`u_eq_one_of_fixes_all_but_one`). The ONE deep input — exact transitivity on hyperbolic pairs within
+`offSU C`, landing in `⟨transvections⟩` (the unitary `offS_transvecGen_maps_pair`, which needs the
+third-dimension determinant balance `exists_scale`) — is abstracted as the hypothesis `hpair`. -/
+
+/-- **Base case of the generation induction.** A `g ∈ SU` fixing all standard basis vectors but at
+most one (`Cᶜ.card ≤ 1`) is the identity (`det` base case), hence in `⟨transvections⟩`. -/
+theorem uGenAux_base (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))
+    {C : Finset (Fin n)} (hsmall : Cᶜ.card ≤ 1) (hg : FixSU p C g) :
+    g ∈ uTransvecGen p (n := n) := by
+  have hu : star (g : Matrix (Fin n) (Fin n) (UnitaryField p)) * g = 1 :=
+    Matrix.mem_unitaryGroup_iff'.mp (Matrix.specialUnitaryGroup_le_unitaryGroup g.2)
+  have hdet : (g : Matrix (Fin n) (Fin n) (UnitaryField p)).det = 1 :=
+    (Matrix.mem_specialUnitaryGroup_iff.mp g.2).2
+  rcases Cᶜ.eq_empty_or_nonempty with hCe | ⟨k, hk⟩
+  · have hCuniv : C = Finset.univ := (Finset.compl_eq_empty_iff C).mp hCe
+    subst hCuniv
+    rw [FixSU_univ_eq_one p hg]; exact one_mem _
+  · have hg1 : (g : Matrix (Fin n) (Fin n) (UnitaryField p)) = 1 := by
+      apply u_eq_one_of_fixes_all_but_one hu hdet (k := k)
+      intro i hik
+      apply hg i
+      by_contra hiC
+      exact hik (Finset.card_le_one.mp hsmall i (Finset.mem_compl.mpr hiC) k hk)
+    rw [show g = 1 from Subtype.ext hg1]; exact one_mem _
+
+/-- **The unitary generation induction, modulo exact pair-transitivity `hpair`.** Any `g ∈ SU`
+fixing the standard basis vectors indexed by `C` lies in `⟨transvections⟩`. -/
+theorem uGenAux (h2 : (2 : UnitaryField p) ≠ 0)
+    (hpair : ∀ (C : Finset (Fin n)) (e f e' f' : Fin n → UnitaryField p),
+      offSU p C e → offSU p C f → offSU p C e' → offSU p C f' →
+      star e ⬝ᵥ e = 0 → star f ⬝ᵥ f = 0 → star e ⬝ᵥ f = 1 →
+      star e' ⬝ᵥ e' = 0 → star f' ⬝ᵥ f' = 0 → star e' ⬝ᵥ f' = 1 →
+      ∃ g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p), g ∈ uTransvecGen p (n := n) ∧
+        FixSU p C g ∧ (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ e = e' ∧
+          (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f = f') :
+    ∀ (steps : ℕ) (C : Finset (Fin n))
+      (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)),
+      Cᶜ.card ≤ steps → FixSU p C g → g ∈ uTransvecGen p (n := n) := by
+  obtain ⟨c, hcnorm⟩ := UnitaryField.exists_norm_neg_one p
+  have hc0 : c ≠ 0 := fun h => by simp [h] at hcnorm
+  intro steps
+  induction steps with
+  | zero =>
+    intro C g hCn hg
+    -- `Cᶜ.card ≤ 0`, so `g` fixes every basis vector ⟹ `g = 1`
+    exact uGenAux_base p g (by omega) hg
+  | succ steps ih =>
+    intro C g hCn hg
+    by_cases hsmall : Cᶜ.card ≤ 1
+    · exact uGenAux_base p g hsmall hg
+    · -- peel a pair of unfixed coordinates
+      have h1lt : 1 < Cᶜ.card := not_le.mp hsmall
+      obtain ⟨i, hiCc, j, hjCc, hij⟩ := Finset.one_lt_card.mp h1lt
+      have hiC : i ∉ C := Finset.mem_compl.mp hiCc
+      have hjC : j ∉ C := Finset.mem_compl.mp hjCc
+      -- the preserved hyperbolic pair `(g·hpA, g·hpB)`
+      have hgu : (g : Matrix (Fin n) (Fin n) (UnitaryField p)) ∈ Matrix.unitaryGroup (Fin n) _ :=
+        Matrix.specialUnitaryGroup_le_unitaryGroup g.2
+      have hAiso : star (hpA p i j c) ⬝ᵥ hpA p i j c = 0 := hpA_iso p hij hcnorm
+      have hBiso : star (hpB p i j c) ⬝ᵥ hpB p i j c = 0 := hpB_iso p hij hcnorm
+      have hABhyp : star (hpA p i j c) ⬝ᵥ hpB p i j c = 1 := hpA_hpB_hyperbolic p hij h2 hcnorm
+      obtain ⟨t, htmem, htfix, htA, htB⟩ := hpair C
+        ((g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ hpA p i j c)
+        ((g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ hpB p i j c)
+        (hpA p i j c) (hpB p i j c)
+        (offSU_preserved p hg (hpA_offSU p hiC hjC c))
+        (offSU_preserved p hg (hpB_offSU p hiC hjC c))
+        (hpA_offSU p hiC hjC c) (hpB_offSU p hiC hjC c)
+        (by rw [u_preserves_form hgu]; exact hAiso)
+        (by rw [u_preserves_form hgu]; exact hBiso)
+        (by rw [u_preserves_form hgu]; exact hABhyp)
+        hAiso hBiso hABhyp
+      -- `t·g` fixes `hpA` and `hpB`, hence `e_i` and `e_j`
+      have htgA : (↑(t * g) : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ hpA p i j c
+          = hpA p i j c := by rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, htA]
+      have htgB : (↑(t * g) : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ hpB p i j c
+          = hpB p i j c := by rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, htB]
+      obtain ⟨hgi, hgj⟩ := fixes_coords_of_fixes_hpAB p h2 hc0 htgA htgB
+      -- `t·g` fixes `C ∪ {i,j}`
+      have htgfix : FixSU p (insert i (insert j C)) (t * g) := by
+        intro k hk
+        rw [Finset.mem_insert] at hk
+        rcases hk with rfl | hk
+        · exact hgi
+        · rw [Finset.mem_insert] at hk
+          rcases hk with rfl | hk
+          · exact hgj
+          · exact (FixSU_mul p htfix hg) k hk
+      -- the complement shrinks by two
+      have hcard : (insert i (insert j C))ᶜ.card ≤ steps := by
+        have hijnotin : i ∉ insert j C := by
+          simp only [Finset.mem_insert, not_or]; exact ⟨hij, hiC⟩
+        have e1 : (insert i (insert j C)).card = C.card + 2 := by
+          rw [Finset.card_insert_of_notMem hijnotin, Finset.card_insert_of_notMem hjC]
+        have e2 : (insert i (insert j C))ᶜ.card = n - (C.card + 2) := by
+          rw [Finset.card_compl, Fintype.card_fin, e1]
+        have e3 : Cᶜ.card = n - C.card := by rw [Finset.card_compl, Fintype.card_fin]
+        have e4 : C.card ≤ n := by
+          have := Finset.card_le_univ C; rwa [Fintype.card_fin] at this
+        omega
+      have htgmem : (t * g) ∈ uTransvecGen p (n := n) :=
+        ih (insert i (insert j C)) (t * g) hcard htgfix
+      have hgeq : g = t⁻¹ * (t * g) := by group
+      rw [hgeq]; exact mul_mem (inv_mem htmem) htgmem
+
+/-- **The single deep input to `hgen`**: exact transitivity on hyperbolic pairs within `offSU C`,
+landing in `⟨transvections⟩` (the unitary `offS_transvecGen_maps_pair`). Discharging this — which
+requires the third-dimension determinant balance `exists_scale` (`n ≥ 3` essential) — completes the
+proof that unitary transvections generate `SU`. -/
+def UExactPairTrans : Prop :=
+  ∀ (C : Finset (Fin n)) (e f e' f' : Fin n → UnitaryField p),
+    offSU p C e → offSU p C f → offSU p C e' → offSU p C f' →
+    star e ⬝ᵥ e = 0 → star f ⬝ᵥ f = 0 → star e ⬝ᵥ f = 1 →
+    star e' ⬝ᵥ e' = 0 → star f' ⬝ᵥ f' = 0 → star e' ⬝ᵥ f' = 1 →
+    ∃ g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p), g ∈ uTransvecGen p (n := n) ∧
+      FixSU p C g ∧ (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ e = e' ∧
+        (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f = f'
+
+/-- **Unitary transvections generate `SU`, modulo `UExactPairTrans`** — i.e. `hgen` reduced to the
+single deep pair-transitivity step. Instantiates the generation induction `uGenAux` at `C = ∅`
+(`FixSU ∅` is vacuous). -/
+theorem uTransvecGen_eq_top_of_hpair (h2 : (2 : UnitaryField p) ≠ 0)
+    (hpair : UExactPairTrans p (n := n)) : uTransvecGen p (n := n) = ⊤ := by
+  rw [eq_top_iff]
+  intro g _
+  exact uGenAux p h2 hpair (∅ : Finset (Fin n))ᶜ.card ∅ g le_rfl
+    (fun j hj => absurd hj (Finset.notMem_empty j))
+
+/-- **`hgen` reduced to `UExactPairTrans`**: the literal generation hypothesis of
+`commutator_SU_eq_top_of_generate` follows from the single deep pair-transitivity step (the closure
+of the transvection set is `uTransvecGen`). -/
+theorem hgen_of_hpair (h2 : (2 : UnitaryField p) ≠ 0) (hpair : UExactPairTrans p (n := n)) :
+    Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p)
+        (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤ :=
+  uTransvecGen_eq_top_of_hpair p h2 hpair
+
 /-- **`SU_n(F_{p²})` is perfect, modulo the unitary Witt generation theorem** (`n ≥ 3`, `p ≥ 5`).
 Assembles `commutator_specialUnitaryGroup_eq_top` with the concrete fixed-field scalar
 (`exists_fixedField_norm_ne_one`, `p ≥ 5`) and hyperbolic partners (`exists_hyperbolic_partner`).

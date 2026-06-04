@@ -81,4 +81,120 @@ noncomputable def pslnAction :
       (Projectivization F (n → F)) :=
   MulAction.compHom _ pslnPermHom
 
+/-! ### Faithfulness of the `PSL(n,F)` action — the Iwasawa `FaithfulSMul` obligation
+
+The kernel of the `SL(n,F)` action on `ℙ^{n-1}` is **exactly** the center: `center_le_ker`
+gives `⊇`; the reverse `ker_le_center` is the content here, namely that an element fixing
+every line is a scalar (hence central). So the descended representation `pslnPermHom :
+PSL(n,F) → Sym(ℙ^{n-1})` is injective. This generalizes `SL2.mem_center_of_smul_eq` /
+`SL2.pslPermHom_injective` to all ranks. The "every nonzero vector is an eigenvector ⟹ the
+matrix is scalar" argument is run on the standard basis: each `e_i` forces column `i` to be
+`a_i · e_i` (off-diagonal entries vanish), and each `e_i + e_{i₀}` forces `a_i = a_{i₀}`. -/
+
+/-- If `g` fixes the line `[v]` (for `v ≠ 0`), then `g.mulVec v` is a scalar multiple of `v`
+(the geometric meaning of "fixes the line"). -/
+theorem parallel_of_fixes (g : SpecialLinearGroup n F)
+    (h : ∀ x : Projectivization F (n → F), g • x = x)
+    (v : n → F) (hv : v ≠ 0) :
+    ∃ a : Fˣ, (a : F) • v = g.val.mulVec v := by
+  have hx := h (Projectivization.mk _ v hv)
+  rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff] at hx
+  obtain ⟨a, ha⟩ := hx
+  exact ⟨a, by
+    rw [show g.val.mulVec v = g • v from (smul_vec_def g v).symm, ← Units.smul_def]; exact ha⟩
+
+/-- **An `SL(n,F)` element fixing every line of `ℙ^{n-1}` is central** (a scalar matrix). The
+crux of faithfulness: `ker (SL ↠ Sym ℙ^{n-1}) ≤ center`. Every nonzero vector is an
+eigenvector of `g`; testing the standard basis `e_i` (columns are `a_i · e_i`, so `g` is
+diagonal) and the vectors `e_i + e_{i₀}` (forcing all `a_i` equal) shows `g = scalar (a_{i₀})`,
+which has `det = a_{i₀}^{|n|} = 1`, hence lies in the center (`SpecialLinearGroup.mem_center_iff`). -/
+theorem mem_center_of_smul_eq [Nonempty n] (g : SpecialLinearGroup n F)
+    (h : ∀ x : Projectivization F (n → F), g • x = x) :
+    g ∈ Subgroup.center (SpecialLinearGroup n F) := by
+  -- column `i` of `g` is `a i • e_i`
+  have col : ∀ i : n, ∃ a : Fˣ, ∀ j, g.val j i = (a : F) * (Pi.single i 1 : n → F) j := by
+    intro i
+    have hsi : (Pi.single i 1 : n → F) ≠ 0 := fun hz => by simpa using congrFun hz i
+    obtain ⟨a, ha⟩ := parallel_of_fixes g h (Pi.single i 1) hsi
+    refine ⟨a, fun j => ?_⟩
+    have e := congrFun ha j
+    rw [mulVec_single_one] at e
+    simp only [Pi.smul_apply, smul_eq_mul, Matrix.col_apply] at e
+    exact e.symm
+  choose a ha using col
+  have hoff : ∀ i j : n, j ≠ i → g.val j i = 0 := fun i j hji => by
+    rw [ha i j, Pi.single_eq_of_ne hji, mul_zero]
+  have hdiagval : ∀ i : n, g.val i i = (a i : F) := fun i => by
+    rw [ha i i, Pi.single_eq_same, mul_one]
+  obtain ⟨i0⟩ := (inferInstance : Nonempty n)
+  -- all diagonal entries agree
+  have hAllEq : ∀ i : n, (a i : F) = (a i0 : F) := by
+    intro i
+    by_cases hi : i = i0
+    · rw [hi]
+    · have hw : (Pi.single i 1 + Pi.single i0 1 : n → F) ≠ 0 := fun hz => by
+        have := congrFun hz i
+        rw [Pi.add_apply, Pi.single_eq_same, Pi.single_eq_of_ne hi, add_zero] at this
+        exact one_ne_zero this
+      obtain ⟨b, hb⟩ := parallel_of_fixes g h _ hw
+      have ei := congrFun hb i
+      have ei0 := congrFun hb i0
+      rw [Matrix.mulVec_add, mulVec_single_one, mulVec_single_one] at ei ei0
+      have lhsi : ((b : F) • (Pi.single i 1 + Pi.single i0 1 : n → F)) i = (b : F) := by
+        simp [Pi.single_eq_same, Pi.single_eq_of_ne hi]
+      have lhsi0 : ((b : F) • (Pi.single i 1 + Pi.single i0 1 : n → F)) i0 = (b : F) := by
+        simp [Pi.single_eq_same, Pi.single_eq_of_ne (Ne.symm hi)]
+      have rhsi : (g.val.col i + g.val.col i0) i = (a i : F) := by
+        simp only [Pi.add_apply, Matrix.col_apply]
+        rw [hdiagval i, hoff i0 i hi, add_zero]
+      have rhsi0 : (g.val.col i + g.val.col i0) i0 = (a i0 : F) := by
+        simp only [Pi.add_apply, Matrix.col_apply]
+        rw [hdiagval i0, hoff i i0 (Ne.symm hi), zero_add]
+      rw [lhsi, rhsi] at ei
+      rw [lhsi0, rhsi0] at ei0
+      rw [← ei, ← ei0]
+  -- assemble: `g = scalar (a i0)`, central
+  set r : F := (a i0 : F) with hrdef
+  have hscalar : Matrix.scalar n r = g.val := by
+    ext i j
+    rw [Matrix.scalar_apply]
+    by_cases hij : i = j
+    · subst hij; rw [diagonal_apply_eq, hdiagval i, hAllEq i]
+    · rw [diagonal_apply_ne _ hij, hoff j i hij]
+  have hdet : r ^ Fintype.card n = 1 := by
+    have h1 : Matrix.det (Matrix.scalar n r) = 1 := by rw [hscalar]; exact g.2
+    rwa [show (Matrix.scalar n r) = diagonal (fun _ => r) from rfl, det_diagonal,
+      Finset.prod_const, Finset.card_univ] at h1
+  exact Matrix.SpecialLinearGroup.mem_center_iff.mpr ⟨r, hdet, hscalar⟩
+
+/-- **The kernel of the `ℙ^{n-1}` action equals the center** — with `center_le_ker`, this
+pins `ker (toPermHom) = center`. -/
+theorem ker_le_center [Nonempty n] :
+    (MulAction.toPermHom (SpecialLinearGroup n F)
+      (Projectivization F (n → F))).ker ≤
+      Subgroup.center (SpecialLinearGroup n F) := by
+  intro g hg
+  rw [MonoidHom.mem_ker] at hg
+  apply mem_center_of_smul_eq g
+  intro x
+  have := (Equiv.ext_iff.mp hg) x
+  simpa using this
+
+theorem pslnPermHom_mk (g : SpecialLinearGroup n F) :
+    pslnPermHom (QuotientGroup.mk g) =
+      MulAction.toPermHom (SpecialLinearGroup n F) (Projectivization F (n → F)) g := rfl
+
+/-- **`pslnPermHom : PSL(n,F) → Sym(ℙ^{n-1})` is injective** — its kernel is
+`ker (toPermHom) / center = ⊥` because `ker (toPermHom) = center` (`ker_le_center`). This
+is the Iwasawa `FaithfulSMul` obligation in representation form (`PSL(n,F)` acts faithfully
+on `ℙ^{n-1}`). Generalizes `SL2.pslPermHom_injective` to all ranks. -/
+theorem pslnPermHom_injective [Nonempty n] :
+    Function.Injective (pslnPermHom (n := n) (F := F)) := by
+  rw [injective_iff_map_eq_one]
+  intro x hx
+  induction x using QuotientGroup.induction_on with
+  | H g =>
+    rw [pslnPermHom_mk] at hx
+    exact (QuotientGroup.eq_one_iff g).mpr (ker_le_center (MonoidHom.mem_ker.mpr hx))
+
 end FiniteSimpleGroups.SLn

@@ -89,6 +89,15 @@ theorem spTransvection_det (v : (l ⊕ l) → R) (c : R) : (spTransvection v c).
     det_one_add_replicateCol_mul_replicateRow, dotProduct_smul,
     dotProduct_comm, spForm_self, smul_zero, add_zero]
 
+/-- **The geometric action of a symplectic transvection**: `τ_{v,c}(w) = w + c·ω(w,v)·v`,
+where `ω(w,v) = w ⬝ᵥ (J·v)` is the symplectic form. This is the defining property of the
+transvection (matrix-vector form), the foundation for transitivity-on-vectors and the
+Steinberg/commutator relations toward `Sp`-generation and perfectness. -/
+theorem spTransvection_mulVec (v : (l ⊕ l) → R) (c : R) (w : (l ⊕ l) → R) :
+    spTransvection v c *ᵥ w = w + (c * (w ⬝ᵥ (Matrix.J l R *ᵥ v))) • v := by
+  rw [spTransvection, Matrix.add_mulVec, Matrix.one_mulVec, Matrix.smul_mulVec,
+    Matrix.vecMulVec_mulVec, op_smul_eq_smul, smul_smul, dotProduct_comm]
+
 /-- The symplectic transvection packaged as an element of `symplecticGroup l R`. -/
 noncomputable def spTransvecSp (v : (l ⊕ l) → R) (c : R) : symplecticGroup l R :=
   ⟨spTransvection v c, spTransvection_mem v c⟩

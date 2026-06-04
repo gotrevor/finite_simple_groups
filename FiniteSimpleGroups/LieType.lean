@@ -168,10 +168,12 @@ axiom PSU_isSimpleGroup
     (h_n : 3 ≤ n) :
     IsSimpleGroup (PSU n q)
 
-axiom PSp_isSimpleGroup
-    (n q : ℕ)
-    (h_n : 2 ≤ n) (h_skip : ¬ (n = 2 ∧ q = 2)) :
-    IsSimpleGroup (PSp n q)
+-- `PSp_isSimpleGroup` is no longer an axiom here: it is the downstream **theorem**
+-- `FiniteSimpleGroups.PSp_isSimpleGroup` (in `SpLieType.lean`), assembled from the symplectic
+-- Iwasawa criterion `SpN.PSpn_isSimpleGroup_of_iwasawa`. It carries `[Fact (Nat.Prime q)]` (the
+-- composite-`q` soundness fix, as for PSL) and rests on the single geometric axiom
+-- `SpN.sp_stab_transitive_on_perp_lines` (Δ₀ perp-line Witt transitivity) plus a `q ∈ {2,3}`
+-- small-field residual.
 
 axiom POmega_isSimpleGroup
     (n q : ℕ) [Group (POmega n q)]

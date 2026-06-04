@@ -23,6 +23,7 @@ import FiniteSimpleGroups.SpTransvection
 import FiniteSimpleGroups.SpAction
 import FiniteSimpleGroups.SpSimple
 import FiniteSimpleGroups.SpIwasawa
+import FiniteSimpleGroups.SpLieType
 import FiniteSimpleGroups.Wielandt
 import FiniteSimpleGroups.AschbacherDichotomy
 import FiniteSimpleGroups.ComponentCommute

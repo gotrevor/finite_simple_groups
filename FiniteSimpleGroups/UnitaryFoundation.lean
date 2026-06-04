@@ -1,0 +1,90 @@
+import Mathlib
+
+/-!
+# Foundation for `PSU(n,q)`: the Hermitian base field `F_{q²}` with Frobenius star
+
+`PSU_n(F_q)` is `SU_n(F_{q²}) / center`, where the unitary group is taken with respect to the
+**Hermitian** form built from the order-2 Galois automorphism of `F_{q²}/F_q` — i.e. the
+`q`-power Frobenius `x ↦ x^q`, an involution on `F_{q²}` (since `(x^q)^q = x^{q²} = x`).
+
+mathlib's `Matrix.specialUnitaryGroup n α` is defined for any `[Field α] [StarRing α]` using
+`star`. To instantiate it for the finite unitary groups we must equip `F_{q²}` with the Frobenius
+as its `StarRing` structure — which mathlib does NOT provide for finite fields. This file supplies
+it for the prime case `q = p` (base field `F_{p²} = GaloisField p 2`, `star x = x^p`) on a type
+synonym, so there is no risk of a global `Star` diamond on `GaloisField`.
+
+This is step 0 of the PSU thread (see `PENDING_WORK.md §G`): once `F_{p²}` is a `StarRing`,
+`Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)` is the concrete `SU_n(p)`, and
+`PSU n p := … ⧸ center` connects the currently-`opaque` `LieType.PSU`.
+-/
+
+open Polynomial
+
+namespace FiniteSimpleGroups.PSU
+
+/-- The Hermitian base field `F_{p²}` for `PSU_n(F_p)`, as a type synonym of `GaloisField p 2`
+carrying the Frobenius `x ↦ x^p` as its `star`. -/
+def UnitaryField (p : ℕ) [Fact p.Prime] : Type := GaloisField p 2
+
+namespace UnitaryField
+
+variable (p : ℕ) [Fact p.Prime]
+
+noncomputable instance : Field (UnitaryField p) := inferInstanceAs (Field (GaloisField p 2))
+instance : Finite (UnitaryField p) := inferInstanceAs (Finite (GaloisField p 2))
+noncomputable instance : Fintype (UnitaryField p) := Fintype.ofFinite _
+instance : CharP (UnitaryField p) p := inferInstanceAs (CharP (GaloisField p 2) p)
+
+/-- `|F_{p²}| = p²`. -/
+theorem card_eq : Fintype.card (UnitaryField p) = p ^ 2 := by
+  rw [← Nat.card_eq_fintype_card]
+  exact GaloisField.card p 2 (by norm_num)
+
+/-- The Frobenius `x ↦ x^p` is the Hermitian conjugation. -/
+noncomputable instance : Star (UnitaryField p) := ⟨fun x => frobenius (UnitaryField p) p x⟩
+
+theorem star_eq (x : UnitaryField p) : star x = frobenius (UnitaryField p) p x := rfl
+
+theorem star_pow (x : UnitaryField p) : star x = x ^ p := by
+  rw [star_eq, frobenius_def]
+
+/-- The Frobenius is an **involution** on `F_{p²}`: `(x^p)^p = x^{p²} = x`. -/
+noncomputable instance : InvolutiveStar (UnitaryField p) where
+  star_involutive x := by
+    rw [star_pow, star_pow, ← pow_mul, ← sq, ← card_eq p]
+    exact FiniteField.pow_card x
+
+/-- `F_{p²}` is a `StarRing` with the Frobenius conjugation: `star` is a multiplicative,
+additive involution (additivity is the Frobenius/`add_pow_char`, multiplicativity is field
+commutativity). This is the Hermitian structure underlying `SU_n(F_p)`. -/
+noncomputable instance : StarRing (UnitaryField p) where
+  star_involutive := star_involutive
+  star_mul x y := by
+    rw [star_pow, star_pow, star_pow, mul_pow, mul_comm]
+  star_add x y := by
+    rw [star_pow, star_pow, star_pow, add_pow_char]
+
+/-- Sanity: `star` is genuinely the nontrivial Frobenius, not the identity — `star x = x^p`. -/
+theorem star_apply (x : UnitaryField p) : star x = x ^ p := star_pow p x
+
+end UnitaryField
+
+/-- **The concrete special unitary group `SU_n(F_p)`** — now well-formed because `UnitaryField p`
+is a `StarRing`. This is the linear group whose center-quotient is `PSU_n(F_p)`; it connects the
+currently-`opaque` `LieType.PSU` (step 0 of the PSU thread, `PENDING_WORK.md §G`). -/
+noncomputable abbrev SU (n p : ℕ) [Fact p.Prime] : Type :=
+  Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)
+
+/-- **The concrete projective special unitary group** `PSU_n(F_p) = SU_n(F_p) ⧸ center` — the
+target to which the `opaque LieType.PSU` should be connected (replacing the `opaque` carrier and
+the `[Group (PSU n q)]` axiom argument). Both `SU` and its center-quotient inherit `Group`
+instances (sanity-confirmed by `psuConcrete_group` below). -/
+noncomputable abbrev PSUConcrete (n p : ℕ) [Fact p.Prime] : Type :=
+  SU n p ⧸ Subgroup.center (SU n p)
+
+/-- `SU_n(F_p)` is a group (mathlib's `specialUnitaryGroup` group instance, `star = inv`), so its
+center-quotient `PSUConcrete` is too. -/
+theorem psuConcrete_group (n p : ℕ) [Fact p.Prime] : Nonempty (Group (PSUConcrete n p)) :=
+  ⟨inferInstance⟩
+
+end FiniteSimpleGroups.PSU

@@ -378,7 +378,21 @@ axiom-clean (`[propext, Classical.choice, Quot.sound]`), in `UnitarySimple.lean 
     preserved mate `t₁·f↦f'` (`UExactMateTrans`). **The mate scalar is auto-pinned to 1** by
     `⟨e',·⟩=1` (form-preserved), so the mate step carries **NO torus**.
 
-  **⇒ THE TWO REMAINING ATOMS (next laps):**
+  **Membership+`FixSU`-aware engines already built (consume these next lap):**
+  `offSU_maps_nonorth_gen` (non-orth line move `v↦c·w`), `exists_su_weyl_swap_gen` (3-transvec Weyl),
+  `exists_su_hyperbolic_scale_gen` (6-transvec `F_q*` torus `e↦λe,f↦λ⁻¹f`), all `∈ uTransvecGen ∧
+  FixSU C`. `uEichler_eq_mul_transvection` (`E_{x,h,μ} = E_{x,h,0}·τ_{x,−μ}`, peels the μ-part).
+  Top-level statement: **`PSU_isSimpleGroup_modulo_line_mate`** (`IsSimpleGroup (PSUConcrete n p)`
+  ⟸ `UExactLineTrans + UExactMateTrans`, `n≥3`, `p≥5`).
+
+  **Next-lap achievable sub-bricks (no torus, just porting):** (i) within-`offSU C` connectivity
+  (common non-orth isotropic `u ∈ offSU C` for `|Cᶜ|≥3`) — port `exists_common_nonorth_isotropic`
+  relativised to the coordinate subspace (the identity form restricted to `offSU C` is just the
+  identity form on `Fin |Cᶜ|`); this + `offSU_maps_nonorth_gen` reduces `UExactLineTrans` to the bare
+  scalar-kill. (ii) The `F_q`-scalar case of `UExactLineTrans` (e.g. `|Cᶜ|=2`, the last plane) via
+  `exists_su_hyperbolic_scale_gen`.
+
+  **⇒ THE TWO REMAINING ATOMS (deep, literature-requested):**
   1. **`UExactLineTrans`** (THE deep wall) — exact single-vector transitivity `e↦e'` in
      `offSU C`, in `uTransvecGen`. The line move `offSU_maps_nonorth_gen` gives `e↦c·e'`; killing
      the scalar `c` (a 1-dim `F_q`-coset, generally `∉ F_q`) needs the **third-dimension `F_{q²}*`

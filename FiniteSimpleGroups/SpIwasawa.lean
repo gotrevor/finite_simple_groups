@@ -983,16 +983,73 @@ theorem psp_smul_eq_mk [Nonempty l] (g : symplecticGroup l F)
   rw [Projectivization.smul_mk]
   rfl
 
-/-- **DISCLOSED AXIOM (Δ₀ transitivity — perp-line Witt transitivity).** The stabiliser of a
-nonzero vector `v` acts transitively on the projective lines inside `v^⊥` (other than `⟨v⟩`).
-Out at Aristotle (`91082bf9`). -/
-axiom sp_stab_transitive_on_perp_lines {v u u' : (l ⊕ l) → F} (hv : v ≠ 0)
+/-- **Three-way separation for the standard dot product**: for `u, u'` neither proportional to
+`v`, there is a `t` with `v ⬝ᵥ t = 0`, `u ⬝ᵥ t ≠ 0`, `u' ⬝ᵥ t ≠ 0`. From two applications of
+`exists_dot_perp_nonperp` (kernel of `v ⬝ᵥ ·`) + a field-size-free combination of the witnesses. -/
+theorem exists_dot_both_ne_perp {v u u' : (l ⊕ l) → F} (hu : u ≠ 0) (hu' : u' ≠ 0)
+    (hunv : ¬ ∃ a : F, u = a • v) (hu'nv : ¬ ∃ a : F, u' = a • v) :
+    ∃ t : (l ⊕ l) → F, v ⬝ᵥ t = 0 ∧ u ⬝ᵥ t ≠ 0 ∧ u' ⬝ᵥ t ≠ 0 := by
+  obtain ⟨t1, hv1, hu1⟩ := exists_dot_perp_nonperp hu hunv
+  obtain ⟨t2, hv2, hu'2⟩ := exists_dot_perp_nonperp hu' hu'nv
+  by_cases hut2 : u ⬝ᵥ t2 = 0
+  · by_cases hu't1 : u' ⬝ᵥ t1 = 0
+    · refine ⟨t1 + t2, ?_, ?_, ?_⟩
+      · rw [dotProduct_add, hv1, hv2, add_zero]
+      · rw [dotProduct_add, hut2, add_zero]; exact hu1
+      · rw [dotProduct_add, hu't1, zero_add]; exact hu'2
+    · exact ⟨t1, hv1, hu1, hu't1⟩
+  · exact ⟨t2, hv2, hut2, hu'2⟩
+
+/-- **Relative non-degeneracy on `v^⊥`**: for `u, u'` neither proportional to `v`, there is a `w`
+with `ω(v,w) = 0` (so `w ∈ v^⊥`), `ω(u,w) ≠ 0` and `ω(w,u') ≠ 0`. From `exists_dot_both_ne_perp`
+via `w = -J·t`. The engine of perp-line transitivity. -/
+theorem exists_form_both_ne_in_perp {v u u' : (l ⊕ l) → F} (hu : u ≠ 0) (hu' : u' ≠ 0)
+    (hunv : ¬ ∃ a : F, u = a • v) (hu'nv : ¬ ∃ a : F, u' = a • v) :
+    ∃ w : (l ⊕ l) → F,
+      v ⬝ᵥ (Matrix.J l F *ᵥ w) = 0 ∧
+      u ⬝ᵥ (Matrix.J l F *ᵥ w) ≠ 0 ∧
+      w ⬝ᵥ (Matrix.J l F *ᵥ u') ≠ 0 := by
+  obtain ⟨t, hvt, hut, hu't⟩ := exists_dot_both_ne_perp hu hu' hunv hu'nv
+  have hJ : Matrix.J l F *ᵥ (-(Matrix.J l F *ᵥ t)) = t := by
+    rw [mulVec_neg, mulVec_mulVec, J_squared, neg_mulVec, one_mulVec, neg_neg]
+  refine ⟨-(Matrix.J l F *ᵥ t), ?_, ?_, ?_⟩
+  · rw [hJ]; exact hvt
+  · rw [hJ]; exact hut
+  · rw [spForm_skew, hJ]; exact neg_ne_zero.mpr hu't
+
+/-- **Δ₀ transitivity — perp-line Witt transitivity (machine-checked, no axiom).** The stabiliser
+of a nonzero vector `v` acts transitively on the projective lines inside `v^⊥` (other than `⟨v⟩`):
+for `u, u' ∈ v^⊥` nonzero, not proportional to `v`, there is `g ∈ Sp` fixing `v` (exactly) with
+`g ·ᵥ u = u'`. All transvections centred in `v^⊥` fix `v` (`sp_transvecFixing_step` with `e = v`):
+if `ω(u,u') ≠ 0` a single one maps `u → u'`; otherwise route through `w ∈ v^⊥` non-orthogonal to
+both (`exists_form_both_ne_in_perp`). This was the last disclosed geometric axiom of the PSp
+simplicity thread — it is now a theorem, so `PSpn_isSimpleGroup_of_iwasawa` is `#print axioms`
+clean. (The `_hv` hypothesis is retained for the perp-line interface but unused: `u ∉ ⟨v⟩` already
+forces `u ≠ 0`.) -/
+theorem sp_stab_transitive_on_perp_lines {v u u' : (l ⊕ l) → F} (_hv : v ≠ 0)
     (huv : v ⬝ᵥ (Matrix.J l F *ᵥ u) = 0) (hu'v : v ⬝ᵥ (Matrix.J l F *ᵥ u') = 0)
     (hu : u ≠ 0) (hu' : u' ≠ 0)
     (hunv : ∀ a : F, u ≠ a • v) (hu'nv : ∀ a : F, u' ≠ a • v) :
     ∃ (g : symplecticGroup l F) (c : F), c ≠ 0 ∧
       (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ v = v ∧
-      (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ u = c • u'
+      (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ u = c • u' := by
+  have hunv' : ¬ ∃ a : F, u = a • v := fun ⟨a, ha⟩ => hunv a ha
+  have hu'nv' : ¬ ∃ a : F, u' = a • v := fun ⟨a, ha⟩ => hu'nv a ha
+  by_cases huu' : u ⬝ᵥ (Matrix.J l F *ᵥ u') ≠ 0
+  · have horth : v ⬝ᵥ (Matrix.J l F *ᵥ (u' - u)) = 0 := by
+      rw [mulVec_sub, dotProduct_sub, hu'v, huv, sub_zero]
+    obtain ⟨t, _, htv, htu⟩ := sp_transvecFixing_step huu' horth
+    exact ⟨t, 1, one_ne_zero, htv, by rw [htu, one_smul]⟩
+  · obtain ⟨w, hvw, huw, hwu'⟩ := exists_form_both_ne_in_perp hu hu' hunv' hu'nv'
+    have horth1 : v ⬝ᵥ (Matrix.J l F *ᵥ (w - u)) = 0 := by
+      rw [mulVec_sub, dotProduct_sub, hvw, huv, sub_zero]
+    have horth2 : v ⬝ᵥ (Matrix.J l F *ᵥ (u' - w)) = 0 := by
+      rw [mulVec_sub, dotProduct_sub, hu'v, hvw, sub_zero]
+    obtain ⟨t1, _, ht1v, ht1u⟩ := sp_transvecFixing_step huw horth1
+    obtain ⟨t2, _, ht2v, ht2u⟩ := sp_transvecFixing_step hwu' horth2
+    refine ⟨t2 * t1, 1, one_ne_zero, ?_, ?_⟩
+    · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1v, ht2v]
+    · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1u, ht2u, one_smul]
 
 /-- **T1 (non-perp transitivity, projective).** If `[y]`, `[y']` are both non-perpendicular to
 `[x]`, there is `g ∈ PSp` fixing `[x]` and mapping `[y] → [y']`. -/

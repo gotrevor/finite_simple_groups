@@ -127,4 +127,19 @@ theorem commutator_SLn_eq_top (h3 : 3 ≤ Fintype.card n) :
   rintro g ⟨i, j, h, c, rfl⟩
   exact transvecSL_mem_commutator h3 h c
 
+/-- **`PSL(n,F)` is perfect for `3 ≤ |n|`** (modulo the generation axiom) — the
+first Iwasawa obligation for `PSL(n,q)` simplicity, `n ≥ 3`. Perfectness descends
+from `SL(n,F)` (`commutator_SLn_eq_top`) along the surjection onto the quotient by
+its center (`PSL = SL/Z`), exactly as in the `n = 2` case (`SL2.PSL2_perfect`). -/
+theorem commutator_PSLn_eq_top (h3 : 3 ≤ Fintype.card n) :
+    commutator (SpecialLinearGroup n F ⧸
+      Subgroup.center (SpecialLinearGroup n F)) = ⊤ := by
+  set G := SpecialLinearGroup n F
+  let f := QuotientGroup.mk' (Subgroup.center G)
+  have hf : Function.Surjective f := QuotientGroup.mk'_surjective _
+  have hmap : commutator (G ⧸ Subgroup.center G) = Subgroup.map f (commutator G) := by
+    show ⁅(⊤ : Subgroup _), ⊤⁆ = Subgroup.map f ⁅(⊤ : Subgroup G), ⊤⁆
+    rw [Subgroup.map_commutator, Subgroup.map_top_of_surjective f hf]
+  rw [hmap, commutator_SLn_eq_top h3, Subgroup.map_top_of_surjective f hf]
+
 end FiniteSimpleGroups.SLn

@@ -220,11 +220,17 @@ as `n = 2` but on `ℙ^{n-1}`. **Progress this lap** — `FiniteSimpleGroups/SLn
   axiom `transvecSL_closure_eq_top` (transvections generate `SL n F`). `#print axioms`
   = `[propext, Classical.choice, Quot.sound, transvecSL_closure_eq_top]`.
 
+- ✅ **Iwasawa obligation 1 (perfect)** `commutator_PSLn_eq_top` — `PSL(n,F)` perfect for
+  `3 ≤ |n|` (modulo the generation axiom), by descending `commutator_SLn_eq_top` along
+  `SL ↠ SL/Z` (mirrors `SL2.PSL2_perfect`). `#print axioms` adds only
+  `transvecSL_closure_eq_top`.
+
 **Next bricks for §E** (toward the full Iwasawa structure on `ℙ^{n-1}`):
 1. **`transvecSL_closure_eq_top`** (the one open axiom) — transvections generate `SL n F`.
    mathlib has `Matrix.diagonal_transvection_induction` (matrices = products of diagonals
    + transvections); missing step = det-1 diagonal is a product of transvections
-   (Whitehead). OUT at Aristotle (submit next). For `n=2` it's `SL2.transvections_generate`.
+   (Whitehead). **OUT at Aristotle `a4b84e9f`** (see `ARISTOTLE-JOB-transvec-generate.md`).
+   For `n=2` it's `SL2.transvections_generate`.
 2. `SL(n,q) ↷ ℙ^{n-1}` action + 2-transitivity ⇒ quasi-preprimitive (mirror `pslQuasiPreprimitive`).
 3. center of `SL(n,q)` = scalar matrices `{λI : λⁿ=1}`; faithful `PSL` action on `ℙ^{n-1}`.
 4. the unipotent `IwasawaStructure` (transvection subgroups fixing a point of `ℙ^{n-1}`).

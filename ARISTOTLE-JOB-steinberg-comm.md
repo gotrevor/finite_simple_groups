@@ -10,7 +10,14 @@ Steinberg/Chevalley type-`A` relation — no field-size restriction. mathlib v4.
 has `Matrix.transvection` + basic lemmas but NOT this commutator identity (checked
 2026-06-04).
 
-## Job — `steinberg_comm` (IN FLIGHT)
+## Job — `steinberg_comm` (✅ SUPERSEDED — beaten locally 2026-06-04)
+
+**PROVED LOCALLY, axiom-clean** — see `FiniteSimpleGroups/SLnPerfect.lean`
+`steinberg_comm`. Proof: `simp [transvection, single_neg-helper]; noncomm_ring;
+simp [single_mul_single_same + ground vanishing-product haves]; abel`. The Aristotle
+job below is now redundant; ignore its result. (Cancel returned 404 "cannot be
+canceled" — it was already finalizing.) Job slot reused for `transvecSL_closure_eq_top`
+(see `ARISTOTLE-JOB-transvec-generate.md`).
 
 **Project UUID `4827df6e-ba1f-45f0-b1aa-cc243c1e7efa`.** Submitted 2026-06-04.
 Project dir `/tmp/steinberg/Steinberg.lean`. Statement (elaborates clean in our

@@ -41,6 +41,18 @@ noncomputable def spTransvection (v : (l ⊕ l) → R) (c : R) :
     Matrix (l ⊕ l) (l ⊕ l) R :=
   1 + c • Matrix.vecMulVec v ((Matrix.J l R).mulVec v)
 
+/-- **The standard symplectic form is alternating:** `ω(v,v) = v ⬝ᵥ (J·v) = 0` for every `v`.
+Proved from `J`'s block structure (`fromBlocks 0 (-1) 1 0`), so it holds even in
+characteristic 2 — skew-symmetry alone (`Jᵀ = -J`) would only give `2·ω(v,v) = 0`. -/
+theorem spForm_self (v : (l ⊕ l) → R) : v ⬝ᵥ ((Matrix.J l R) *ᵥ v) = 0 := by
+  have hblk : (Matrix.J l R) = Matrix.fromBlocks 0 (-1) 1 0 := rfl
+  rw [hblk, fromBlocks_mulVec]
+  simp only [zero_mulVec, one_mulVec, neg_mulVec, zero_add, add_zero]
+  nth_rewrite 1 [← Sum.elim_comp_inl_inr v]
+  rw [sumElim_dotProduct_sumElim, dotProduct_neg,
+    dotProduct_comm (v ∘ Sum.inr) (v ∘ Sum.inl)]
+  ring
+
 /-- **A symplectic transvection lies in the symplectic group** (for every `v` and `c`):
 `M (J) Mᵀ = J`. The symplectic analogue of `det_transvection_of_ne` for `SL`. The two cross
 terms cancel (`J Nᵀ = -(N J)`) and the quadratic term vanishes by the alternating identity
@@ -56,15 +68,7 @@ theorem spTransvection_mem (v : (l ⊕ l) → R) (c : R) :
   have hJJ : Jmᵀ * Jm = 1 := by rw [hJt, neg_mul, hJsq]; exact neg_neg _
   have hJ2v : Jm *ᵥ (Jm *ᵥ v) = -v := by
     rw [mulVec_mulVec, hJsq, neg_mulVec, one_mulVec]
-  -- the alternating identity, proved via the block structure of `J`
-  have hskew : v ⬝ᵥ (Jm *ᵥ v) = 0 := by
-    have hblk : Jm = Matrix.fromBlocks 0 (-1) 1 0 := rfl
-    rw [hblk, fromBlocks_mulVec]
-    simp only [zero_mulVec, one_mulVec, neg_mulVec, zero_add, add_zero]
-    nth_rewrite 1 [← Sum.elim_comp_inl_inr v]
-    rw [sumElim_dotProduct_sumElim, dotProduct_neg,
-      dotProduct_comm (v ∘ Sum.inr) (v ∘ Sum.inl)]
-    ring
+  have hskew : v ⬝ᵥ (Jm *ᵥ v) = 0 := by rw [hJm]; exact spForm_self v
   have hNJ : N * Jm = vecMulVec v v := by
     rw [hN, vecMulVec_mul, vecMul_mulVec, hJJ, vecMul_one]
   have hJNt : Jm * Nᵀ = -(vecMulVec v v) := by
@@ -80,5 +84,21 @@ theorem spTransvection_mem (v : (l ⊕ l) → R) (c : R) :
 /-- The symplectic transvection packaged as an element of `symplecticGroup l R`. -/
 noncomputable def spTransvecSp (v : (l ⊕ l) → R) (c : R) : symplecticGroup l R :=
   ⟨spTransvection v c, spTransvection_mem v c⟩
+
+/-- **The transvections at a fixed `v` form an abelian one-parameter subgroup** isomorphic
+to `(R, +)`: `τ_{v,c₁} · τ_{v,c₂} = τ_{v, c₁+c₂}`. The nilpotency `(v ⊗ J·v)² = 0` follows
+from the alternating identity `spForm_self`. This is the abelian "root subgroup" feeding the
+Iwasawa structure on `PSp` (analogue of the direction-`v` transvection family for `SL`). -/
+theorem spTransvection_mul (v : (l ⊕ l) → R) (c₁ c₂ : R) :
+    spTransvection v c₁ * spTransvection v c₂ = spTransvection v (c₁ + c₂) := by
+  have hNsq : Matrix.vecMulVec v ((Matrix.J l R) *ᵥ v)
+      * Matrix.vecMulVec v ((Matrix.J l R) *ᵥ v) = 0 := by
+    rw [vecMulVec_mul_vecMulVec,
+      show ((Matrix.J l R *ᵥ v) ⬝ᵥ v) = 0 from by rw [dotProduct_comm]; exact spForm_self v,
+      zero_smul, vecMulVec_zero]
+  simp only [spTransvection]
+  simp only [add_mul, mul_add, one_mul, mul_one, smul_mul_assoc, mul_smul_comm, smul_smul]
+  rw [hNsq, smul_zero, add_zero, add_smul]
+  abel
 
 end FiniteSimpleGroups.SpN

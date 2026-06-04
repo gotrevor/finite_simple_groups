@@ -493,6 +493,82 @@ theorem exists_isotropic_perp_nonperp_of_perp_partner (hn : 3 ≤ n)
     ring
   · rw [hys]; exact one_ne_zero
 
+/-- **Lemma T — MACHINE-CHECKED.** Every `-(⟨w,w⟩)` is a Hermitian-trace value:
+`∃ t, t + star t = -(star w ⬝ᵥ w)`. The self-product `⟨w,w⟩ = Σ N(wⱼ)` is `algebraMap` of a sum of
+field norms (a fixed-field element), and the trace `a ↦ a + star a` is surjective onto the fixed
+field. Generalizes `UnitaryField.exists_add_star_eq_neg_norm` from one norm to a self-dot-product. -/
+theorem exists_add_star_eq_neg_dotProduct_self (w : Fin n → UnitaryField p) :
+    ∃ t : UnitaryField p, t + star t = -(star w ⬝ᵥ w) := by
+  have hsum : star w ⬝ᵥ w
+      = (algebraMap (ZMod p) (UnitaryField p)) (∑ j, Algebra.norm (ZMod p) (w j)) := by
+    rw [map_sum, dotProduct]
+    exact Finset.sum_congr rfl
+      (fun j _ => by rw [algebraMap_norm_eq_mul_star, Pi.star_apply, mul_comm])
+  obtain ⟨t, ht⟩ := Algebra.trace_surjective (ZMod p) (UnitaryField p)
+    (-(∑ j, Algebra.norm (ZMod p) (w j)))
+  exact ⟨t, by rw [← algebraMap_trace_eq_add_star, ht, map_neg, ← hsum]⟩
+
+/-- **Separation, no isotropy needed — MACHINE-CHECKED.** If `x` is not a scalar multiple of `y`
+(and `y ≠ 0`), there is a `u` perpendicular to `y` but not to `x`: `⟨y,u⟩ = 0`, `⟨x,u⟩ ≠ 0`. Pure
+linear algebra: if no such `u` existed, `⟨x,·⟩` would vanish on `ker ⟨y,·⟩`, forcing
+`star x = c·star y`, i.e. `x = star c · y`. -/
+theorem exists_perp_nonperp {x y : Fin n → UnitaryField p} (hy0 : y ≠ 0)
+    (hnp : ¬ ∃ c : UnitaryField p, x = c • y) :
+    ∃ u : Fin n → UnitaryField p, star y ⬝ᵥ u = 0 ∧ star x ⬝ᵥ u ≠ 0 := by
+  by_contra h
+  simp only [not_exists, not_and, not_not] at h
+  apply hnp
+  obtain ⟨k, hk⟩ := Function.ne_iff.mp (star_vec_ne_zero hy0)
+  rw [Pi.zero_apply] at hk
+  set c : UnitaryField p := (star x) k * ((star y) k)⁻¹ with hc
+  have hcoord : ∀ j, (star x) j = c * (star y) j := by
+    intro j
+    have hu : star y ⬝ᵥ ((Pi.single j 1 : Fin n → UnitaryField p)
+        - ((star y) j * ((star y) k)⁻¹) • (Pi.single k 1 : Fin n → UnitaryField p)) = 0 := by
+      rw [dotProduct_sub, dotProduct_smul, dotProduct_single, dotProduct_single, mul_one, mul_one,
+        smul_eq_mul, mul_assoc, inv_mul_cancel₀ hk, mul_one, sub_self]
+    have hx := h _ hu
+    rw [dotProduct_sub, dotProduct_smul, dotProduct_single, dotProduct_single, mul_one, mul_one,
+      smul_eq_mul, sub_eq_zero] at hx
+    rw [hc, hx]; ring
+  refine ⟨star c, ?_⟩
+  have hsx : star x = c • star y :=
+    funext fun j => by rw [Pi.smul_apply, smul_eq_mul]; exact hcoord j
+  have hxx : x = star (c • star y) := by rw [← hsx, star_star]
+  rw [hxx]; funext i
+  simp only [Pi.smul_apply, Pi.star_apply, smul_eq_mul, star_mul', star_star]
+
+/-- **Perpendicular partner exists — MACHINE-CHECKED (the discharge of `hPP`).** For `x` nonzero
+isotropic and `y` nonzero with `⟨x,y⟩ = 0` and `x ∦ y`, there is an isotropic `v` with `⟨x,v⟩ = 1`,
+`⟨y,v⟩ = 0`. This was feared to be a Witt-extension fact; it is **not**. Get `u ⊥ y` with `⟨x,u⟩ ≠ 0`
+(`exists_perp_nonperp`), rescale to `w₁ = ⟨x,u⟩⁻¹·u` (so `⟨x,w₁⟩ = 1`, `⟨y,w₁⟩ = 0`, both inside
+`y^⊥ ⊇ span{x,u}`), then `v = w₁ + t·x` with `t + star t = -⟨w₁,w₁⟩` (Lemma T). Because
+`⟨x,w₁⟩ = 1 ≠ 0` the `x`-correction is *effective* (the trace term appears), so `v` is isotropic; and
+`v ∈ span{x,u} ⊆ y^⊥`, so `⟨y,v⟩ = 0`. Discharges the last existence atom of PSU primitivity. -/
+theorem exists_isotropic_perp_partner {x y : Fin n → UnitaryField p}
+    (hxiso : star x ⬝ᵥ x = 0) (hy0 : y ≠ 0) (hperp : star x ⬝ᵥ y = 0)
+    (hnp : ¬ ∃ c : UnitaryField p, x = c • y) :
+    ∃ v : Fin n → UnitaryField p, star v ⬝ᵥ v = 0 ∧
+      star x ⬝ᵥ v = 1 ∧ star y ⬝ᵥ v = 0 := by
+  obtain ⟨u, hyu, hxu⟩ := exists_perp_nonperp p hy0 hnp
+  have hyx : star y ⬝ᵥ x = 0 := by rw [dotProduct_star_swap, hperp, star_zero]
+  obtain ⟨w₁, hxw1, hyw1⟩ :
+      ∃ w₁ : Fin n → UnitaryField p, star x ⬝ᵥ w₁ = 1 ∧ star y ⬝ᵥ w₁ = 0 :=
+    ⟨(star x ⬝ᵥ u)⁻¹ • u, by rw [dotProduct_smul, smul_eq_mul, inv_mul_cancel₀ hxu],
+      by rw [dotProduct_smul, smul_eq_mul, hyu, mul_zero]⟩
+  obtain ⟨t, ht⟩ := exists_add_star_eq_neg_dotProduct_self p w₁
+  refine ⟨w₁ + t • x, ?_, ?_, ?_⟩
+  · have hxw1' : star w₁ ⬝ᵥ x = 1 := by rw [dotProduct_star_swap, hxw1, star_one]
+    have hss : star (w₁ + t • x) = star w₁ + star t • star x := by
+      funext i
+      simp only [Pi.add_apply, Pi.smul_apply, Pi.star_apply, smul_eq_mul, star_add, star_mul']
+    rw [hss]
+    simp only [add_dotProduct, dotProduct_add, smul_dotProduct, dotProduct_smul, smul_eq_mul,
+      hxiso, hxw1, hxw1', mul_one, mul_zero, add_zero]
+    linear_combination ht
+  · rw [dotProduct_add, hxw1, dotProduct_smul, smul_eq_mul, hxiso, mul_zero, add_zero]
+  · rw [dotProduct_add, hyw1, dotProduct_smul, smul_eq_mul, hyx, mul_zero, add_zero]
+
 /-- **Transvection transitivity, non-orthogonal case** (the unitary Witt transitivity core that
 needs NO form classification): for nonzero isotropic `v, w` with `⟨v,w⟩ = β ≠ 0`, the element
 `g = τ_{v,b}·τ_{w,a} ∈ SU` maps `v` to the nonzero multiple `(a·star β)·w` of `w`. The trick: a
@@ -1407,6 +1483,42 @@ theorem PSU_isSimpleGroup_of_generate_of_eichler' (hn : 3 ≤ n) (hp : 5 ≤ p)
     IsSimpleGroup (PSUConcrete n p) :=
   PSU_isSimpleGroup_of_generate_of_eichler p n hn hp hgen hT1 hT2
     (fun hxy hperp => hSep_of_perp_partner p n hn hPP hxy hperp)
+
+/-- **The perpendicular-partner atom `hPP` is DISCHARGED** (point level): distinct perpendicular
+isotropic points `x ≠ y` always admit an isotropic `v` with `⟨x,v⟩ = 1`, `⟨y,v⟩ = 0`, by the
+machine-checked `exists_isotropic_perp_partner`. The reps are nonzero isotropic and non-parallel
+(distinct projective points), which is all the vector lemma needs. So `hPP` is **not** a remaining
+hypothesis — it is a theorem. -/
+theorem psu_hPP {x y : IsoPoint p n} (hxy : x ≠ y) (hperp : star x.1.rep ⬝ᵥ y.1.rep = 0) :
+    ∃ v : Fin n → UnitaryField p, star v ⬝ᵥ v = 0 ∧
+      star x.1.rep ⬝ᵥ v = 1 ∧ star y.1.rep ⬝ᵥ v = 0 := by
+  have hnp : ¬ ∃ c : UnitaryField p, x.1.rep = c • y.1.rep := by
+    rintro ⟨c, hc⟩
+    apply hxy; apply Subtype.ext
+    rw [← Projectivization.mk_rep x.1, ← Projectivization.mk_rep y.1,
+      Projectivization.mk_eq_mk_iff']
+    exact ⟨c, hc.symm⟩
+  exact exists_isotropic_perp_partner p x.2 (Projectivization.rep_nonzero y.1) hperp hnp
+
+/-- **`PSU_n(F_{p²})` is simple** (`n ≥ 3`, `p ≥ 5`) for general `n`, reduced to the THREE pure
+group-action atoms — Witt generation `hgen`, non-perp transitivity `hT1`, perp transitivity `hT2`.
+The perpendicular-partner existence is now a **theorem** (`psu_hPP`), so the entire isotropic
+separation is machine-checked and DROPS OUT of the hypothesis list. Every remaining hypothesis is a
+single stabilizer-transitivity / generation statement (all consequences of Witt's theorem for the
+unitary group). For `n = 3`, `psu3_isSimpleGroup_of_generate_of_T1` needs only `{hgen, hT1}`. -/
+theorem PSU_isSimpleGroup_of_generate_of_transitivity (hn : 3 ≤ n) (hp : 5 ≤ p)
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
+        (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤)
+    (hT1 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep ≠ 0 → star x.1.rep ⬝ᵥ y'.1.rep ≠ 0 →
+        ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+    (hT2 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep = 0 → star x.1.rep ⬝ᵥ y'.1.rep = 0 →
+        y ≠ x → y' ≠ x → ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y') :
+    IsSimpleGroup (PSUConcrete n p) :=
+  PSU_isSimpleGroup_of_generate_of_eichler' p n hn hp hgen hT1 hT2
+    (fun hxy hperp => psu_hPP p n hxy hperp)
 
 end Iwasawa
 

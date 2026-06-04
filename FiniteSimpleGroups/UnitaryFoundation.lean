@@ -180,6 +180,27 @@ theorem exists_two_norm_neg_one :
     calc (c * ζ) * (star c * star ζ) = (c * star c) * (ζ * star ζ) := by ring
       _ = -1 := by rw [hc, hNζ, mul_one]
 
+/-- **The Hermitian trace is the field trace**: `algebraMap (trace x) = x + star x`. Both are the
+sum of the two Galois conjugates `x^{p^0} + x^{p^1} = x + x^p` (`FiniteField.algebraMap_trace_eq_sum_pow`
+with `finrank = 2`, `|F_p| = p`). The additive analogue of `algebraMap_norm_eq_mul_star`. -/
+theorem algebraMap_trace_eq_add_star (x : UnitaryField p) :
+    (algebraMap (ZMod p) (UnitaryField p)) (Algebra.trace (ZMod p) (UnitaryField p) x)
+      = x + star x := by
+  have hfin : Module.finrank (ZMod p) (UnitaryField p) = 2 := GaloisField.finrank p (by norm_num)
+  have hcard : Nat.card (ZMod p) = p := by rw [Nat.card_eq_fintype_card, ZMod.card]
+  rw [FiniteField.algebraMap_trace_eq_sum_pow, hfin, hcard, Finset.sum_range_succ,
+    Finset.sum_range_one, pow_zero, pow_one, pow_one, ← star_pow]
+
+/-- **Every `-(norm)` is a trace value** of the Hermitian conjugation: `∃ t, t + star t = -(c·star c)`.
+The field trace is surjective onto `F_p` (`Algebra.trace_surjective`), and `c·star c = N(c)` is a
+trace target via `algebraMap_trace_eq_add_star` + `algebraMap_norm_eq_mul_star`. This is the
+correction needed to make a hyperbolic partner isotropic (`UnitarySimple.exists_hyperbolic_partner`). -/
+theorem exists_add_star_eq_neg_norm (c : UnitaryField p) :
+    ∃ t : UnitaryField p, t + star t = -(c * star c) := by
+  obtain ⟨t, ht⟩ := Algebra.trace_surjective (ZMod p) (UnitaryField p)
+    (-(Algebra.norm (ZMod p) c))
+  exact ⟨t, by rw [← algebraMap_trace_eq_add_star, ht, map_neg, algebraMap_norm_eq_mul_star]⟩
+
 end UnitaryField
 
 /-- **The concrete special unitary group `SU_n(F_p)`** — now well-formed because `UnitaryField p`

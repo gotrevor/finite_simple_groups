@@ -307,14 +307,37 @@ variable (p : ℕ) [Fact p.Prime] {n : ℕ}
 
 open UnitaryField
 
-/-- **GEOMETRY AXIOM — hyperbolic partner.** Every nonzero isotropic `z` in `(F_{p²})ⁿ` has an
-isotropic `w` with `⟨z,w⟩ = 1` (the standard hyperbolic-pair completion of a nondegenerate
-Hermitian space). True for `n ≥ 2`; stated with `n ≥ 3` for the unitary simplicity range.
-TODO(discharge): build `w` from any `w'` with `⟨z,w'⟩ ≠ 0`, rescale and add an isotropic
-correction `t·z` (trace surjectivity onto `F_p`). -/
-axiom exists_hyperbolic_partner (hn : 3 ≤ n) :
+/-- **Hyperbolic partner exists** (machine-checked). Every nonzero isotropic `z` in `(F_{p²})ⁿ`
+has an isotropic `w` with `⟨z,w⟩ = 1`. Construction: pick a coordinate `k` with `z k ≠ 0`, so
+`⟨z, e_k⟩ = star(z k) =: d ≠ 0`; the rescaled `w₁ = d⁻¹·e_k` has `⟨z,w₁⟩ = 1`, and
+`⟨w₁,w₁⟩ = d⁻¹·star(d⁻¹)` is a **norm** hence a trace value, so `exists_add_star_eq_neg_norm`
+gives `t` with `t + star t = -⟨w₁,w₁⟩`; then `w = w₁ + t·z` is isotropic (the trace correction)
+and still has `⟨z,w⟩ = 1` (since `z` is isotropic). The `hn` hypothesis is unused (holds for
+`n ≥ 1`) but kept for a uniform geometry interface. -/
+theorem exists_hyperbolic_partner (_hn : 3 ≤ n) :
     ∀ z : Fin n → UnitaryField p, z ≠ 0 → star z ⬝ᵥ z = 0 →
-      ∃ w : Fin n → UnitaryField p, star w ⬝ᵥ w = 0 ∧ star z ⬝ᵥ w = 1
+      ∃ w : Fin n → UnitaryField p, star w ⬝ᵥ w = 0 ∧ star z ⬝ᵥ w = 1 := by
+  intro z hz hziso
+  obtain ⟨k, hk⟩ := Function.ne_iff.mp hz
+  rw [Pi.zero_apply] at hk
+  set d : UnitaryField p := star (z k) with hd
+  have hd0 : d ≠ 0 := by rw [hd]; exact star_ne_zero.mpr hk
+  set w₁ : Fin n → UnitaryField p := Pi.single k d⁻¹ with hw1
+  have hzw1 : star z ⬝ᵥ w₁ = 1 := by
+    rw [hw1, dotProduct_single, Pi.star_apply, ← hd, mul_inv_cancel₀ hd0]
+  have hw1z : star w₁ ⬝ᵥ z = 1 := by rw [dotProduct_star_swap, hzw1, star_one]
+  have hw1w1 : star w₁ ⬝ᵥ w₁ = d⁻¹ * star d⁻¹ := by
+    rw [hw1, ← Pi.single_star, single_dotProduct, Pi.single_eq_same, mul_comm]
+  obtain ⟨t, ht⟩ := UnitaryField.exists_add_star_eq_neg_norm p d⁻¹
+  refine ⟨w₁ + t • z, ?_, ?_⟩
+  · have hss : star (w₁ + t • z) = star w₁ + star t • star z := by
+      funext i
+      simp only [Pi.add_apply, Pi.smul_apply, Pi.star_apply, smul_eq_mul, star_add, star_mul']
+    rw [hss]
+    simp only [add_dotProduct, dotProduct_add, smul_dotProduct, dotProduct_smul, smul_eq_mul,
+      hw1w1, hziso, hzw1, hw1z, mul_zero, mul_one, add_zero]
+    linear_combination ht
+  · rw [dotProduct_add, dotProduct_smul, hzw1, hziso, smul_eq_mul, mul_zero, add_zero]
 
 /-- **GEOMETRY AXIOM — diameter-2 connectivity.** Any two nonzero isotropic vectors `z₁, z₂` in
 `(F_{p²})ⁿ`, `n ≥ 3`, have a common non-orthogonal isotropic `u` (`⟨z₁,u⟩ ≠ 0`, `⟨z₂,u⟩ ≠ 0`).

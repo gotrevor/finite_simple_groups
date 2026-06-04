@@ -367,6 +367,47 @@ theorem uScale_mem (v w : N → F) (lam : F) (hlam : lam ≠ 0)
     hAA, hBB, hAB, hBA, smul_zero, add_zero]
   match_scalars <;> field_simp <;> ring
 
+/-- **Determinant of the scaling element**: `det (uScale v w λ) = λ·(star λ)⁻¹`. By the
+Weinstein–Aronszajn identity `det (1 + U V) = det (1 + V U)`, writing the rank-2 update as
+`U V` with `U = [v | w]` (`N × 2`) and `V` the `2 × N` matrix of scaled coforms; then `V U` is the
+`2 × 2` diagonal `diag(λ-1, (star λ)⁻¹-1)`, so `det (1 + V U) = λ·(star λ)⁻¹`. -/
+theorem uScale_det (v w : N → F) (lam : F)
+    (hvw : star v ⬝ᵥ w = 1) (hwv : star w ⬝ᵥ v = 1)
+    (hviso : star v ⬝ᵥ v = 0) (hwiso : star w ⬝ᵥ w = 0) :
+    (uScale v w lam).det = lam * (star lam)⁻¹ := by
+  let U : Matrix N (Fin 2) F := Matrix.of (fun i => ![v i, w i])
+  let V : Matrix (Fin 2) N F := Matrix.of (fun k j => (![(lam - 1) * star w j,
+    ((star lam)⁻¹ - 1) * star v j] : Fin 2 → F) k)
+  have key : ∀ (c : F) (a b : N → F), (∑ x, c * (star a) x * b x) = c * (star a ⬝ᵥ b) := by
+    intro c a b; rw [dotProduct, Finset.mul_sum]
+    exact Finset.sum_congr rfl (fun x _ => mul_assoc _ _ _)
+  have hUV : uScale v w lam = 1 + U * V := by
+    ext i j
+    simp only [uScale, Matrix.add_apply, Matrix.mul_apply, Fin.sum_univ_two, Matrix.of_apply,
+      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.smul_apply, vecMulVec_apply,
+      Pi.star_apply, U, V, smul_eq_mul]
+    ring
+  have hVU : V * U = !![lam - 1, 0; 0, (star lam)⁻¹ - 1] := by
+    ext a b
+    fin_cases a <;> fin_cases b <;>
+      simp only [Matrix.mul_apply, U, V, Matrix.of_apply, Fin.zero_eta, Fin.mk_one,
+        Matrix.cons_val_zero, Matrix.cons_val_one] <;>
+      rw [key] <;>
+      simp only [hwv, hwiso, hviso, hvw, mul_one, mul_zero]
+  rw [hUV, Matrix.det_one_add_mul_comm, hVU]
+  simp [Matrix.det_fin_two, Matrix.add_apply]
+
+/-- **The scaling element lies in `SU`** when `λ` is in the fixed field (`star λ = λ`, `λ ≠ 0`):
+then `det = λ·λ⁻¹ = 1`. This is the regime that feeds `PSU` perfectness (`N(λ) = λ²`, and one needs
+`λ² ≠ 1`, i.e. a fixed-field scalar `≠ ±1`, available for `|F₀| ≥ 4`). -/
+theorem uScale_mem_su (v w : N → F) (lam : F) (hlam : lam ≠ 0) (hfix : star lam = lam)
+    (hvw : star v ⬝ᵥ w = 1) (hwv : star w ⬝ᵥ v = 1)
+    (hviso : star v ⬝ᵥ v = 0) (hwiso : star w ⬝ᵥ w = 0) :
+    uScale v w lam ∈ Matrix.specialUnitaryGroup N F :=
+  Matrix.mem_specialUnitaryGroup_iff.mpr
+    ⟨uScale_mem v w lam hlam hvw hwv hviso hwiso, by
+      rw [uScale_det v w lam hvw hwv hviso hwiso, hfix, mul_inv_cancel₀ hlam]⟩
+
 end Scaling
 
 end FiniteSimpleGroups.PSU

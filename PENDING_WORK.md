@@ -385,29 +385,30 @@ axiom-clean (`[propext, Classical.choice, Quot.sound]`), in `UnitarySimple.lean 
   Top-level statement: **`PSU_isSimpleGroup_modulo_line_mate`** (`IsSimpleGroup (PSUConcrete n p)`
   ⟸ `UExactLineTrans + UExactMateTrans`, `n≥3`, `p≥5`).
 
-  **Next-lap achievable sub-bricks (no torus, just porting):** (i) within-`offSU C` connectivity
-  (common non-orth isotropic `u ∈ offSU C` for `|Cᶜ|≥3`) — port `exists_common_nonorth_isotropic`
-  relativised to the coordinate subspace (the identity form restricted to `offSU C` is just the
-  identity form on `Fin |Cᶜ|`); this + `offSU_maps_nonorth_gen` reduces `UExactLineTrans` to the bare
-  scalar-kill. (ii) The `F_q`-scalar case of `UExactLineTrans` (e.g. `|Cᶜ|=2`, the last plane) via
-  `exists_su_hyperbolic_scale_gen`.
+  **UPDATE (later in same lap): the within-`offSU C` connectivity is now DISCHARGED**, so
+  `UExactLineTrans` collapses to the bare scalar-kill. New axiom-clean lemmas:
+  `exists_hyperbolic_partner_offSU`, `common_nonorth_isotropic_perp_offSU`,
+  `exists_common_nonorth_isotropic_offSU` (the connectivity construction stays in `offSU C` — it's
+  built from `z₁,z₂` + partners), `offSU_maps_isotropic_gen` (within-`offSU C` line-to-scalar
+  `e↦c·e'` in `uTransvecGen`+`FixSU C`), and the collapse `UExactLineTrans_of_scaleKill`.
 
-  **⇒ THE TWO REMAINING ATOMS (deep, literature-requested):**
-  1. **`UExactLineTrans`** (THE deep wall) — exact single-vector transitivity `e↦e'` in
-     `offSU C`, in `uTransvecGen`. The line move `offSU_maps_nonorth_gen` gives `e↦c·e'`; killing
-     the scalar `c` (a 1-dim `F_q`-coset, generally `∉ F_q`) needs the **third-dimension `F_{q²}*`
-     line-stabiliser scaling `exists_scale`** (n≥3 essential — `diag(μ,star μ⁻¹)` on one plane has
-     `det = μ/star μ ≠ 1`, balanced by `det = star μ/μ` on a second plane / anisotropic axis). SU-level
-     `exists_scale` is at Aristotle (`9105747d`, R·P construction); but generation needs the
-     **T-level** (transvection-product) torus — the genuine multi-lap core.
+  **⇒ `hgen` (hence PSU simplicity) NOW RESTS ON EXACTLY TWO TRANSVECTION-PRODUCT FACTS:**
+  `hgen_of_scaleKill_mate : hgen ⟸ UScaleKill + UExactMateTrans + (2≠0)`, top-level
+  `PSU_isSimpleGroup_modulo_scaleKill_mate`. Both deep, literature-requested (`ON-LINE-REQUEST.md`):
+  1. **`UScaleKill`** (THE wall) — a `uTransvecGen`/`FixSU C` element scaling an isotropic
+     `e' ↦ c·e'` for ARBITRARY `c ∈ F_{q²}*`. = the `F_{q²}*` line-stabiliser torus as a
+     **transvection product**, i.e. the `SU₃` generation base case (`diag(μ,star μ/μ,star μ⁻¹)` on a
+     hyperbolic plane + anisotropic axis; the norm-1 middle entry absorbs the determinant). The
+     SU-level version (any SU element, not a transvection product) is the easy `exists_scale` at
+     Aristotle (`9105747d`, R·P construction, still RUNNING >1hr); generation needs the **T-level**
+     (transvection-product) form — the genuine multi-lap core. n≥3 essential.
   2. **`UExactMateTrans`** (no torus, but needs partners) — mate `f↦f'` fixing `e`. Reduces to
-     **`uEichler ∈ uTransvecGen`** (Eichler = product of transvections). This lap proved the
-     μ-peeling `uEichler_eq_mul_transvection : E_{x,h,μ} = E_{x,h,0}·τ_{x,−μ}`, reducing it to the
-     **pure** `E_{x,h,0}` (h isotropic). KEY FINDING: `E_{x,h,0}` is **NOT** a product of
-     `span{x,h}`-transvections (those commute & act diagonally since `span{x,h}` is totally
-     isotropic when `x⊥h` both isotropic) — it requires **ambient hyperbolic partners** of `x`/`h`.
-     So this atom, while torus-free, is a genuine (non-local) Dieudonné lemma; a good Aristotle brick
-     once a partner-based factorization is sketched.
+     **`uEichler ∈ uTransvecGen`** (Eichler = product of transvections). Proved the μ-peeling
+     `uEichler_eq_mul_transvection : E_{x,h,μ} = E_{x,h,0}·τ_{x,−μ}`, reducing to the **pure**
+     `E_{x,h,0}` (h isotropic). KEY FINDING: `E_{x,h,0}` is **NOT** a product of
+     `span{x,h}`-transvections (totally isotropic ⟹ they commute & act diagonally) — it needs an
+     **ambient hyperbolic partner** `k` of `x`. A good Aristotle brick once the partner-based
+     factorization is sketched (requested online).
 
 **★★★ UPDATE 2026-06-04 (generation-infrastructure lap — superseded by the genAux-skeleton lap above).**
 `hT1` now also

@@ -454,6 +454,19 @@ or the SU₃ core (n=3). New, all axiom-clean, full build green (8312 jobs):
   dispatch the `linear_combination` alternatives (leaves a goal unsolved even when the lc is correct)
   — use **explicit `·` bullets per goal** instead. Dump the goals with a bare `match_scalars` first.
 
+  **Gotcha #2 (cost me the `uEichler_split_mem_uTransvecGen` conditional this lap — the COMPOSITION
+  wiring is trivial, only the trace bookkeeping `(μ+ν+⟨h₁,h₂⟩) + star(…) = ⟨h₁+h₂,h₁+h₂⟩` stalls):**
+  `ring`/`ring_nf`/`abel`/`linear_combination` ALL leave an unclosable residual of the shape
+  `star h₂ ⬝ᵥ h₁ + star h₁ ⬝ᵥ h₂ = star h₁ ⬝ᵥ h₂ + star h₂ ⬝ᵥ h₁` once the two `dotProduct` terms
+  arrive via *different* routes (one from `dotProduct_star_swap`/a `rw`, one from a `simp` of
+  `star (h₁+h₂) ⬝ᵥ (h₁+h₂)`) — they are not syntactically-identical atoms, so the normalizers can't
+  commute them. (A *directly written* `star b ⬝ᵥ a + star a ⬝ᵥ b = …` DOES close with `ring` — so it
+  is purely an atom-provenance mismatch.) **Next-lap recipe:** force one canonical form — e.g. rewrite
+  BOTH cross terms to `star (star h₁ ⬝ᵥ h₂)` (via `← dotProduct_star_swap`) BEFORE any
+  ring/linear_combination, or finish the swap by hand with `Finset.sum_comm`/explicit `add_comm
+  (star h₂ ⬝ᵥ h₁) _`. The split lemma is otherwise ready: `E_{x,h₁+h₂,μ+ν+⟨h₁,h₂⟩} =
+  E_{x,h₁,μ}·E_{x,h₂,ν}` (`uEichler_comp`) ⟹ `mul_mem` of two `uEichler_isotropic_mem_uTransvecGen`.
+
 **★★★ UPDATE 2026-06-04 (generation-infrastructure lap — superseded by the genAux-skeleton lap above).**
 `hT1` now also
 DISCHARGED on the real defs (commits `fa29843`/`e6abae4`); capstone `PSU_isSimpleGroup_modulo_generation`

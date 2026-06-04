@@ -372,6 +372,27 @@ theorem uEichler_isotropic_eq_transvection_prod {x h : n → α}
   · linear_combination (d * (star h ⬝ᵥ z) - star x ⬝ᵥ z) * hcd
   · linear_combination (star h ⬝ᵥ z) * hcd
 
+/-- **Eichler composition law** (fixed isotropic centre `x`, second arguments `⊥ x`): the Eichler
+transformations centred at `x` form a group under addition of their second argument, with a
+`⟨a,b⟩`-cocycle in the scalar slot:
+`E_{x,a,μ} · E_{x,b,ν} = E_{x, a+b, μ + ν + ⟨a,b⟩}`   (`⟨a,b⟩ = star a ⬝ᵥ b`).
+This is the group law of the "long-root"/Eichler subgroup centred at `x`. It lets an Eichler with an
+*anisotropic* `h` be split into two with *isotropic* second arguments (each then a transvection
+product by `uEichler_isotropic_eq_transvection_prod`), once `h = h₁ + h₂` is a sum of two isotropic
+vectors `⊥ x` — available when `dim x^⊥/⟨x⟩ ≥ 2` (i.e. `n ≥ 4`). -/
+theorem uEichler_comp {x a b : n → α} (μ ν : α)
+    (hxx : star x ⬝ᵥ x = 0) (hxa : star x ⬝ᵥ a = 0) (hxb : star x ⬝ᵥ b = 0) :
+    uEichler x a μ * uEichler x b ν = uEichler x (a + b) (μ + ν + star a ⬝ᵥ b) := by
+  have hax : star a ⬝ᵥ x = 0 := by
+    rw [show star a ⬝ᵥ x = star (star x ⬝ᵥ a) by
+      simp only [dotProduct, star_sum, Pi.star_apply, star_mul', star_star, mul_comm], hxa, star_zero]
+  apply Matrix.ext_iff_mulVec.mpr
+  intro z
+  simp only [← Matrix.mulVec_mulVec, uEichler_mulVec, star_add, dotProduct_add, add_dotProduct,
+    dotProduct_sub, dotProduct_smul, smul_eq_mul,
+    hxx, hxb, hax, mul_zero, sub_zero, add_zero]
+  match_scalars <;> ring
+
 /-- **The Eichler transformation fixes its isotropic centre `x`** (`⟨x,x⟩ = 0`, `⟨x,h⟩ = 0`): all
 three correction coefficients `⟨x,x⟩`, `⟨h,x⟩`, `μ⟨x,x⟩` vanish. -/
 theorem uEichler_apply_self (x h : n → α) (μ : α)

@@ -5,35 +5,38 @@ item below, and remove this file once nothing is left open.
 
 ---
 
-## 2026-06-04 (genAux-skeleton lap) — SHARPENED: two precise atoms for `hgen`
+## 2026-06-04 (genAux-skeleton lap) — ONE precise atom left for `hgen`
 
 The `hgen` Dieudonné generation induction is now **fully formalized modulo two isolated atoms**
-(`UnitarySimple.lean`, `hgen ⟸ UExactLineTrans + UExactMateTrans + (2≠0)`, all axiom-clean). The
-generic Witt/SU-generation ask below is **subsumed**; what would now unblock fastest, in priority
-order, are textbook/literature answers to these TWO specific sub-questions:
+(`UnitarySimple.lean`, `hgen ⟸ UScaleKill + UExactMateTrans + (2≠0)`, all axiom-clean).
 
-1. **(THE wall) The `F_{q²}*` line-stabiliser scaling as a PRODUCT OF TRANSVECTIONS (n≥3).**
-   In `SU_n(F_{q²})`, `n≥3`, given an isotropic hyperbolic pair `(e,m)` (`⟨e,m⟩=1`) and `μ∈F_{q²}*`,
-   I need an element scaling `e ↦ μ·e` that is a **product of unitary transvections** (NOT just any
-   SU element — the SU-level one is easy: `diag(μ,star μ⁻¹)` on `⟨e,m⟩` × a norm-1 scaling on a 3rd
-   axis). Equivalently: is the maximal-torus element `diag(μ, star μ⁻¹, μ⁻¹, star μ)` on two
-   hyperbolic planes an **explicit product of transvections**? This is the crux of the
-   Dieudonné/Eichler generation proof. **What I need:** the explicit transvection (or Eichler-move)
-   factorization of this torus element, from Dieudonné *La géométrie des groupes classiques*, Grove
-   *Classical Groups* §6/§11, or Taylor *Geometry of the Classical Groups* Ch. 11 — ideally the
-   precise word/Bruhat decomposition `t = ∏ τ_{vᵢ,aᵢ}` with the `vᵢ` and `aᵢ` in terms of `e,m` and
-   the second plane's `e',m'`. Also: the small-rank base cases (`SU_2`-of-a-hyperbolic-plane ≅
-   `SL_2(F_q)`, `SU_3`) where this is classical.
+**✅ SOLVED locally (2026-06-04, no literature needed) — was item #2:** the pure Eichler
+`E_{x,h,0}` (x,h isotropic, ⟨x,h⟩=0) IS an explicit product of three unitary transvections,
+`E_{x,h,0} = τ_{h,c⁻¹}·τ_{x,−c}·τ_{x+c⁻¹h,c}` for any trace-zero unit c — NO partner k needed (the
+three centres x,h,x+c⁻¹h are pairwise/self-orthogonal isotropic, all vecMulVec cross-products
+vanish). Kernel-verified: `uEichler_isotropic_eq_transvection_prod` (`UnitaryTransvection.lean`),
+membership `uEichler_zero_mem_uTransvecGen` / `uEichler_isotropic_mem_uTransvecGen`
+(`UnitarySimple.lean`). This discharges the `UExactMateTrans` mate step whenever the mate difference
+`h = f'−f` is **isotropic**. The remaining gap of `UExactMateTrans` is the **anisotropic-h** case,
+which (for n=3) coincides with the deep `UScaleKill` core below; for n≥4 it splits into two isotropic
+Eichlers via the Eichler composition law `E_{x,a,λ}·E_{x,b,ν}=E_{x,a+b,λ+ν+⟨a,b⟩}` (being verified by
+Aristotle, job `fcb65b71`).
 
-2. **The unitary Eichler/Siegel transformation `E_{x,h}` as a product of transvections.**
-   For isotropic `x`, `h ⊥ x` (h possibly anisotropic), `E_{x,h}(v) = v + ⟨x,v⟩h − ⟨h,v⟩x −
-   μ⟨x,v⟩x` (`μ+star μ = ⟨h,h⟩`). I proved the μ-part peels off as `τ_{x,−μ}`, reducing to the
-   **pure** `E_{x,h,0}` with `h` isotropic. I verified `E_{x,h,0}` is NOT a product of transvections
-   centred in `span{x,h}` (totally isotropic ⟹ they commute & act diagonally) — it must use a
-   **hyperbolic partner** `k` of `x` (`⟨x,k⟩=1`). **What I need:** the standard explicit
-   factorization of `E_{x,h,0}` as a product of transvections using `x`, `k`, `h` (Taylor Ch. 8/11,
-   or the "Eichler transformations are products of two transvections" lemma + its precise form for
-   the unitary group with the `star`/trace-zero scalars).
+1. **(THE remaining wall) The `F_{q²}*` line-stabiliser scaling as a PRODUCT OF TRANSVECTIONS (n≥3),
+   i.e. `UScaleKill`.** In `SU_n(F_{q²})`, `n≥3`, given isotropic hyperbolic pair `(e,m)` (`⟨e,m⟩=1`),
+   an anisotropic `w⊥{e,m}` (`⟨w,w⟩=δ≠0`), and `μ∈F_{q²}*`, I need an element scaling `e ↦ μ·e` that
+   is a **product of unitary transvections** in SU (isotropic centres, trace-zero coeffs).
+   **NEW (Aristotle-verified) structural fact:** the SU-level scaler is explicitly `g = R·P` with
+   `P = 1 + (μ−1)·e⊗m̄ + ((star μ)⁻¹−1)·m⊗ē` (the F_{q²}-scaling on the hyperbolic plane,
+   `e↦μe, m↦(star μ)⁻¹m`, det `μ/star μ`) and `R = 1 + ((star μ·μ⁻¹−1)δ⁻¹)·w⊗w̄` (norm-1 scaling of
+   `w` by `star μ/μ`, det `star μ/μ`). Individually `P,R ∉ SU` (dets ≠1); only `R·P ∈ SU`. So the
+   open question is precisely: **express this `R·P` torus element as a product of SU unitary
+   transvections** (the SU₃ short-root/Weyl construction). **What I need:** the explicit word
+   `t = ∏ τ_{vᵢ,aᵢ}` (centres `vᵢ` isotropic, in terms of `e,m,w`; coeffs `aᵢ` trace-zero) — from
+   Dieudonné *La géométrie des groupes classiques*, Grove *Classical Groups* §6/§11, or Taylor
+   *Geometry of the Classical Groups* Ch. 11. Likely route: the **short root subgroups** of SU₃
+   (transvections at isotropic `e+βm+γw`, `Tr(β)+N(γ)δ=0`) and the torus-as-Weyl-word
+   `h_α(t)=w_α(t)w_α(1)⁻¹`; I need the precise parameters. The `(3,2)` exception confirms `q≥3`.
 
 ---
 

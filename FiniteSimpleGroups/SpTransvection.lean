@@ -167,6 +167,19 @@ theorem spTransvecSp_conj (g : symplecticGroup l R) (v : (l ⊕ l) → R) (c : R
     simp only [Submonoid.coe_mul, spTransvecSp_coe, SymplecticGroup.coe_inv']
     exact spTransvection_conj g.property v c)
 
+/-- **Scaling the center direction reparametrizes the transvection**: `τ_{a·v, c} = τ_{v, c·a²}`
+(`vecMulVec (a•v) (J·(a•v)) = a²·(v ⊗ J·v)`). Hence `spTransvecGroup` depends only on the
+line `[v]` (over a field, after a nonzero rescale) — the well-definedness needed for the
+projective transvection family `Tline`. -/
+theorem spTransvection_smul_vec (a c : R) (v : (l ⊕ l) → R) :
+    spTransvection (a • v) c = spTransvection v (c * a * a) := by
+  rw [spTransvection, spTransvection, mulVec_smul, smul_vecMulVec, vecMulVec_smul, smul_smul,
+    smul_smul]
+
+theorem spTransvecSp_smul_vec (a c : R) (v : (l ⊕ l) → R) :
+    spTransvecSp (a • v) c = spTransvecSp v (c * a * a) :=
+  Subtype.ext (by simp only [spTransvecSp_coe]; exact spTransvection_smul_vec a c v)
+
 /-- The one-parameter subgroup hom `(R,+) → Sp`, `c ↦ τ_{v,c}`. -/
 noncomputable def spTransvecHom (v : (l ⊕ l) → R) : Multiplicative R →* symplecticGroup l R where
   toFun c := spTransvecSp v (Multiplicative.toAdd c)

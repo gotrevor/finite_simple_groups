@@ -254,4 +254,29 @@ theorem PSp_nontrivial [Nonempty l] :
     Matrix.diagonal_apply_ne _ hne] at hentry
   exact one_ne_zero hentry
 
+/-! ### Line-invariance of the transvection subgroup (for the projective family `Tline`) -/
+
+/-- **The transvection subgroup depends only on the line `[v]`**: scaling `v` by a nonzero `a`
+leaves `spTransvecGroup` unchanged (reparametrize `c ↦ c·a²`, `spTransvecSp_smul_vec`). -/
+theorem spTransvecGroup_smul {a : F} (ha : a ≠ 0) (v : (l ⊕ l) → F) :
+    spTransvecGroup (a • v) = spTransvecGroup v := by
+  apply le_antisymm <;> rw [SetLike.le_def] <;> intro y hy <;>
+    rw [mem_spTransvecGroup] at hy ⊢ <;> obtain ⟨c, rfl⟩ := hy
+  · exact ⟨c * a * a, (spTransvecSp_smul_vec a c v).symm⟩
+  · refine ⟨c * (a * a)⁻¹, ?_⟩
+    rw [spTransvecSp_smul_vec]
+    congr 1
+    field_simp
+
+/-- `spTransvecGroup` of a representative of `[v]` equals that of `v` (line-invariance). -/
+theorem spTransvecGroup_rep (v : (l ⊕ l) → F) (hv : v ≠ 0) :
+    spTransvecGroup ((Projectivization.mk F v hv).rep) = spTransvecGroup v := by
+  have h2 : Projectivization.mk F ((Projectivization.mk F v hv).rep)
+        (Projectivization.rep_nonzero _) = Projectivization.mk F v hv := by
+    rw [Projectivization.mk_rep]
+  rw [Projectivization.mk_eq_mk_iff] at h2
+  obtain ⟨a, ha⟩ := h2
+  rw [← ha, Units.smul_def]
+  exact spTransvecGroup_smul (Units.ne_zero a) v
+
 end FiniteSimpleGroups.SpN

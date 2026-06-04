@@ -447,6 +447,61 @@ theorem exists_common_nonorth_isotropic (hn : 3 ≤ n) :
       · intro h0; rw [h0, dotProduct_zero] at hzw1; exact one_ne_zero hzw1.symm
       · rw [hzw1]; exact one_ne_zero
 
+/-- **Transvection transitivity, non-orthogonal case** (the unitary Witt transitivity core that
+needs NO form classification): for nonzero isotropic `v, w` with `⟨v,w⟩ = β ≠ 0`, the element
+`g = τ_{v,b}·τ_{w,a} ∈ SU` maps `v` to the nonzero multiple `(a·star β)·w` of `w`. The trick: a
+single product of two transvections moves `v` along its orbit to `[w]` —
+`τ_{w,a}·v = v + (a·star β)·w`, then `τ_{v,b}` (with `b·a·N(β) = -1`, `a` any nonzero trace-zero,
+`b = -(N(β)·a)⁻¹` automatically trace-zero since `N(β)` is fixed) kills the `v`-component. Both
+factors are in `SU` (isotropic centres, trace-zero parameters). This is the elementary Eichler
+move; no orthogonal-complement decomposition or Hermitian-form equivalence is needed. -/
+theorem exists_su_maps_nonorth (v w : Fin n → UnitaryField p)
+    (hviso : star v ⬝ᵥ v = 0) (hwiso : star w ⬝ᵥ w = 0)
+    (hvw : star v ⬝ᵥ w ≠ 0) :
+    ∃ (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) (c : UnitaryField p),
+      c ≠ 0 ∧ (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ v = c • w := by
+  have hβ : star w ⬝ᵥ v = star (star v ⬝ᵥ w) := dotProduct_star_swap v w
+  set β := star v ⬝ᵥ w with hβdef
+  set Nβ := star β * β with hNdef
+  have hNβ0 : Nβ ≠ 0 := mul_ne_zero (star_ne_zero.mpr hvw) hvw
+  have hNβH : star Nβ = Nβ := by rw [hNdef, star_mul', star_star, mul_comm]
+  obtain ⟨t, ht0, httr⟩ := UnitaryField.exists_traceZero_ne_zero p
+  have hstart : star t = -t := by linear_combination httr
+  set b := -(Nβ⁻¹ * t⁻¹) with hbdef
+  have hb_tr : b + star b = 0 := by
+    rw [hbdef, star_neg, star_mul', star_inv₀, star_inv₀, hNβH, hstart, inv_neg]
+    ring
+  have hcoef : b * (t * Nβ) = -1 := by
+    rw [hbdef, neg_mul,
+      show Nβ⁻¹ * t⁻¹ * (t * Nβ) = (Nβ⁻¹ * Nβ) * (t⁻¹ * t) by ring,
+      inv_mul_cancel₀ hNβ0, inv_mul_cancel₀ ht0, mul_one]
+  refine ⟨uTransvecSU v b hviso hb_tr * uTransvecSU w t hwiso httr, t * star β,
+    mul_ne_zero ht0 (star_ne_zero.mpr hvw), ?_⟩
+  rw [Submonoid.coe_mul, uTransvecSU_coe, uTransvecSU_coe, ← Matrix.mulVec_mulVec,
+    uTransvection_mulVec w t v, hβ, uTransvection_mulVec v b,
+    dotProduct_add, dotProduct_smul, hviso, ← hβdef, smul_eq_mul, zero_add,
+    show t * star β * β = t * Nβ by rw [hNdef]; ring, hcoef, neg_one_smul]
+  abel
+
+/-- **`SU` is transitive on isotropic lines** (`n ≥ 3`, machine-checked, no Witt classification):
+for nonzero isotropic `v, w`, there is `g ∈ SU` with `g·v = c·w` (`c ≠ 0`), i.e. `g·[v] = [w]`.
+Route through a common non-orthogonal isotropic `u` (`exists_common_nonorth_isotropic`, diameter-2
+connectivity of the non-orthogonality graph): `g₁·v = c₁·u` and `g₂·u = c₂·w` by the non-orthogonal
+move (`exists_su_maps_nonorth`), so `g₂g₁·v = (c₁c₂)·w`. This is the geometric core of unitary
+pretransitivity on `IsoPoint`. -/
+theorem exists_su_maps_isotropic (hn : 3 ≤ n) (v w : Fin n → UnitaryField p)
+    (hv : v ≠ 0) (hw : w ≠ 0) (hviso : star v ⬝ᵥ v = 0) (hwiso : star w ⬝ᵥ w = 0) :
+    ∃ (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) (c : UnitaryField p),
+      c ≠ 0 ∧ (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ v = c • w := by
+  obtain ⟨u, hu0, huiso, hvu, hwu⟩ :=
+    exists_common_nonorth_isotropic p hn v w hv hw hviso hwiso
+  obtain ⟨g1, c1, hc1, hg1⟩ := exists_su_maps_nonorth p v u hviso huiso hvu
+  have huw : star u ⬝ᵥ w ≠ 0 := by
+    rw [dotProduct_star_swap w u]; exact star_ne_zero.mpr hwu
+  obtain ⟨g2, c2, hc2, hg2⟩ := exists_su_maps_nonorth p u w huiso hwiso huw
+  refine ⟨g2 * g1, c1 * c2, mul_ne_zero hc1 hc2, ?_⟩
+  rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, hg1, Matrix.mulVec_smul, hg2, smul_smul]
+
 /-- **Isotropic vectors span** (`n ≥ 3`, machine-checked). For each `i` pick `j ≠ i`; with two
 distinct `c, c'` of norm `-1` (`exists_two_norm_neg_one`), `eᵢ + c·eⱼ` and `eᵢ + c'·eⱼ` are
 isotropic (`isotropic_single_pair`), their difference gives `eⱼ ∈ span`, hence `eᵢ ∈ span`. As
@@ -775,6 +830,27 @@ theorem psu_mk_smul (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) (x
   rw [psuPermHom_mk]
   rfl
 
+/-- **`PSU = SU/Z` is pretransitive on the isotropic points `IsoPoint`** (`n ≥ 3`,
+machine-checked) — the Iwasawa pretransitivity obligation, descended from `SU`'s transitivity on
+isotropic lines (`exists_su_maps_isotropic`). For isotropic points `x, y`, a two-transvection
+product maps `x.rep → c·y.rep`, so its image in `PSU` maps `x → y`. Unitary analogue of
+`SpN.psp_isPretransitive`. -/
+theorem psu_isPretransitive (hn : 3 ≤ n) :
+    letI := psuAction p n
+    MulAction.IsPretransitive (PSUConcrete n p) (IsoPoint p n) := by
+  letI := psuAction p n
+  refine ⟨fun x y => ?_⟩
+  obtain ⟨g, c, hc, hg⟩ := exists_su_maps_isotropic p hn x.1.rep y.1.rep
+    (Projectivization.rep_nonzero x.1) (Projectivization.rep_nonzero y.1) x.2 y.2
+  refine ⟨QuotientGroup.mk g, ?_⟩
+  rw [psu_mk_smul p n g x]
+  apply Subtype.ext
+  rw [isoPoint_smul_coe]
+  conv_lhs => rw [← Projectivization.mk_rep x.1]
+  conv_rhs => rw [← Projectivization.mk_rep y.1]
+  rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff']
+  exact ⟨c, by rw [su_smul_vec_def]; exact hg.symm⟩
+
 /-- **The `PSU`-level root subgroup along the isotropic line `x`** — the image in `SU/Z` of
 `uRootSubgroup x.rep`. The Iwasawa family `T`. By `uRootSubgroup_rep`/`_smul` it depends only on
 the line `x`. -/
@@ -935,24 +1011,21 @@ theorem PSU_isSimpleGroup_of_generate_of_qpp (hn : 3 ≤ n) (hp : 5 ≤ p)
   exact (psuIwasawaStructure p n hgen).isSimpleGroup
     (commutator_PSU_eq_top_of_generate p n hn hp hgen) (psuFaithful p n hn)
 
-/-- **`PSU_n(F_{p²})` is simple** (`n ≥ 3`, `p ≥ 5`), with quasi-preprimitivity decomposed into its
-two classical constituents — `hpt` (the `IsoPoint` action is pretransitive: unitary Witt transitivity
-on isotropic points) and `hblk` (its only blocks are trivial) — via the mathlib bridge
-`IsPreprimitive.isQuasiPreprimitive`. These two, together with the Witt generation `hgen`, are the
-**only** remaining inputs; everything else is machine-checked. Axiom-clean. The unitary analogue of
-the `SpN.pspPreprimitive`-based assembly; the recognized textbook targets for the remaining PSU work
-(point-stabilizer = a maximal parabolic). -/
+/-- **`PSU_n(F_{p²})` is simple** (`n ≥ 3`, `p ≥ 5`), modulo the Witt generation `hgen` and
+block-triviality `hblk`. **Pretransitivity is now machine-checked** (`psu_isPretransitive`), so
+together with `hblk` it yields `IsPreprimitive`, hence quasi-preprimitivity via the mathlib bridge
+`IsPreprimitive.isQuasiPreprimitive`. Only TWO inputs remain — the Witt generation (Step 3a, at
+Aristotle) and primitivity/block-triviality (the maximal-parabolic core); everything else is
+machine-checked. Axiom-clean. -/
 theorem PSU_isSimpleGroup_of_generate (hn : 3 ≤ n) (hp : 5 ≤ p)
     (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
       ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
         (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤)
-    (hpt : letI := psuAction p n;
-      MulAction.IsPretransitive (PSUConcrete n p) (IsoPoint p n))
     (hblk : letI := psuAction p n; ∀ {B : Set (IsoPoint p n)},
       MulAction.IsBlock (PSUConcrete n p) B → MulAction.IsTrivialBlock B) :
     IsSimpleGroup (PSUConcrete n p) := by
   letI := psuAction p n
-  haveI : MulAction.IsPretransitive (PSUConcrete n p) (IsoPoint p n) := hpt
+  haveI : MulAction.IsPretransitive (PSUConcrete n p) (IsoPoint p n) := psu_isPretransitive p n hn
   haveI : MulAction.IsPreprimitive (PSUConcrete n p) (IsoPoint p n) :=
     { isTrivialBlock_of_isBlock := hblk }
   exact PSU_isSimpleGroup_of_generate_of_qpp p n hn hp hgen inferInstance

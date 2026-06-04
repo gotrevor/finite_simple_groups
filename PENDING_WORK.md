@@ -338,26 +338,55 @@ This lap discharged BOTH former core axioms and wired into LieType:
    axiom is `PSp_perfect_small_field` : `commutator (PSp n q) = ⊤` for `q∈{2,3}`, `n≥2`,
    `¬(n=2∧q=2)`. `PSp(4,2)≅S₆` correctly excluded — it fails at perfectness, not primitivity.
 
-### G. ◐ NEXT DEEP THREAD — `PSU_{n}(q)` simplicity (the unitary family)
+### G. ◐ ACTIVE DEEP THREAD — `PSU_{n}(q)` simplicity (the unitary family)
 **Status:** `PSU n q` is still `opaque` in `LieType.lean` (NOT connected to a concrete group), so
-`axiom PSU_isSimpleGroup (n q)(3≤n)` is vacuous-ish. Discharging it is genuinely multi-lap:
+`axiom PSU_isSimpleGroup (n q)(3≤n)` is vacuous-ish. Discharging it is genuinely multi-lap.
+**Steps 0, 1, and the step-2 number-theory prereqs are DONE (2026-06-04 PM).**
 
-**Step 0 (foundation — the first brick):** connect the type. `PSU n q :=
-specialUnitaryGroup (Fin n) F_{q²} ⧸ center`, where `F_{q²}` carries `star = q-power Frobenius`.
-mathlib HAS: `Matrix.specialUnitaryGroup` (needs `[Field][StarRing]`, group instance + `star=inv`),
-`GaloisField p 2` (`Field` + `Finite`, char p, `frobenius _ p`), `FiniteField.pow_card`,
-`GaloisField.card p 2 : Nat.card = p²`. mathlib LACKS: any `StarRing` on a finite field.
-- **Crux brick:** build `StarRing F` with `star = frobenius` (q=p prime case: `GaloisField p 2`,
-  star x = x^p). Involution `(x^p)^p = x` = `x^(p²)=x` via `FiniteField.pow_card` (NB: GaloisField
-  has `Finite` not `Fintype` — `haveI := Fintype.ofFinite _`, then `Fintype.card = Nat.card = p²`).
-  star_add via `frobenius` being a `RingHom`; star_mul via commutativity. To avoid global-instance
-  diamonds, put the `Star/InvolutiveStar/StarMul/StarRing` instances on a **type synonym**
-  `def UnitaryField p := GaloisField p 2`. General `q=p^m`: `star = iterateFrobenius _ p m`.
-  → ready-to-submit Aristotle brick (account was busy w/ a foreign job at lap end; submit when free).
-**Step 1:** unitary transvections `τ_{v,a}(x)=x+a·⟨x,v⟩·v` + membership (mirror `spTransvection_mem`).
-**Step 2:** action on isotropic ℙ-points, faithful + quasi-preprimitive (mirror SpIwasawa primitivity).
-**Step 3:** `MulAction.IwasawaStructure` (mathlib criterion, same as PSL/PSp) + perfectness.
-The whole PSp scaffold (`SpIwasawa`/`SpTransvection`/`SpSmallField`) is the template to copy.
+- ✅ **Step 0 (foundation)** — `UnitaryFoundation.lean`. `UnitaryField p := GaloisField p 2`,
+  `star = frobenius` (`star x = x^p`), `StarRing` on the type synonym; `SU n p`, `PSUConcrete`.
+- ✅ **Step 1 (transvections) — COMPLETE** in `UnitaryTransvection.lean` (general `[CommRing α]
+  [StarRing α]`), all axiom-clean (`[propext, Classical.choice, Quot.sound]`):
+  - `uTransvection v a := 1 + a•(v ⊗ star v)`; `uTransvection_mulVec` (action `x ↦ x+a⟨v,x⟩v`).
+  - `uTransvection_star : star τ_{v,a} = τ_{v,star a}` (`v⊗star v` Hermitian) ⟹
+    `uTransvection_mem` (∈ unitaryGroup iff `v` isotropic `star v⬝ᵥv=0` ∧ `a` trace-zero
+    `a+star a=0`), `uTransvection_det = 1`, `uTransvection_mem_su` (∈ specialUnitaryGroup).
+  - `uTransvection_mul : τ_{v,a}τ_{v,b}=τ_{v,a+b}` (isotropic); `u_preserves_form`,
+    `u_isotropic_of_mem`; `uTransvection_conjH/conj : gτ_{v,a}g⁻¹=τ_{g·v,a}`.
+  - **Perfectness engine:** `uTransvection_smul_vec : τ_{c·v,a}=τ_{v,a·(c·star c)}` (NORM replaces
+    square), `uTransvection_inv_eq`, `uTransvection_commutator : [g,τ_{v,a}]=τ_{v,(N(λ)−1)·a}`
+    when `g·v=λ·v` (N(λ)=λ·star λ).
+  - **Group level:** `traceZero α : AddSubgroup` (skew-Hermitian scalars), `uTransvecHom :
+    Multiplicative(traceZero α)→*SU`, `uRootSubgroup v` (= range, abelian via `IsMulCommutative`),
+    `uTransvecSU_conj` (the Iwasawa `is_conj` input).
+- ✅ **Step 2 number-theory prereqs — DONE** in `UnitaryFoundation.lean`, all axiom-clean:
+  - `Algebra (ZMod p) (UnitaryField p)`; `algebraMap_norm_eq_mul_star : algebraMap(norm c)=c·star c`
+    (both `c^{p+1}`); `exists_norm_neg_one : ∃ c, c·star c=−1` (via `FiniteField.norm_surjective`).
+  - `exists_isotropic (n≥2) : ∃ v≠0, star v⬝ᵥv=0` (`v=c·e₀+e₁`) — Iwasawa-action NONEMPTINESS.
+  - `exists_traceZero_ne_zero : ∃ a≠0, a+star a=0` (Frobenius nontrivial via
+    `orderOf_frobeniusAlgHom=finrank=2`) — `uRootSubgroup` NONTRIVIALITY.
+
+**REMAINING (the genuine multi-lap cores):**
+- **Step 2 proper — the action + primitivity.** Define the SU-action on isotropic ℙ-points
+  (lift `u_isotropic_of_mem`); faithfulness mod center; **quasi-preprimitivity** (the deep
+  geometric core, mirrors SpIwasawa's `psp_isTrivialBlock_of_isBlock` — point-stabilizer
+  maximal/parabolic). Mathlib has `IsPreprimitive.isQuasiPreprimitive`.
+- **Step 3a — generation.** Unitary transvections generate `SU` (the unitary Eichler/Witt
+  theorem). DEEP core, mirrors `sp_stab_hyperbolic_le` / the ambient-induction generation proof.
+- **Step 3b — perfectness assembly.** Engine done (`uTransvection_commutator`). NEED: a scaling
+  element `g∈SU` with `g·v=λ·v`, `N(λ)≠1`, `v` isotropic (unitary `spDiag` analogue) so every
+  transvection is a commutator; lift to group level with `traceZero` bookkeeping; `commutator=⊤`.
+  CAUTION: like PSp(4,2), small unitary groups have exceptions (e.g. SU(2,2)≅?, SU(3,2) not
+  perfect) — `N(λ)≠1` needs a field/dimension hypothesis; defer the exact exclusion.
+- **Step 3c — assemble** `MulAction.IwasawaStructure` (same mathlib criterion as PSL/PSp/PSU) ⟹
+  `IsSimpleGroup (PSUConcrete n p)`, then **connect `LieType.PSU`** (replace `opaque` carrier;
+  CAUTION: `PSU` used in `classicalLieTypeCarrier` + `PSU_isSimpleGroup`; general `q=p^m` needs
+  `GaloisField p (2m)` + `iterateFrobenius`).
+The whole PSp scaffold (`SpIwasawa`/`SpTransvection`/`SpSmallField`) remains the template to copy.
+
+**Ready Aristotle brick (submit when account frees):** unitary scaling element — given `v`
+isotropic and `λ` with `N(λ)=λ·star λ≠1`, construct `g∈specialUnitaryGroup` with `g·v=λ·v`
+(inline `uTransvection`/membership facts as axioms; the unitary analogue of `spDiag`).
 
 **Other open classical axiom:** `POmega_isSimpleGroup` (n≥7) — also opaque, orthogonal geometry,
 hardest of the four (ε-type quadratic forms). After PSU.

@@ -316,6 +316,24 @@ theorem uEichler_mulVec (x h : n → α) (μ : α) (z : n → α) :
   simp only [uEichler, Matrix.sub_mulVec, Matrix.add_mulVec, Matrix.one_mulVec,
     Matrix.smul_mulVec, Matrix.vecMulVec_mulVec, op_smul_eq_smul, smul_smul]
 
+/-- **The anisotropic `μ`-part of the Eichler transformation peels off as a transvection at `x`**:
+`E_{x,h,μ} = E_{x,h,0} · τ_{x,−μ}` (for `⟨x,x⟩ = 0`, `⟨x,h⟩ = 0`). The two cross products
+`(h⊗x̄)(x⊗x̄) = ⟨x,x⟩·(h⊗x̄)` and `(x⊗h̄)(x⊗x̄) = ⟨h,x⟩·(x⊗x̄)` both vanish (isotropy/orthogonality),
+leaving exactly the `−μ·(x⊗x̄)` term. This reduces the Eichler-as-transvection-product question to
+the *pure* (`μ = 0`) case `E_{x,h,0}`, isolating the trace-zero scalar correction `τ_{x,−μ}` as a
+genuine transvection (`−μ` is trace-zero whenever `μ + star μ = ⟨h,h⟩` and `h` is isotropic). -/
+theorem uEichler_eq_mul_transvection {x h : n → α} (μ : α)
+    (hxx : star x ⬝ᵥ x = 0) (hxh : star x ⬝ᵥ h = 0) :
+    uEichler x h μ = uEichler x h 0 * uTransvection x (-μ) := by
+  have hhx : star h ⬝ᵥ x = 0 := by
+    rw [show star h ⬝ᵥ x = star (star x ⬝ᵥ h) by
+      simp only [dotProduct, star_sum, Pi.star_apply, star_mul', star_star, mul_comm], hxh,
+      star_zero]
+  simp only [uEichler, uTransvection, zero_smul, sub_zero, neg_smul,
+    Matrix.mul_add, Matrix.add_mul, Matrix.sub_mul, Matrix.mul_one, Matrix.one_mul,
+    Matrix.mul_neg, Matrix.mul_smul, Matrix.vecMulVec_mul_vecMulVec, hxx, hhx, vecMulVec_zero]
+  abel
+
 /-- **The Eichler transformation fixes its isotropic centre `x`** (`⟨x,x⟩ = 0`, `⟨x,h⟩ = 0`): all
 three correction coefficients `⟨x,x⟩`, `⟨h,x⟩`, `μ⟨x,x⟩` vanish. -/
 theorem uEichler_apply_self (x h : n → α) (μ : α)

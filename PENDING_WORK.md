@@ -355,6 +355,48 @@ the correction `c = ⟨h,y⟩+μ` is **automatically trace-zero** (because `y,y'
 "requires Witt" diagnosis from the `ugen`/`t1` Aristotle runs was wrong for hT1. The t1 Aristotle
 job (`19b0b4a0`) is now MOOT. **Only `hgen` remains (Step 3a below).**
 
+**★★★ UPDATE 2026-06-04 (generation-infrastructure lap — current HEAD).** `hT1` now also
+DISCHARGED on the real defs (commits `fa29843`/`e6abae4`); capstone `PSU_isSimpleGroup_modulo_generation`
+is axiom-clean modulo `hgen` ALONE. This lap built the scaffolding for the `hgen` Dieudonné dimension
+induction (all axiom-clean, in `UnitarySimple.lean` general section + `UnitaryTransvection.lean`):
+  - **Perp-projection block:** `uForm_nondegenerate`, `uPerpComp e f x := x − ⟨f,x⟩·e − ⟨e,x⟩·f`,
+    `uPerpComp_mem_perp`, `uPerpComp_add_span` (the `V = ⟨e,f⟩ ⊕ ⟨e,f⟩^⊥` split), relative
+    non-degeneracy `uPerp_form_ne_of_mem_perp`, `exists_uPerp_form_both_ne`. (Unitary analogues of
+    symplectic `perpComp`/`perp_form_ne_of_mem_perp`.)
+  - **Pair-stabiliser bricks** (`UnitaryTransvection.lean`): `u_fixing_preserves_perp`,
+    `uTransvection_fixes_pair`.
+  - **Relative-transitivity engines:** `exists_su_maps_nonorth_fixing_perp` (g maps isotropic
+    `v ↦ c·w`, fixes ALL of `⟨v,w⟩^⊥`) and `exists_su_fixes_maps_isotropic_mate_fixing_perp` (exact
+    mate `y↦y'`, fixes `⟨x,y,y'⟩^⊥`). Unitary analogues of `offS_transvecGen_maps` /
+    `offS_transvecFixing_maps_mate`.
+  - **Weyl + torus:** `exists_su_weyl_swap` (`τ_{e,a}τ_{f,-a⁻¹}τ_{e,a}`: `e↦-a⁻¹·f, f↦a·e`, fixes
+    perp; `-a⁻¹` auto trace-zero) and `exists_su_hyperbolic_scale` (`D_λ = w(a')w(a)`: `e↦λe, f↦λ⁻¹f`
+    for `λ∈F_q*`, fixes perp). The within-plane torus is `F_q*`-valued (det=1 forces fixed field).
+  - **Det base case** (Aristotle project `c861683e`, verified in-kernel): `u_eq_one_of_fixes_all_but_one`
+    — SU `g` fixing all standard basis vectors but one is `1`.
+
+  **REFINED PLAN for `hgen` (genAux-style, mirrors symplectic `genAux_le`):**
+  Induct peeling standard hyperbolic pairs indexed by a `Finset S`; `FixS S g` = fixes the S-pairs;
+  complement = `offS`-analog. Step: map `(g·e_{i₁}, g·f_{i₁})` back to `(e_{i₁},f_{i₁})` EXACTLY by a
+  transvection product fixing the S-pairs. Base: `S=univ` ⟹ `g=1` (det base case for the odd
+  anisotropic coordinate).
+  **★ KEY INSIGHT (this lap):** exact pair-transitivity does NOT need arbitrary-`F_{q²}*`-scaling.
+  A "scale `e` by `λ∉F_q` while fixing `⟨e,f⟩^⊥` pointwise" is IMPOSSIBLE in SU (det = λ/star λ ≠ 1,
+  no room to compensate). The induction must fix only the SMALL already-fixed set `S`, letting the
+  det-compensation happen by free movement in the not-yet-fixed complement — exactly as symplectic
+  `offS_transvecGen_maps_pair` does. So the engines must fix `offS S` (a coordinate condition), NOT
+  the full geometric perp. `exists_su_maps_nonorth_fixing_perp` (fixes whole perp) is therefore too
+  strong for the pair-mapping step and only directly usable for within-complement moves where the
+  scalar is `F_q`-valued (handled by the torus `exists_su_hyperbolic_scale`).
+  **REMAINING (multi-lap):** (1) explicit isotropic hyperbolic basis for the identity form
+  (coordinate-pairs `(2i,2i+1)` via `isotropic_single_pair`, + lone anisotropic coord for odd n);
+  (2) `FixS`/`offS` predicates + closure lemmas (mechanical, mirror SpIwasawa 460-600);
+  (3) `offS`-transitivity on isotropic vectors via the Eichler engines + Weyl/torus to fix scalars;
+  (4) `genAux`-style induction + assembly to `hgen`.
+  **Aristotle (this lap):** base-case `c861683e` DONE+ported; exact-transitivity assembly
+  `90aa26a2` IN_PROGRESS (rests on an `exists_scale` axiom = `F_{q²}*` line-stabiliser scaling, the
+  one piece that genuinely needs the 3rd dimension — n≥3 essential).
+
 - ✅ **Step 0 (foundation)** — `UnitaryFoundation.lean`. `UnitaryField p := GaloisField p 2`,
   `star = frobenius` (`star x = x^p`), `StarRing` on the type synonym; `SU n p`, `PSUConcrete`.
 - ✅ **Step 1 (transvections) — COMPLETE** in `UnitaryTransvection.lean` (general `[CommRing α]

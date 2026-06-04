@@ -50,34 +50,29 @@ theorem two_ne_zero_zmod (q : ℕ) [Fact (Nat.Prime q)] (hq2 : q ≠ 2) : (2 : Z
     intro h; exact absurd (Nat.le_of_dvd (by norm_num) h) (by omega)
   simpa using h2
 
-/-- **Residual axiom for `q = 2`, `n ≥ 3` — the genuinely char-2 short-root core.** `Sp(2n,2)` is
-perfect (`commutator = ⊤`) for `n ≥ 3`. In characteristic 2 the symplectic Steinberg structure
-constant `2` vanishes (`SpN.root_steinberg`), so the long-root transvection is *not* a commutator
-of the two short roots; perfectness instead comes from the rank-`≥3` short-root relations
-`[x_{εᵢ-εⱼ}, x_{εⱼ±εₖ}] = x_{εᵢ±εₖ}` (third index `k`), which need `n ≥ 3`. `Sp(4,2) ≅ S₆`
-(`n = 2`) is genuinely *not* perfect, correctly excluded. This is strictly narrower than the former
-`PSp_perfect_small_field` axiom — the `q = 3` case is now the machine-checked theorem below. -/
-axiom PSp_perfect_char_two (n : ℕ) (h_n : 3 ≤ n) :
-    commutator (PSp n 2) = ⊤
+/-- **`PSp(2n,q)` is perfect for prime `q ∈ {2,3}`, `2 ≤ n`, excluding `PSp(4,2)` — fully
+machine-checked, ZERO custom axioms.** Two complementary symplectic Steinberg engines cover every
+case:
+* `n ≥ 3` (any `q`): the rank-`≥3` short-root relations `[x_{εᵢ-εₖ}, x_{εₖ±εⱼ}] = x_{εᵢ±εⱼ}`
+  (structure constant `1`, characteristic-free) put the long-root transvections in `[Sp,Sp]`
+  (`SpN.commutator_PSp_eq_top_n3`). This is what makes `Sp(2n,2)` perfect for `n ≥ 3`.
+* `n = 2`: then `q ≠ 2` (forced by `h_skip`), so `q = 3` (prime, `≤ 3`) has characteristic ≠ 2 and
+  the long-root transvection `τ_{eᵢ,c} = ⁅1+s·N₁, 1+N₂⁆` is a single short-short commutator
+  (`SpN.commutator_PSp_eq_top_char_ne_two`).
 
-/-- **`PSp(2n,q)` is perfect for prime `q ∈ {2,3}`, `2 ≤ n`, excluding `PSp(4,2)`** — formerly the
-monolithic small-field axiom, now **discharged for `q = 3`** via the symplectic Steinberg relation
-(`SpN.commutator_PSp_eq_top_char_ne_two`, machine-checked). For `q = 2` it reduces to the narrower
-char-2 residual `PSp_perfect_char_two` (`n ≥ 3`, forced by `h_skip` + `h_n`). -/
+`PSp(4,2) ≅ S₆` (`n = 2`, `q = 2`) is genuinely not perfect, correctly excluded by `h_skip`. -/
 theorem PSp_perfect_small_field (n q : ℕ) [Fact (Nat.Prime q)]
-    (h_n : 2 ≤ n) (hq : q ≤ 3) (h_skip : ¬ (n = 2 ∧ q = 2)) :
+    (h_n : 2 ≤ n) (_hq : q ≤ 3) (h_skip : ¬ (n = 2 ∧ q = 2)) :
     commutator (PSp n q) = ⊤ := by
-  haveI : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.mpr h_n
-  rcases eq_or_ne q 2 with hq2 | hq2
-  · -- `q = 2`: `n ≥ 3` (from `h_n` and `¬(n = 2 ∧ q = 2)`), char-2 residual
-    subst hq2
-    have hn3 : 3 ≤ n := by
-      rcases Nat.lt_or_ge n 3 with h | h
-      · exact absurd ⟨by omega, rfl⟩ h_skip
-      · exact h
-    exact PSp_perfect_char_two n hn3
-  · -- `q ≠ 2`, prime, `q ≤ 3` ⟹ `q = 3`: characteristic ≠ 2, Steinberg engine applies
+  rcases Nat.lt_or_ge n 3 with hn2 | hn3
+  · -- `2 ≤ n < 3` ⟹ `n = 2`; then `q ≠ 2` (h_skip), so `q = 3`: characteristic ≠ 2
+    have hn : n = 2 := by omega
+    have hq2 : q ≠ 2 := fun h => h_skip ⟨hn, h⟩
+    haveI : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.mpr h_n
     exact SpN.commutator_PSp_eq_top_char_ne_two (l := Fin n) (F := ZMod q) (two_ne_zero_zmod q hq2)
+  · -- `n ≥ 3`: characteristic-free rank-3 argument (covers `q = 2` and `q = 3`)
+    exact SpN.commutator_PSp_eq_top_n3 (l := Fin n) (F := ZMod q)
+      (by rw [Fintype.card_fin]; omega)
 
 /-- `PSp(2n,q)` simple for prime `q ∈ {2,3}` (excluding `PSp(4,2)`), from the perfectness residual
 `PSp_perfect_small_field` fed through `PSpn_isSimpleGroup_of_perfect` (faithfulness + quasi-

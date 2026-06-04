@@ -6,11 +6,18 @@ import FiniteSimpleGroups.SpIwasawa
 for small fields `q ∈ {2,3}`
 
 The former monolithic small-field axiom `PSp_perfect_small_field` (perfectness for `q ∈ {2,3}`,
-`n ≥ 2`, `¬(n=2∧q=2)`) is **discharged here for `q = 3`** (and, in fact, for any field of
-characteristic ≠ 2): the `λ²≠1` commutator engine is unavailable over `𝔽₃`, so perfectness comes
-instead from the type-`Cₙ` **Steinberg relation** — the long-root transvection `τ_{eᵢ,·}` is the
-group commutator of two short-root unipotents, with structure constant `2` (invertible iff char ≠ 2).
-The only surviving residual is the genuinely char-2 case `PSp_perfect_char_two` (`q = 2`, `n ≥ 3`).
+`n ≥ 2`, `¬(n=2∧q=2)`) is now **fully discharged** here, so `PSp_isSimpleGroup` is axiom-clean.
+Two complementary type-`Cₙ` **Steinberg engines** cover every case:
+* **`n = 2` (char ≠ 2, i.e. `q = 3`):** the long-root transvection `τ_{eᵢ,·}` is the single
+  short-short commutator `⁅1+s·N₁, 1+N₂⁆` with structure constant `2` (invertible) — see
+  `commutator_PSp_eq_top_char_ne_two`.
+* **`n ≥ 3` (ANY field, char-free):** the rank-`≥3` short-root relations
+  `[x_{εᵢ-εₖ}, x_{εₖ±εⱼ}] = x_{εᵢ±εⱼ}` (structure constant `1`) plus the long-root extraction
+  `⁅1+N₁(i,j), 1+a·M_j⁆ = (1+a·N₂(i,j))·τ_{eᵢ,·}` put every transvection in `[Sp,Sp]` — see
+  `commutator_PSp_eq_top_n3`. This is what makes `Sp(2n,2)` perfect for `n ≥ 3`, even though the
+  char-2 short-short structure constant `2` vanishes.
+
+`PSp(4,2) ≅ S₆` (`n = 2`, `q = 2`) is genuinely not perfect, correctly excluded.
 
 This file machine-checks the **algebraic core** (no field-size or characteristic hypothesis):
 - `rootN1/rootN2/rootM` — the short-root (`εᵢ∓εⱼ`) unipotent generators and the long-root (`2εᵢ`)
@@ -23,16 +30,14 @@ This file machine-checks the **algebraic core** (no field-size or characteristic
 **The structure constant `2`** (`N₁N₂ = M`, `N₂N₁ = -M`, so `[N₁,N₂] = 2M`) is exactly why
 `Sp(4,2) ≅ S₆` (char 2) fails to be perfect while `Sp(4,3)` (char 3, `2` invertible) is perfect.
 
-**Done this lap** (everything below `root_steinberg`): (a) symplectic membership
+Everything below `root_steinberg` is the assembly: (a) symplectic membership
 `1 + s·rootN1, 1 + s·rootN2 ∈ symplecticGroup` (`mem_one_add_rootN1/2`, the `gᵀJg = J`
 computation); (b) the long-root identification `1 + c·rootM i = spTransvection (single (inr i)) (-c)`
-(`one_add_rootM_eq_spTransvection`); (c) the seed `spTransvecSp_inr_mem_commutator` (`τ_{eᵢ,c}` is a
-commutator over char ≠ 2), its `Sp`-conjugate spread `spTransvecSp_mem_commutator_char_ne_two`, and
-`commutator_Sp_eq_top_char_ne_two` / `commutator_PSp_eq_top_char_ne_two`.
-
-**Remaining:** the char-2 case `PSp_perfect_char_two` (`q = 2`, `n ≥ 3`) — short roots only, via the
-rank-`≥3` relations `[x_{εᵢ-εⱼ}, x_{εⱼ±εₖ}] = x_{εᵢ±εₖ}` (the structure constant `2` vanishes, so the
-two-short-root commutator above produces the *trivial* long root in char 2).
+(`one_add_rootM_eq_spTransvection`); (c) the char-≠-2 seed `spTransvecSp_inr_mem_commutator` and its
+`Sp`-conjugate spread to `commutator_PSp_eq_top_char_ne_two`; (d) the char-free rank-3 engine
+(`group_comm_first_order`/`group_comm_second_order`, the three Steinberg relations
+`rootN1_steinberg`/`rootN2_steinberg`/`rootM_steinberg`, the seed
+`spTransvecSp_inr_mem_commutator_n3`, spread to `commutator_PSp_eq_top_n3`).
 -/
 
 open Matrix
@@ -325,5 +330,235 @@ theorem commutator_PSp_eq_top_char_ne_two [Nontrivial l] (h2 : (2 : F) ≠ 0) :
     show ⁅(⊤ : Subgroup _), ⊤⁆ = Subgroup.map f ⁅(⊤ : Subgroup G), ⊤⁆
     rw [Subgroup.map_commutator, Subgroup.map_top_of_surjective f hf]
   rw [hmap, commutator_Sp_eq_top_char_ne_two h2, Subgroup.map_top_of_surjective f hf]
+
+/-- **First-order group-commutator identity** for nilpotent `X, Y` with `XYX = 0`, `Y(XY) = 0`:
+`(1+sX)(1+tY)(1-sX)(1-tY) = 1 + st·(XY - YX)`. The Steinberg relation whose structure constant
+is `±1` (so it survives every characteristic). -/
+theorem group_comm_first_order (s t : F) (X Y : Matrix (l ⊕ l) (l ⊕ l) F)
+    (hX2 : X * X = 0) (hY2 : Y * Y = 0) (hXYX : X * Y * X = 0) (hXYY : X * Y * Y = 0)
+    (hYXY : Y * X * Y = 0) :
+    (1 + s • X) * (1 + t • Y) * (1 - s • X) * (1 - t • Y)
+      = 1 + (s * t) • (X * Y - Y * X) := by
+  have e1 : (1 + s • X) * (1 + t • Y) * (1 - s • X)
+      = 1 + t • Y + (s * t) • (X * Y - Y * X) := by
+    simp only [add_mul, mul_add, mul_sub, one_mul, mul_one, smul_mul_assoc, mul_smul_comm,
+      hX2, hXYX]
+    simp only [smul_zero]
+    module
+  rw [e1]
+  simp only [add_mul, mul_sub, sub_mul, one_mul, mul_one, smul_mul_assoc, mul_smul_comm,
+    hY2, hXYY, hYXY]
+  simp only [smul_zero]
+  module
+
+/-! #### Rank-3 short-root products (the `E_{ik}E_{kj}=E_{ij}` Levi algebra) -/
+
+/-- `N₁(i,k)·N₁(k,j) = E_{eᵢ,eⱼ}` (`i ≠ j`). -/
+theorem rootN1_mul_rootN1 (i k j : l) (hij : i ≠ j) :
+    rootN1 (F := F) i k * rootN1 k j = Matrix.single (Sum.inr i) (Sum.inr j) 1 := by
+  simp [rootN1, sub_mul, mul_sub, single_mul_single_same, single_mul_single_of_ne, hij]
+
+/-- `N₁(k,j)·N₁(i,k) = E_{fⱼ,fᵢ}` (`i ≠ j`). -/
+theorem rootN1_mul_rootN1' (i k j : l) (hij : i ≠ j) :
+    rootN1 (F := F) k j * rootN1 i k = Matrix.single (Sum.inl j) (Sum.inl i) 1 := by
+  simp [rootN1, sub_mul, mul_sub, single_mul_single_same, single_mul_single_of_ne, hij.symm]
+
+/-- `N₁(i,k)·N₂(k,j) = E_{eᵢ,fⱼ}` (`j ≠ k`). -/
+theorem rootN1_mul_rootN2 (i k j : l) (hjk : j ≠ k) :
+    rootN1 (F := F) i k * rootN2 k j = Matrix.single (Sum.inr i) (Sum.inl j) 1 := by
+  simp [rootN1, rootN2, sub_mul, mul_add, single_mul_single_same, single_mul_single_of_ne,
+    hjk.symm]
+
+/-- `N₂(k,j)·N₁(i,k) = -E_{eⱼ,fᵢ}` (`j ≠ k`). -/
+theorem rootN2_mul_rootN1 (i k j : l) (hjk : j ≠ k) :
+    rootN2 (F := F) k j * rootN1 i k = - Matrix.single (Sum.inr j) (Sum.inl i) 1 := by
+  simp [rootN1, rootN2, add_mul, mul_sub, single_mul_single_same, single_mul_single_of_ne, hjk]
+
+/-- **Second-order group-commutator identity** for nilpotent `X, Y` with `XYX = Q`, `QY = 0`,
+`XYY = 0`, `YXY = 0`: `(1+sX)(1+aY)(1-sX)(1-aY) = 1 + sa·(XY-YX) - s²a·Q`. The second-order term
+`Q` is the long-root contribution `2α+β` of the Chevalley formula. -/
+theorem group_comm_second_order (s a : F) (X Y Q : Matrix (l ⊕ l) (l ⊕ l) F)
+    (hX2 : X * X = 0) (hY2 : Y * Y = 0) (hXYX : X * Y * X = Q) (hXYY : X * Y * Y = 0)
+    (hYXY : Y * X * Y = 0) (hQY : Q * Y = 0) :
+    (1 + s • X) * (1 + a • Y) * (1 - s • X) * (1 - a • Y)
+      = 1 + (s * a) • (X * Y - Y * X) - (s * s * a) • Q := by
+  have e1 : (1 + s • X) * (1 + a • Y) * (1 - s • X)
+      = 1 + a • Y + (s * a) • (X * Y - Y * X) - (s * s * a) • Q := by
+    simp only [add_mul, mul_add, mul_sub, one_mul, mul_one, smul_mul_assoc, mul_smul_comm,
+      hX2, hXYX]
+    simp only [smul_zero]
+    module
+  rw [e1]
+  simp only [add_mul, sub_mul, mul_sub, one_mul, mul_one, smul_mul_assoc, mul_smul_comm,
+    hY2, hXYY, hYXY, hQY]
+  simp only [smul_zero]
+  module
+
+/-! #### The three symplectic Steinberg relations (rank-3 short, and the long-root extraction) -/
+
+/-- **Rank-3 short × short → short:** `⁅1+s·N₁(i,k), 1+t·N₁(k,j)⁆ = 1 + st·N₁(i,j)`
+(`[ε_i-ε_k, ε_k-ε_j] = ε_i-ε_j`). Structure constant `1`, so it holds in every characteristic —
+the engine that makes `Sp(2n,2)` perfect for `n ≥ 3`. -/
+theorem rootN1_steinberg (s t : F) {i j k : l} (hik : i ≠ k) (hkj : k ≠ j) (hij : i ≠ j) :
+    (1 + s • rootN1 (F := F) i k) * (1 + t • rootN1 k j) * (1 - s • rootN1 i k)
+        * (1 - t • rootN1 k j)
+      = 1 + (s * t) • rootN1 i j := by
+  have hXYX : rootN1 (F := F) i k * rootN1 k j * rootN1 i k = 0 := by
+    rw [rootN1_mul_rootN1 i k j hij]
+    simp [rootN1, mul_sub, single_mul_single_of_ne, hij.symm]
+  have hXYY : rootN1 (F := F) i k * rootN1 k j * rootN1 k j = 0 := by
+    rw [mul_assoc, rootN1_sq k j hkj, mul_zero]
+  have hYXY : rootN1 (F := F) k j * rootN1 i k * rootN1 k j = 0 := by
+    rw [rootN1_mul_rootN1' i k j hij]
+    simp [rootN1, mul_sub, single_mul_single_of_ne, hij]
+  have hbr : rootN1 (F := F) i k * rootN1 k j - rootN1 k j * rootN1 i k = rootN1 i j := by
+    rw [rootN1_mul_rootN1 i k j hij, rootN1_mul_rootN1' i k j hij]; rfl
+  rw [group_comm_first_order s t _ _ (rootN1_sq i k hik) (rootN1_sq k j hkj) hXYX hXYY hYXY, hbr]
+
+/-- **Rank-3 short × short → short:** `⁅1+s·N₁(i,k), 1+t·N₂(k,j)⁆ = 1 + st·N₂(i,j)`
+(`[ε_i-ε_k, ε_k+ε_j] = ε_i+ε_j`). -/
+theorem rootN2_steinberg (s t : F) {i j k : l} (hik : i ≠ k) (hjk : j ≠ k) :
+    (1 + s • rootN1 (F := F) i k) * (1 + t • rootN2 k j) * (1 - s • rootN1 i k)
+        * (1 - t • rootN2 k j)
+      = 1 + (s * t) • rootN2 i j := by
+  have hXYX : rootN1 (F := F) i k * rootN2 k j * rootN1 i k = 0 := by
+    rw [rootN1_mul_rootN2 i k j hjk]
+    simp [rootN1, mul_sub, single_mul_single_of_ne, hjk]
+  have hXYY : rootN1 (F := F) i k * rootN2 k j * rootN2 k j = 0 := by
+    rw [mul_assoc, rootN2_sq k j, mul_zero]
+  have hYXY : rootN2 (F := F) k j * rootN1 i k * rootN2 k j = 0 := by
+    rw [rootN2_mul_rootN1 i k j hjk]
+    simp [rootN2, neg_mul, mul_add, single_mul_single_of_ne]
+  have hbr : rootN1 (F := F) i k * rootN2 k j - rootN2 k j * rootN1 i k = rootN2 i j := by
+    rw [rootN1_mul_rootN2 i k j hjk, rootN2_mul_rootN1 i k j hjk, sub_neg_eq_add]
+    rfl
+  rw [group_comm_first_order s t _ _ (rootN1_sq i k hik) (rootN2_sq k j) hXYX hXYY hYXY, hbr]
+
+/-- **Long × short → long extraction:** `⁅1+s·N₁(i,j), 1+a·M_j⁆ = (1+sa·N₂(i,j))·(1+s²a·M_i)`.
+The second-order term `s²a·M_i` is the long root `2ε_i` (the `2α+β` Chevalley term). Crucially the
+structure constant of `M_i` is `1` (not `2`), so this survives characteristic 2 — the mechanism by
+which the long-root transvection lands in `[Sp,Sp]` even when the short-short Steinberg constant `2`
+vanishes. -/
+theorem rootM_steinberg (s a : F) {i j : l} (hij : i ≠ j) :
+    (1 + s • rootN1 (F := F) i j) * (1 + a • rootM j) * (1 - s • rootN1 i j) * (1 - a • rootM j)
+      = (1 + (s * a) • rootN2 i j) * (1 + (s * s * a) • rootM i) := by
+  have hXY : rootN1 (F := F) i j * rootM j = Matrix.single (Sum.inr i) (Sum.inl j) 1 := by
+    simp [rootN1, rootM, sub_mul, single_mul_single_same, single_mul_single_of_ne]
+  have hYX : rootM (F := F) j * rootN1 i j = - Matrix.single (Sum.inr j) (Sum.inl i) 1 := by
+    simp [rootN1, rootM, mul_sub, single_mul_single_same, single_mul_single_of_ne]
+  have hXYX : rootN1 (F := F) i j * rootM j * rootN1 i j = - rootM i := by
+    rw [hXY]
+    simp [rootN1, rootM, mul_sub, single_mul_single_same, single_mul_single_of_ne]
+  have hXYY : rootN1 (F := F) i j * rootM j * rootM j = 0 := by
+    rw [mul_assoc, rootM_sq, mul_zero]
+  have hYXY : rootM (F := F) j * rootN1 i j * rootM j = 0 := by
+    rw [hYX]
+    simp [rootM, neg_mul, single_mul_single_of_ne]
+  have hQY : (- rootM (F := F) i) * rootM j = 0 := by
+    simp [rootM, neg_mul, single_mul_single_of_ne]
+  have hbr : rootN1 (F := F) i j * rootM j - rootM j * rootN1 i j = rootN2 i j := by
+    rw [hXY, hYX, sub_neg_eq_add]; rfl
+  rw [group_comm_second_order s a _ _ _ (rootN1_sq i j hij) (rootM_sq j) hXYX hXYY hYXY hQY, hbr]
+  -- 1 + sa•N₂ - (s*s*a)•(-M_i) = (1+sa•N₂)(1+s²a•M_i)
+  have hexp : (1 + (s * a) • rootN2 (F := F) i j) * (1 + (s * s * a) • rootM i)
+      = 1 + (s * a) • rootN2 i j + (s * s * a) • rootM i := by
+    rw [add_mul, one_mul, mul_add, mul_one, smul_mul_assoc, mul_smul_comm, smul_smul,
+      rootN2_mul_M i j, smul_zero, add_zero]
+    abel
+  rw [hexp, smul_neg, sub_neg_eq_add]
+
+/-! #### Group-level assembly: perfectness of `Sp(2n,F)` for `n ≥ 3` (any field) -/
+
+/-- `1 + a·M_j ∈ Sp` (it is the transvection `τ_{e_j,-a}`). -/
+theorem mem_one_add_rootM (j : l) (a : F) :
+    (1 + a • rootM j) ∈ symplecticGroup l F := by
+  rw [one_add_rootM_eq_spTransvection]; exact spTransvection_mem _ _
+
+/-- **The short-root unipotent `1 + r·N₂(i,j)` is a commutator** (given a third index `k`):
+`= ⁅1+N₁(i,k), 1+r·N₂(k,j)⁆` by `rootN2_steinberg`. Needs `n ≥ 3`. -/
+theorem rootN2_mem_commutator (i j k : l) (hik : i ≠ k) (hjk : j ≠ k) (r : F) :
+    (⟨1 + r • rootN2 i j, mem_one_add_rootN2 i j r⟩ : symplecticGroup l F)
+      ∈ commutator (symplecticGroup l F) := by
+  set V1 : symplecticGroup l F := ⟨1 + (1 : F) • rootN1 i k, mem_one_add_rootN1 i k hik 1⟩ with hV1
+  set V2 : symplecticGroup l F := ⟨1 + r • rootN2 k j, mem_one_add_rootN2 k j r⟩ with hV2
+  have hcomm : (⟨1 + r • rootN2 i j, mem_one_add_rootN2 i j r⟩ : symplecticGroup l F) = ⁅V1, V2⁆ := by
+    apply Subtype.ext
+    rw [commutatorElement_def]
+    simp only [Submonoid.coe_mul, SymplecticGroup.coe_inv', hV1, hV2]
+    rw [inv_one_add_smul 1 (rootN1_sq i k hik), inv_one_add_smul r (rootN2_sq k j),
+      rootN2_steinberg (i := i) (j := j) (k := k) 1 r hik hjk, one_mul]
+  rw [hcomm]
+  exact Subgroup.commutator_mem_commutator (Subgroup.mem_top V1) (Subgroup.mem_top V2)
+
+/-- **Seed (n ≥ 3): the long-root transvection at `e_i` is in `[Sp,Sp]` over ANY field.**
+From `rootM_steinberg` (s=1, a=-c): `⁅1+N₁(i,j), 1+(-c)·M_j⁆ = (1+(-c)·N₂(i,j))·τ_{e_i,c}`. The
+short-root factor is a commutator (`rootN2_mem_commutator`, needs the third index `k`), so
+`τ_{e_i,c}` — being its inverse times a commutator — lies in `[Sp,Sp]`. Characteristic-free: this
+is what makes `Sp(2n,2)` perfect for `n ≥ 3`. -/
+theorem spTransvecSp_inr_mem_commutator_n3 (i j k : l) (hij : i ≠ j) (hik : i ≠ k) (hjk : j ≠ k)
+    (c : F) :
+    spTransvecSp (Pi.single (Sum.inr i) 1) c ∈ commutator (symplecticGroup l F) := by
+  set W : symplecticGroup l F := ⟨1 + (-c) • rootN2 i j, mem_one_add_rootN2 i j (-c)⟩ with hW
+  set V1 : symplecticGroup l F := ⟨1 + (1 : F) • rootN1 i j, mem_one_add_rootN1 i j hij 1⟩ with hV1
+  set V2 : symplecticGroup l F := ⟨1 + (-c) • rootM j, mem_one_add_rootM j (-c)⟩ with hV2
+  have hWV : ⁅V1, V2⁆ = W * spTransvecSp (Pi.single (Sum.inr i) 1) c := by
+    apply Subtype.ext
+    rw [commutatorElement_def]
+    simp only [Submonoid.coe_mul, SymplecticGroup.coe_inv', spTransvecSp_coe, hW, hV1, hV2]
+    rw [inv_one_add_smul 1 (rootN1_sq i j hij), inv_one_add_smul (-c) (rootM_sq j),
+      rootM_steinberg (i := i) (j := j) 1 (-c) hij,
+      show spTransvection (Pi.single (Sum.inr i) 1) c = 1 + (-c) • rootM i from by
+        rw [one_add_rootM_eq_spTransvection, neg_neg]]
+    simp only [one_mul]
+  have hkey : spTransvecSp (Pi.single (Sum.inr i) 1) c = W⁻¹ * ⁅V1, V2⁆ := by
+    rw [hWV, ← mul_assoc, inv_mul_cancel, one_mul]
+  rw [hkey]
+  exact mul_mem (inv_mem (rootN2_mem_commutator i j k hik hjk (-c)))
+    (Subgroup.commutator_mem_commutator (Subgroup.mem_top V1) (Subgroup.mem_top V2))
+
+/-- **`Sp(2n,F)` is perfect for `n ≥ 3` over EVERY field** (`commutator = ⊤`). The transvections
+generate `Sp` (`sp_transvec_closure_eq_top`) and each lies in `[Sp,Sp]`: the seed long-root
+transvection at `e_{i₀}` does (`spTransvecSp_inr_mem_commutator_n3`), and `Sp`-conjugacy spreads it
+to every transvection. Characteristic-free — in particular this discharges `Sp(2n,2)` perfectness. -/
+theorem commutator_Sp_eq_top_n3 (hcard : 2 < Fintype.card l) :
+    commutator (symplecticGroup l F) = ⊤ := by
+  obtain ⟨i, j, k, hij, hik, hjk⟩ := Fintype.two_lt_card_iff.mp hcard
+  have he0 : (Pi.single (Sum.inr i) 1 : (l ⊕ l) → F) ≠ 0 := by
+    intro h
+    have := congrFun h (Sum.inr i)
+    rw [Pi.single_eq_same, Pi.zero_apply] at this
+    exact one_ne_zero this
+  have hseed : ∀ {v : (l ⊕ l) → F}, v ≠ 0 → ∀ c : F,
+      spTransvecSp v c ∈ commutator (symplecticGroup l F) := by
+    intro v hv c
+    obtain ⟨g, _, hg⟩ := exists_sp_transvecGen_maps he0 hv
+    have hconj : spTransvecSp v c = g * spTransvecSp (Pi.single (Sum.inr i) 1) c * g⁻¹ := by
+      rw [spTransvecSp_conj, hg]
+    rw [hconj]
+    exact (Subgroup.commutator_normal ⊤ ⊤).conj_mem _
+      (spTransvecSp_inr_mem_commutator_n3 i j k hij hik hjk c) g
+  rw [eq_top_iff, ← sp_transvec_closure_eq_top]
+  refine iSup_le fun v => ?_
+  intro y hy
+  rw [mem_spTransvecGroup] at hy
+  obtain ⟨c, rfl⟩ := hy
+  by_cases hv : v = 0
+  · subst hv
+    have h0 : spTransvecSp (0 : (l ⊕ l) → F) c = 1 := by
+      apply Subtype.ext; simp [spTransvecSp_coe, spTransvection]
+    rw [h0]; exact one_mem _
+  · exact hseed hv c
+
+/-- **`PSp(2n,F)` is perfect for `n ≥ 3` over EVERY field**. Descends from `commutator_Sp_eq_top_n3`
+along `Sp ↠ Sp/Z`. -/
+theorem commutator_PSp_eq_top_n3 (hcard : 2 < Fintype.card l) :
+    commutator (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) = ⊤ := by
+  set G := symplecticGroup l F
+  let f := QuotientGroup.mk' (Subgroup.center G)
+  have hf : Function.Surjective f := QuotientGroup.mk'_surjective _
+  have hmap : commutator (G ⧸ Subgroup.center G) = Subgroup.map f (commutator G) := by
+    show ⁅(⊤ : Subgroup _), ⊤⁆ = Subgroup.map f ⁅(⊤ : Subgroup G), ⊤⁆
+    rw [Subgroup.map_commutator, Subgroup.map_top_of_surjective f hf]
+  rw [hmap, commutator_Sp_eq_top_n3 hcard, Subgroup.map_top_of_surjective f hf]
 
 end FiniteSimpleGroups.SpN

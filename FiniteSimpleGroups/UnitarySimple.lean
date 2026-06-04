@@ -569,4 +569,157 @@ theorem PSU_nontrivial (hn : 3 ≤ n) : Nontrivial (PSUConcrete n p) := by
 
 end Concrete
 
+/-! ### The `PSU = SU/Z` action on isotropic projective points, and faithfulness
+
+`SU_n(F_{p²})` is **not** transitive on the full projective space `ℙ(Fⁿ)` (isotropic and
+anisotropic points sit in separate orbits), so the Iwasawa action for `PSU` lives on the
+**isotropic** projective points. Faithfulness of the descended `PSU = SU/Z` action there is exactly
+the kernel = center result assembled above: `ker ⊆ center` is `su_fixes_isotropic_imp_central`,
+`center ⊆ ker` is `su_central_fixes_isotropic_line`. This mirrors `SpN.pspFaithful`/`pspPermHom`. -/
+
+section Faithful
+
+variable (p : ℕ) [Fact p.Prime] (n : ℕ)
+
+open UnitaryField
+
+/-- **Isotropy is scale-invariant**: `⟨a·v, a·v⟩ = (star a · a)·⟨v,v⟩`. -/
+theorem star_smul_dotProduct_self (a : UnitaryField p) (v : Fin n → UnitaryField p) :
+    star (a • v) ⬝ᵥ (a • v) = (star a * a) * (star v ⬝ᵥ v) := by
+  have hs : star (a • v) = star a • star v := by
+    funext i
+    simp only [Pi.smul_apply, Pi.star_apply, smul_eq_mul, star_mul']
+  rw [hs, smul_dotProduct, dotProduct_smul, smul_eq_mul, smul_eq_mul]; ring
+
+/-- **Isotropy is well-defined on projective points**: `[v]` is isotropic iff `v` is. -/
+theorem isIso_mk_iff {v : Fin n → UnitaryField p} (hv : v ≠ 0) :
+    star (Projectivization.mk (UnitaryField p) v hv).rep ⬝ᵥ
+        (Projectivization.mk (UnitaryField p) v hv).rep = 0 ↔ star v ⬝ᵥ v = 0 := by
+  obtain ⟨a, ha⟩ := (Projectivization.mk_eq_mk_iff' (UnitaryField p) _ v
+    (Projectivization.rep_nonzero _) hv).mp (Projectivization.mk_rep _)
+  have ha0 : a ≠ 0 := by
+    rintro rfl; rw [zero_smul] at ha; exact (Projectivization.rep_nonzero _) ha.symm
+  rw [← ha, star_smul_dotProduct_self, mul_eq_zero,
+    or_iff_right (mul_ne_zero (star_ne_zero.mpr ha0) ha0)]
+
+/-- **The isotropic projective points** — the carrier of the `PSU`-Iwasawa action. -/
+abbrev IsoPoint : Type _ :=
+  { x : Projectivization (UnitaryField p) (Fin n → UnitaryField p) // star x.rep ⬝ᵥ x.rep = 0 }
+
+/-- `SU` preserves isotropy of a projective point (form preservation). -/
+theorem su_smul_isoPoint_mem (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))
+    {x : Projectivization (UnitaryField p) (Fin n → UnitaryField p)} (hx : star x.rep ⬝ᵥ x.rep = 0) :
+    star (g • x).rep ⬝ᵥ (g • x).rep = 0 := by
+  have hrep : g • x = Projectivization.mk (UnitaryField p) (g • x.rep)
+      ((smul_ne_zero_iff_ne g).mpr x.rep_nonzero) := by
+    conv_lhs => rw [← Projectivization.mk_rep x]
+    rw [Projectivization.smul_mk]
+  rw [hrep, isIso_mk_iff, su_smul_vec_def]
+  exact u_isotropic_of_mem (Matrix.specialUnitaryGroup_le_unitaryGroup g.2) hx
+
+noncomputable instance instSMulIsoPoint :
+    SMul (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) (IsoPoint p n) where
+  smul g x := ⟨g • x.1, su_smul_isoPoint_mem p n g x.2⟩
+
+theorem isoPoint_smul_coe (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))
+    (x : IsoPoint p n) : (g • x).1 = g • x.1 := rfl
+
+noncomputable instance instMulActionIsoPoint :
+    MulAction (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) (IsoPoint p n) where
+  one_smul x := Subtype.ext (one_smul _ x.1)
+  mul_smul g h x := Subtype.ext (mul_smul g h x.1)
+
+/-- **`center ⊆ ker`**: a central `g ∈ SU` fixes every isotropic projective point. -/
+theorem su_center_le_isoKer :
+    Subgroup.center (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) ≤
+      (MulAction.toPermHom (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))
+        (IsoPoint p n)).ker := by
+  intro g hg
+  rw [MonoidHom.mem_ker]
+  obtain ⟨a, ha0, ha⟩ := UnitaryField.exists_traceZero_ne_zero p
+  apply Equiv.ext
+  intro x
+  show g • x = x
+  apply Subtype.ext
+  rw [isoPoint_smul_coe]
+  obtain ⟨b, hb⟩ := su_central_fixes_isotropic_line g hg (Projectivization.rep_nonzero x.1)
+    x.2 a ha0 ha
+  conv_lhs => rw [← Projectivization.mk_rep x.1]
+  conv_rhs => rw [← Projectivization.mk_rep x.1]
+  rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff']
+  refine ⟨b, ?_⟩
+  rw [su_smul_vec_def]
+  exact hb.symm
+
+/-- **`ker ⊆ center`** (`n ≥ 3`): a `g ∈ SU` fixing every isotropic projective point is central.
+This is where the geometric crux (`su_fixes_isotropic_imp_central`) enters. -/
+theorem su_isoKer_le_center (hn : 3 ≤ n) :
+    (MulAction.toPermHom (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))
+        (IsoPoint p n)).ker ≤
+      Subgroup.center (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) := by
+  intro g hg
+  rw [MonoidHom.mem_ker] at hg
+  apply su_fixes_isotropic_imp_central p hn g
+  intro z hziso
+  rcases eq_or_ne z 0 with h0 | h0
+  · exact ⟨1, by subst h0; simp⟩
+  · have hzmem : star (Projectivization.mk (UnitaryField p) z h0).rep ⬝ᵥ
+        (Projectivization.mk (UnitaryField p) z h0).rep = 0 := (isIso_mk_iff p n h0).mpr hziso
+    have hfix : g • (⟨Projectivization.mk (UnitaryField p) z h0, hzmem⟩ : IsoPoint p n) =
+        ⟨Projectivization.mk (UnitaryField p) z h0, hzmem⟩ :=
+      (Equiv.ext_iff.mp hg) _
+    have h2 : g • Projectivization.mk (UnitaryField p) z h0 =
+        Projectivization.mk (UnitaryField p) z h0 := congrArg Subtype.val hfix
+    rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff'] at h2
+    obtain ⟨c, hc⟩ := h2
+    refine ⟨c, ?_⟩
+    rw [← su_smul_vec_def]
+    exact hc.symm
+
+/-- The descended permutation representation `PSU = SU/Z → Sym(IsoPoint)`. -/
+noncomputable def psuPermHom :
+    PSUConcrete n p →* Equiv.Perm (IsoPoint p n) :=
+  QuotientGroup.lift (Subgroup.center _)
+    (MulAction.toPermHom (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) (IsoPoint p n))
+    (su_center_le_isoKer p n)
+
+theorem psuPermHom_mk (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) :
+    psuPermHom p n (QuotientGroup.mk g) =
+      MulAction.toPermHom (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))
+        (IsoPoint p n) g := rfl
+
+/-- **`psuPermHom` is injective** (`n ≥ 3`) — its kernel is trivial because
+`ker (toPermHom) = center`. -/
+theorem psuPermHom_injective (hn : 3 ≤ n) :
+    Function.Injective (psuPermHom p n) := by
+  rw [injective_iff_map_eq_one]
+  intro x hx
+  induction x using QuotientGroup.induction_on with
+  | _ g =>
+    rw [psuPermHom_mk] at hx
+    exact (QuotientGroup.eq_one_iff g).mpr
+      (su_isoKer_le_center p n hn (MonoidHom.mem_ker.mpr hx))
+
+/-- **`PSU = SU/Z` acts on the isotropic projective points** — the Iwasawa `MulAction` obligation. -/
+@[reducible]
+noncomputable def psuAction :
+    MulAction (PSUConcrete n p) (IsoPoint p n) :=
+  MulAction.compHom _ (psuPermHom p n)
+
+/-- **`PSU = SU/Z` acts faithfully on the isotropic projective points** (`n ≥ 3`) — the Iwasawa
+`FaithfulSMul` obligation, the assembly of the whole step-2 kernel = center development. -/
+@[reducible]
+noncomputable def psuFaithful (hn : 3 ≤ n) :
+    letI := psuAction p n
+    FaithfulSMul (PSUConcrete n p) (IsoPoint p n) :=
+  letI := psuAction p n
+  { eq_of_smul_eq_smul := fun {g₁ g₂} hsmul => by
+      apply psuPermHom_injective p n hn
+      apply Equiv.ext
+      intro x
+      show g₁ • x = g₂ • x
+      exact hsmul x }
+
+end Faithful
+
 end FiniteSimpleGroups.PSU

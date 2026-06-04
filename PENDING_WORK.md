@@ -388,11 +388,19 @@ This lap discharged BOTH former core axioms and wired into LieType:
     Then `u = w₁ + w₂'' ` is the common non-orthogonal isotropic. `#print axioms su_center_le_scalar`
     / `su_mem_center_iff_scalar` = `[propext, Classical.choice, Quot.sound]`. **The entire kernel=center
     half of step-2 faithfulness is now axiom-free.**
-- **Step 2 REMAINING — the action on isotropic points + primitivity.** Define the SU-action on the
-  ISOTROPIC ℙ-points subtype (not full ℙ — PSU isn't transitive on full ℙ); wire
-  `su_fixes_isotropic_imp_central` + `su_central_fixes_isotropic_line` into `FaithfulSMul` (mirror
-  `SpN.pspFaithful`/`pspPermHom`). Then **quasi-preprimitivity** (the deep geometric core, mirrors
-  SpIwasawa's `psp_isTrivialBlock_of_isBlock`). Mathlib has `IsPreprimitive.isQuasiPreprimitive`.
+- ✅ **Step 2 FAITHFUL ACTION — DONE** (2026-06-04 eve, `UnitarySimple.lean` §Faithful, axiom-clean).
+  Built the SU-action on the ISOTROPIC ℙ-points subtype `IsoPoint p n` (not full ℙ — PSU isn't
+  transitive there): `instSMulIsoPoint`/`instMulActionIsoPoint` (`su_smul_isoPoint_mem` = form
+  preserves isotropy; `isIso_mk_iff` = isotropy well-defined on ℙ via `star_smul_dotProduct_self`).
+  Wired `su_central_fixes_isotropic_line` ⟹ `su_center_le_isoKer` (center ⊆ ker) and
+  `su_fixes_isotropic_imp_central` ⟹ `su_isoKer_le_center` (ker ⊆ center); descended through the
+  center to `psuPermHom : PSUConcrete →* Perm IsoPoint`, proved `psuPermHom_injective` (n≥3) and
+  **`psuFaithful : FaithfulSMul (PSUConcrete n p) (IsoPoint p n)`** — the Iwasawa `FaithfulSMul`
+  obligation. `#print axioms psuFaithful` = `[propext, Classical.choice, Quot.sound]`. Mirrors
+  `SpN.pspFaithful`/`pspPermHom`/`pspAction` line-for-line.
+- **Step 2c REMAINING — quasi-preprimitivity** of the `IsoPoint` action (the deep geometric core,
+  mirrors SpIwasawa's `psp_isTrivialBlock_of_isBlock`). Mathlib has `IsPreprimitive.isQuasiPreprimitive`.
+  Needs: SU transitive on isotropic points (Witt) + blocks are trivial.
 - **Step 3a — generation.** Unitary transvections generate `SU` (the unitary Eichler/Witt
   theorem). DEEP core, mirrors `sp_stab_hyperbolic_le` / the ambient-induction generation proof.
 - **Step 3b — perfectness assembly.** Engine done (`uTransvection_commutator`). NEED: a scaling

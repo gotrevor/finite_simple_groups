@@ -410,6 +410,50 @@ axiom-clean (`[propext, Classical.choice, Quot.sound]`), in `UnitarySimple.lean 
      **ambient hyperbolic partner** `k` of `x`. A good Aristotle brick once the partner-based
      factorization is sketched (requested online).
 
+**★★★★★ UPDATE 2026-06-04 (Eichler-factorization lap — current HEAD `da44869`).** The
+`UExactMateTrans` atom's core (`uEichler ∈ uTransvecGen`) is **now machine-checked for the
+isotropic-`h` case**, and the anisotropic case is reduced to a finite-field geometry split (n≥4)
+or the SU₃ core (n=3). New, all axiom-clean, full build green (8312 jobs):
+
+- **`uEichler_isotropic_eq_transvection_prod`** (`UnitaryTransvection.lean`): the KEY FINDING in the
+  block above was WRONG about needing a partner `k`. For `x,h` isotropic, `⟨x,h⟩=0` and any
+  trace-zero unit `c` (`c·d=1`, `star d=−d`):
+  **`E_{x,h,0} = τ_{h,c⁻¹}·τ_{x,−c}·τ_{x+c⁻¹h,c}`** — an explicit THREE-transvection product, NO
+  partner needed. The three centres `x,h,x+c⁻¹h` are pairwise/self-orthogonal isotropic ⟹ every
+  `vecMulVec` cross-product vanishes ⟹ the triple product collapses; `c·d=1` finishes.
+- **`uEichler_comp`** (`UnitaryTransvection.lean`): Eichler composition law
+  `E_{x,a,μ}·E_{x,b,ν} = E_{x,a+b,μ+ν+⟨a,b⟩}` (a,b ⊥ isotropic x). The long-root group law.
+- **`uEichler_zero_mem_uTransvecGen`**, **`uEichler_isotropic_mem_uTransvecGen`**
+  (`UnitarySimple.lean`): the above as `uTransvecGen` membership (general μ trace-zero via the peel
+  `E_{x,h,μ}=E_{x,h,0}·τ_{x,−μ}`). **⇒ `UExactMateTrans` is dischargeable whenever `h=f'−f` is
+  isotropic.** The engine that builds the mate element is
+  `exists_su_fixes_maps_isotropic_mate_fixing_perp` (`g = τ_{x,c}·E_{x,h,μ}`); upgrading it to
+  `uTransvecGen` membership in the isotropic-`h` case is now mechanical with these.
+
+  **Refined map of what remains (BOTH atoms collapse to ONE wall):**
+  - `UExactMateTrans` anisotropic-`h`: `h=f'−f` with `⟨h,h⟩≠0`. For **n≥4**: split `h=h₁+h₂` into
+    two isotropic vectors `⊥ x` (∃ isotropic `m'⊥x` with `⟨m',h⟩≠0` ⟹ set `h₁=s·m'`), then
+    `E_{x,h,μ}=E_{x,h₁,λ}·E_{x,h₂,0}` via `uEichler_comp` ⟹ in `uTransvecGen`. The ONLY missing
+    piece for n≥4 is the **split-existence geometry lemma** (bounded; good local or Aristotle target).
+    For **n=3**: `x^⊥/⟨x⟩` is an anisotropic LINE (no isotropic vectors but `F·x`), so the split
+    FAILS — this case coincides with the deep SU₃ core below. (Verified obstruction.)
+  - **`UScaleKill` = the SU₃ torus as a transvection product = THE single remaining wall.** Cannot be
+    decomposed into nondegenerate planes (only `⟨e,m⟩` is nondegenerate; the F_{q²}-scaling genuinely
+    needs rank 3). Aristotle proved the SU-LEVEL scaler `g₀=R·P` (`uscale_brick` `9105747d`, real
+    proof): `P=1+(c−1)e⊗m̄+((star c)⁻¹−1)m⊗ē` (det `c/star c`), `R=1+((star c·c⁻¹−1)δ⁻¹)w⊗w̄` (det
+    `star c/c`); individually ∉ SU, product ∈ SU. The open problem is expressing `R·P` as SU
+    transvections (short-root/Weyl construction). Submitted to Aristotle as `su3_scaler`
+    (`a0bb1361`) with full scaffolding; also the literature ask (`ON-LINE-REQUEST.md` item #1).
+  - Eichler composition law also independently submitted to Aristotle as `ueichler_comp` (`fcb65b71`)
+    before the local proof landed — harvest/discard when it returns.
+
+  **Tactic gotcha (this lap):** for a matrix identity, `apply Matrix.ext_iff_mulVec.mpr; intro z` +
+  `simp only [← Matrix.mulVec_mulVec, <action lemmas>, <dotProduct bilinearity>, <orthogonality>]`
+  then `match_scalars` reduces to per-atom scalar `ring`/`linear_combination` goals. `match_scalars
+  <;> ring` works; but `match_scalars <;> (first | ring | linear_combination …)` SILENTLY fails to
+  dispatch the `linear_combination` alternatives (leaves a goal unsolved even when the lc is correct)
+  — use **explicit `·` bullets per goal** instead. Dump the goals with a bare `match_scalars` first.
+
 **★★★ UPDATE 2026-06-04 (generation-infrastructure lap — superseded by the genAux-skeleton lap above).**
 `hT1` now also
 DISCHARGED on the real defs (commits `fa29843`/`e6abae4`); capstone `PSU_isSimpleGroup_modulo_generation`

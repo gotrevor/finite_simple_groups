@@ -1,6 +1,7 @@
 import Mathlib
 import FiniteSimpleGroups.LieType
 import FiniteSimpleGroups.SpIwasawa
+import FiniteSimpleGroups.SpSmallField
 
 /-!
 # Wiring `PSp(2n,q)` simplicity into the LieType axiom
@@ -41,18 +42,42 @@ theorem exists_sq_ne_one (q : ℕ) [Fact (Nat.Prime q)] (hq : 3 < q) :
     have h30 : (3 : ZMod q) = 0 := by linear_combination hc
     simpa using h30
 
-/-- **Residual axiom for small fields `q ∈ {2,3}` — narrowed to PERFECTNESS.** For prime
-`q ∈ {2,3}` and `2 ≤ n` (excluding `PSp(4,2) ≅ S₆`), `PSp(2n,q)` is perfect (`commutator = ⊤`).
-This is the *true* remaining core: the Iwasawa route for `q ≥ 5` only used `|F| ≥ 4` for
-perfectness (the commutator engine `[g, τ_{v,a}] = τ_{v,(λ²-1)a}` needs `λ²≠1`); faithfulness and
-quasi-primitivity (hence the whole simplicity assembly via `PSpn_isSimpleGroup_of_perfect`) hold
-over **any** field, including `ZMod 2`, `ZMod 3`. For `q ∈ {2,3}`, `n ≥ 2`, perfectness needs the
-symplectic short-root (Steinberg) commutator relations not yet formalized — the genuinely separate
-piece. (`PSp(4,2)≅S₆` is correctly excluded: it fails *here*, at perfectness, not at primitivity.)
-Mirrors the `q ∈ {2,3}` gap in the PSL thread. -/
-axiom PSp_perfect_small_field (n q : ℕ) [Fact (Nat.Prime q)]
+/-- For prime `q ≠ 2`, `2` is invertible in `ZMod q` (`q ∤ 2`). -/
+theorem two_ne_zero_zmod (q : ℕ) [Fact (Nat.Prime q)] (hq2 : q ≠ 2) : (2 : ZMod q) ≠ 0 := by
+  have hp : 2 ≤ q := (Fact.out : Nat.Prime q).two_le
+  have h2 : ((2 : ℕ) : ZMod q) ≠ 0 := by
+    rw [Ne, CharP.cast_eq_zero_iff (ZMod q) q]
+    intro h; exact absurd (Nat.le_of_dvd (by norm_num) h) (by omega)
+  simpa using h2
+
+/-- **Residual axiom for `q = 2`, `n ≥ 3` — the genuinely char-2 short-root core.** `Sp(2n,2)` is
+perfect (`commutator = ⊤`) for `n ≥ 3`. In characteristic 2 the symplectic Steinberg structure
+constant `2` vanishes (`SpN.root_steinberg`), so the long-root transvection is *not* a commutator
+of the two short roots; perfectness instead comes from the rank-`≥3` short-root relations
+`[x_{εᵢ-εⱼ}, x_{εⱼ±εₖ}] = x_{εᵢ±εₖ}` (third index `k`), which need `n ≥ 3`. `Sp(4,2) ≅ S₆`
+(`n = 2`) is genuinely *not* perfect, correctly excluded. This is strictly narrower than the former
+`PSp_perfect_small_field` axiom — the `q = 3` case is now the machine-checked theorem below. -/
+axiom PSp_perfect_char_two (n : ℕ) (h_n : 3 ≤ n) :
+    commutator (PSp n 2) = ⊤
+
+/-- **`PSp(2n,q)` is perfect for prime `q ∈ {2,3}`, `2 ≤ n`, excluding `PSp(4,2)`** — formerly the
+monolithic small-field axiom, now **discharged for `q = 3`** via the symplectic Steinberg relation
+(`SpN.commutator_PSp_eq_top_char_ne_two`, machine-checked). For `q = 2` it reduces to the narrower
+char-2 residual `PSp_perfect_char_two` (`n ≥ 3`, forced by `h_skip` + `h_n`). -/
+theorem PSp_perfect_small_field (n q : ℕ) [Fact (Nat.Prime q)]
     (h_n : 2 ≤ n) (hq : q ≤ 3) (h_skip : ¬ (n = 2 ∧ q = 2)) :
-    commutator (PSp n q) = ⊤
+    commutator (PSp n q) = ⊤ := by
+  haveI : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.mpr h_n
+  rcases eq_or_ne q 2 with hq2 | hq2
+  · -- `q = 2`: `n ≥ 3` (from `h_n` and `¬(n = 2 ∧ q = 2)`), char-2 residual
+    subst hq2
+    have hn3 : 3 ≤ n := by
+      rcases Nat.lt_or_ge n 3 with h | h
+      · exact absurd ⟨by omega, rfl⟩ h_skip
+      · exact h
+    exact PSp_perfect_char_two n hn3
+  · -- `q ≠ 2`, prime, `q ≤ 3` ⟹ `q = 3`: characteristic ≠ 2, Steinberg engine applies
+    exact SpN.commutator_PSp_eq_top_char_ne_two (l := Fin n) (F := ZMod q) (two_ne_zero_zmod q hq2)
 
 /-- `PSp(2n,q)` simple for prime `q ∈ {2,3}` (excluding `PSp(4,2)`), from the perfectness residual
 `PSp_perfect_small_field` fed through `PSpn_isSimpleGroup_of_perfect` (faithfulness + quasi-

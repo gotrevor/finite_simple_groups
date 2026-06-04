@@ -311,6 +311,82 @@ theorem perp_form_ne_of_mem_perp {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Matrix
   rw [hz, hue', huf', mul_zero, mul_zero, add_zero, sub_zero] at key
   exact key.symm
 
+/-- **Relative `exists_form_both_ne` within `⟨e,f⟩⊥`**: for `u, w ∈ ⟨e,f⟩⊥` non-zero there is a
+`z ∈ ⟨e,f⟩⊥` simultaneously non-orthogonal to both (`ω(u,z) ≠ 0 ∧ ω(w,z) ≠ 0`). Same proof
+shape as `exists_dotProduct_both_ne` (standard-witness combination `z₁, z₂, z₁+z₂`), but the
+witnesses come from the relative non-degeneracy `perp_form_ne_of_mem_perp` and lie in the
+complement (a subspace, closed under `+`). The transitivity-within-complement input. -/
+theorem exists_perp_form_both_ne {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1)
+    {u w : (l ⊕ l) → F}
+    (hue : e ⬝ᵥ (Matrix.J l F *ᵥ u) = 0) (huf : f ⬝ᵥ (Matrix.J l F *ᵥ u) = 0) (hu : u ≠ 0)
+    (hwe : e ⬝ᵥ (Matrix.J l F *ᵥ w) = 0) (hwf : f ⬝ᵥ (Matrix.J l F *ᵥ w) = 0) (hw : w ≠ 0) :
+    ∃ z, (e ⬝ᵥ (Matrix.J l F *ᵥ z) = 0 ∧ f ⬝ᵥ (Matrix.J l F *ᵥ z) = 0) ∧
+      u ⬝ᵥ (Matrix.J l F *ᵥ z) ≠ 0 ∧ w ⬝ᵥ (Matrix.J l F *ᵥ z) ≠ 0 := by
+  obtain ⟨z₁, hz1e, hz1f, hz1⟩ := perp_form_ne_of_mem_perp hef hue huf hu
+  obtain ⟨z₂, hz2e, hz2f, hz2⟩ := perp_form_ne_of_mem_perp hef hwe hwf hw
+  by_cases hwz1 : w ⬝ᵥ (Matrix.J l F *ᵥ z₁) = 0
+  · by_cases huz2 : u ⬝ᵥ (Matrix.J l F *ᵥ z₂) = 0
+    · refine ⟨z₁ + z₂,
+        ⟨by rw [mulVec_add, dotProduct_add, hz1e, hz2e, add_zero],
+          by rw [mulVec_add, dotProduct_add, hz1f, hz2f, add_zero]⟩, ?_, ?_⟩
+      · rw [mulVec_add, dotProduct_add, huz2, add_zero]; exact hz1
+      · rw [mulVec_add, dotProduct_add, hwz1, zero_add]; exact hz2
+    · exact ⟨z₂, ⟨hz2e, hz2f⟩, huz2, hz2⟩
+  · exact ⟨z₁, ⟨hz1e, hz1f⟩, hz1, hwz1⟩
+
+/-- **Transitivity within `⟨e,f⟩⊥` by pair-fixing transvections** — the inductive engine of the
+generation core. For `u, w ∈ ⟨e,f⟩⊥` non-zero, there is a product of transvections, **each
+fixing the pair `(e,f)`** (centred in the complement) and lying in `⨆_v spTransvecGroup v`, that
+maps `u → w`. Pick `z ∈ ⟨e,f⟩⊥` non-orthogonal to both (`exists_perp_form_both_ne`); then
+`τ_{z-u,·}` (`u→z`) and `τ_{w-z,·}` (`z→w`) have centres `z-u, w-z ∈ ⟨e,f⟩⊥`, hence fix `(e,f)`
+(`spTransvection_fixes_pair`). This is exactly transitivity-on-vectors run inside the complement,
+the step that lets the dimension induction fix one more complement basis vector at a time. -/
+theorem exists_perp_transvecGen_maps {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1)
+    {u w : (l ⊕ l) → F}
+    (hue : e ⬝ᵥ (Matrix.J l F *ᵥ u) = 0) (huf : f ⬝ᵥ (Matrix.J l F *ᵥ u) = 0) (hu : u ≠ 0)
+    (hwe : e ⬝ᵥ (Matrix.J l F *ᵥ w) = 0) (hwf : f ⬝ᵥ (Matrix.J l F *ᵥ w) = 0) (hw : w ≠ 0) :
+    ∃ g : symplecticGroup l F,
+      g ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) ∧
+        ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e ∧
+          (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f) ∧
+        (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ u = w := by
+  obtain ⟨z, ⟨hze, hzf⟩, huz, hwz⟩ := exists_perp_form_both_ne hef hue huf hu hwe hwf hw
+  have hzw : z ⬝ᵥ (Matrix.J l F *ᵥ w) ≠ 0 := by rw [spForm_skew]; exact neg_ne_zero.mpr hwz
+  have hzu_e : e ⬝ᵥ (Matrix.J l F *ᵥ (z - u)) = 0 := by
+    rw [mulVec_sub, dotProduct_sub, hze, hue, sub_zero]
+  have hzu_f : f ⬝ᵥ (Matrix.J l F *ᵥ (z - u)) = 0 := by
+    rw [mulVec_sub, dotProduct_sub, hzf, huf, sub_zero]
+  have hwz_e : e ⬝ᵥ (Matrix.J l F *ᵥ (w - z)) = 0 := by
+    rw [mulVec_sub, dotProduct_sub, hwe, hze, sub_zero]
+  have hwz_f : f ⬝ᵥ (Matrix.J l F *ᵥ (w - z)) = 0 := by
+    rw [mulVec_sub, dotProduct_sub, hwf, hzf, sub_zero]
+  have ht1e : (spTransvecSp (z - u) (u ⬝ᵥ (Matrix.J l F *ᵥ z))⁻¹
+      : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e := by
+    rw [spTransvecSp_coe]; exact spTransvection_apply_of_orth _ hzu_e
+  have ht1f : (spTransvecSp (z - u) (u ⬝ᵥ (Matrix.J l F *ᵥ z))⁻¹
+      : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f := by
+    rw [spTransvecSp_coe]; exact spTransvection_apply_of_orth _ hzu_f
+  have ht1u : (spTransvecSp (z - u) (u ⬝ᵥ (Matrix.J l F *ᵥ z))⁻¹
+      : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ u = z := by
+    rw [spTransvecSp_coe]; exact spTransvection_maps_of_form_ne huz
+  have ht2e : (spTransvecSp (w - z) (z ⬝ᵥ (Matrix.J l F *ᵥ w))⁻¹
+      : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e := by
+    rw [spTransvecSp_coe]; exact spTransvection_apply_of_orth _ hwz_e
+  have ht2f : (spTransvecSp (w - z) (z ⬝ᵥ (Matrix.J l F *ᵥ w))⁻¹
+      : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f := by
+    rw [spTransvecSp_coe]; exact spTransvection_apply_of_orth _ hwz_f
+  have ht2z : (spTransvecSp (w - z) (z ⬝ᵥ (Matrix.J l F *ᵥ w))⁻¹
+      : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ z = w := by
+    rw [spTransvecSp_coe]; exact spTransvection_maps_of_form_ne hzw
+  refine ⟨spTransvecSp (w - z) (z ⬝ᵥ (Matrix.J l F *ᵥ w))⁻¹
+            * spTransvecSp (z - u) (u ⬝ᵥ (Matrix.J l F *ᵥ z))⁻¹,
+    mul_mem (le_iSup spTransvecGroup (w - z) (mem_spTransvecGroup.mpr ⟨_, rfl⟩))
+      (le_iSup spTransvecGroup (z - u) (mem_spTransvecGroup.mpr ⟨_, rfl⟩)),
+    ⟨?_, ?_⟩, ?_⟩
+  · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1e, ht2e]
+  · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1f, ht2f]
+  · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1u, ht2z]
+
 /-- **DISCLOSED AXIOM (generation core — stabilizer of a hyperbolic pair).** A symplectic `g`
 fixing a hyperbolic pair `(e,f)` (`ω(e,f)=1`) **pointwise** lies in the transvection subgroup
 `⨆_v spTransvecGroup v`. This is the genuine remaining core of symplectic generation, the

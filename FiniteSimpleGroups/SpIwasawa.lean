@@ -387,6 +387,28 @@ theorem exists_perp_transvecGen_maps {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Ma
   · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1f, ht2f]
   · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1u, ht2z]
 
+/-- **Terminal case of the generation-core induction.** If `g` fixes the pair `(e,f)` and fixes
+**every** vector of `⟨e,f⟩⊥`, then `g = 1`. Because `V = ⟨e,f⟩ ⊕ ⟨e,f⟩⊥` (`perpComp_add_span`),
+`g` fixes a spanning set, so `g·v = v` for all `v`, hence `g = 1` (`Matrix.mulVec_injective`).
+This is what the dimension induction terminates at, once every complement vector is fixed. -/
+theorem sp_eq_one_of_fixes_perp {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1)
+    {g : symplecticGroup l F} (hge : (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e)
+    (hgf : (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f)
+    (hperp : ∀ x, e ⬝ᵥ (Matrix.J l F *ᵥ x) = 0 → f ⬝ᵥ (Matrix.J l F *ᵥ x) = 0 →
+      (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ x = x) :
+    g = 1 := by
+  have hv : ∀ v, (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ v = v := by
+    intro v
+    conv_lhs => rw [perpComp_add_span e f v]
+    rw [mulVec_add, mulVec_sub, mulVec_smul, mulVec_smul, hge, hgf,
+      hperp (perpComp e f v) (perpComp_mem_perp hef v).1 (perpComp_mem_perp hef v).2,
+      ← perpComp_add_span e f v]
+  apply Subtype.ext
+  show (g : Matrix (l ⊕ l) (l ⊕ l) F) = 1
+  refine Matrix.mulVec_injective ?_
+  funext v
+  rw [hv v, one_mulVec]
+
 /-- **DISCLOSED AXIOM (generation core — stabilizer of a hyperbolic pair).** A symplectic `g`
 fixing a hyperbolic pair `(e,f)` (`ω(e,f)=1`) **pointwise** lies in the transvection subgroup
 `⨆_v spTransvecGroup v`. This is the genuine remaining core of symplectic generation, the

@@ -25,7 +25,7 @@ quotient type `SL n F ⧸ center` specialises at `(Fin 2, ZMod q)` to `SL2.psl1A
 type, so registering a global instance here would diamond with it.
 -/
 
-open Matrix
+open Matrix Module
 
 namespace FiniteSimpleGroups.SLn
 
@@ -209,25 +209,141 @@ exactly as in `SL2.psl_two_trans`/`psl_two_pretrans`/`pslQuasiPreprimitive`.
 
 The single disclosed input is `exists_sl_maps_two_points` (below). -/
 
-/-- **`SL(n,F)` is 2-transitive on `ℙ^{n-1}` for `2 ≤ |n|`** — DISCLOSED AXIOM (out at
-Aristotle / TODO). Any ordered pair of distinct points `(x₀,x₁)` maps to any other ordered
-pair of distinct points `(y₀,y₁)` by some `g : SL(n,F)`.
+omit [DecidableEq n] [Fintype n] in
+/-- Two representatives of distinct projective points are linearly independent. -/
+theorem rep_pair_li (x0 x1 : Projectivization F (n → F)) (hx : x0 ≠ x1) :
+    LinearIndependent F ![x0.rep, x1.rep] := by
+  rw [LinearIndependent.pair_iff' (Projectivization.rep_nonzero x0)]
+  intro a ha
+  apply hx
+  have hane : a ≠ 0 := by
+    rintro rfl; rw [zero_smul] at ha; exact (Projectivization.rep_nonzero x1) ha.symm
+  rw [← Projectivization.mk_rep x0, ← Projectivization.mk_rep x1, Projectivization.mk_eq_mk_iff']
+  exact ⟨a⁻¹, by rw [← ha, smul_smul, inv_mul_cancel₀ hane, one_smul]⟩
 
-Mathematical content: distinct projective points have linearly independent representatives.
-Given distinct `x₀,x₁` with reps `u,v` (l.i.) and distinct `y₀,y₁` with reps `u',v'` (l.i.),
-extend `{u,v}` and `{u',v'}` to bases; the matrices `A,B` with these as their first two
-columns are invertible, and rescaling the *second* column by `1/det` makes `det = 1` without
-moving the line it spans (projective invariance), giving `A,B ∈ SL(n,F)` mapping the
-reference frame `([e₀],[e₁])` to `(x₀,x₁)` and `(y₀,y₁)`; then `B A⁻¹` is the required element.
-The `2 ≤ |n|` hypothesis guarantees two distinct standard basis lines exist. For `n = 2` this
-is `SL2.sl2_two_trans` (proved); the general case needs mathlib's `Basis.extend` plus the
-column-to-matrix/determinant bookkeeping (a self-contained linear-algebra brick).
+omit [DecidableEq n] in
+/-- **Any independent pair maps to any independent pair under a linear automorphism of
+`n → F`.** Given linearly independent `(u0,u1)` and `(w0,w1)`, there is a linear
+automorphism `T` with `T u0 = w0` and `T u1 = w1`.
 
-TODO(discharge): port the Aristotle proof (or prove locally via `Basis.extend`). Once landed,
-`pslnQuasiPreprimitive` becomes axiom-clean. -/
-axiom exists_sl_maps_two_points (h2 : 2 ≤ Fintype.card n)
+Both pairs are extended to bases of `n → F` via `Basis.sumExtend` (which fixes the original
+two vectors at the `Sum.inl` indices). The two index sets `Fin 2 ⊕ Su`, `Fin 2 ⊕ Sw` have
+equal cardinality (both `= finrank F (n → F) = |n|`), so `Su ≃ Sw`; the sum-equiv fixing the
+`Fin 2` part transports one basis onto the other (`Basis.equiv`), giving `T`. -/
+theorem exists_linearEquiv_pair (u0 u1 w0 w1 : n → F)
+    (hu : LinearIndependent F ![u0, u1]) (hw : LinearIndependent F ![w0, w1]) :
+    ∃ T : (n → F) ≃ₗ[F] (n → F), T u0 = w0 ∧ T u1 = w1 := by
+  set bu := Basis.sumExtend hu with hbu
+  set bw := Basis.sumExtend hw with hbw
+  haveI : Fintype (Fin 2 ⊕ (Basis.sumExtendIndex hu)) := FiniteDimensional.fintypeBasisIndex bu
+  haveI : Fintype (Fin 2 ⊕ (Basis.sumExtendIndex hw)) := FiniteDimensional.fintypeBasisIndex bw
+  haveI : Finite (Basis.sumExtendIndex hu) :=
+    Finite.of_injective (Sum.inr : _ → Fin 2 ⊕ _) Sum.inr_injective
+  haveI : Finite (Basis.sumExtendIndex hw) :=
+    Finite.of_injective (Sum.inr : _ → Fin 2 ⊕ _) Sum.inr_injective
+  haveI : Fintype (Basis.sumExtendIndex hu) := Fintype.ofFinite _
+  haveI : Fintype (Basis.sumExtendIndex hw) := Fintype.ofFinite _
+  have hcu : 2 + Nat.card (Basis.sumExtendIndex hu) = Nat.card n := by
+    have h1 := Module.finrank_eq_card_basis bu
+    rw [Fintype.card_eq_nat_card, Module.finrank_fintype_fun_eq_card,
+      Fintype.card_eq_nat_card, Nat.card_sum] at h1
+    simpa using h1.symm
+  have hcw : 2 + Nat.card (Basis.sumExtendIndex hw) = Nat.card n := by
+    have h1 := Module.finrank_eq_card_basis bw
+    rw [Fintype.card_eq_nat_card, Module.finrank_fintype_fun_eq_card,
+      Fintype.card_eq_nat_card, Nat.card_sum] at h1
+    simpa using h1.symm
+  have hcard' : Fintype.card (Basis.sumExtendIndex hu) = Fintype.card (Basis.sumExtendIndex hw) := by
+    rw [Fintype.card_eq_nat_card, Fintype.card_eq_nat_card]; omega
+  set τ : (Basis.sumExtendIndex hu) ≃ (Basis.sumExtendIndex hw) := Fintype.equivOfCardEq hcard'
+  set E : (Fin 2 ⊕ Basis.sumExtendIndex hu) ≃ (Fin 2 ⊕ Basis.sumExtendIndex hw) :=
+    Equiv.sumCongr (Equiv.refl (Fin 2)) τ
+  have huval : ∀ i : Fin 2, bu (Sum.inl i) = ![u0, u1] i := by
+    intro i
+    simp only [hbu, Basis.sumExtend, Basis.coe_reindex, Function.comp_apply, Equiv.symm_symm]
+    rw [Basis.coe_extend]; rfl
+  have hwval : ∀ i : Fin 2, bw (Sum.inl i) = ![w0, w1] i := by
+    intro i
+    simp only [hbw, Basis.sumExtend, Basis.coe_reindex, Function.comp_apply, Equiv.symm_symm]
+    rw [Basis.coe_extend]; rfl
+  refine ⟨bu.equiv bw E, ?_, ?_⟩
+  · have h := bu.equiv_apply (b' := bw) (e := E) (i := Sum.inl 0)
+    rw [huval 0] at h
+    rw [show (![u0, u1] 0 : n → F) = u0 from rfl] at h
+    rw [h]; show bw (E (Sum.inl 0)) = w0
+    simp only [E, Equiv.sumCongr_apply, Sum.map_inl, Equiv.refl_apply]; exact hwval 0
+  · have h := bu.equiv_apply (b' := bw) (e := E) (i := Sum.inl 1)
+    rw [huval 1] at h
+    rw [show (![u0, u1] 1 : n → F) = u1 from rfl] at h
+    rw [h]; show bw (E (Sum.inl 1)) = w1
+    simp only [E, Equiv.sumCongr_apply, Sum.map_inl, Equiv.refl_apply]; exact hwval 1
+
+/-- **`SL(n,F)` is 2-transitive on `ℙ^{n-1}(F)`** (for `2 ≤ |n|`; the hypothesis is not
+actually needed, since distinctness of the points already forces `|n| ≥ 2`). Any ordered
+pair of distinct points `(x₀,x₁)` maps to any other ordered pair of distinct points
+`(y₀,y₁)` by some `g : SL(n,F)`.
+
+Proof: distinct points have linearly independent reps (`rep_pair_li`), so by
+`exists_linearEquiv_pair` there is a linear automorphism `T` with `T x₀.rep = y₀.rep`,
+`T x₁.rep = y₁.rep`. `T` need not have determinant `1`; we correct it by the diagonal
+operator `D` (in the basis `bw = sumExtend` adapted to `y₀.rep, y₁.rep`) that scales the
+`y₁`-direction by `c = (det T)⁻¹` and fixes everything else. Then `det (D ∘ T) = 1`,
+`(D∘T) x₀.rep = y₀.rep` and `(D∘T) x₁.rep = c • y₁.rep ∥ y₁.rep` — so the matrix of `D∘T`
+lies in `SL(n,F)` and maps the two lines as required (scaling `y₁.rep` is projectively
+invariant). This formerly-axiomatized fact is now fully proved (no reference frame /
+`Basis.extend` column bookkeeping needed). -/
+theorem exists_sl_maps_two_points (h2 : 2 ≤ Fintype.card n)
     (x0 x1 y0 y1 : Projectivization F (n → F)) (hx : x0 ≠ x1) (hy : y0 ≠ y1) :
-    ∃ g : SpecialLinearGroup n F, g • x0 = y0 ∧ g • x1 = y1
+    ∃ g : SpecialLinearGroup n F, g • x0 = y0 ∧ g • x1 = y1 := by
+  classical
+  obtain ⟨T, hT0, hT1⟩ := exists_linearEquiv_pair x0.rep x1.rep y0.rep y1.rep
+    (rep_pair_li x0 x1 hx) (rep_pair_li y0 y1 hy)
+  set d : F := LinearMap.det (T : (n → F) →ₗ[F] (n → F)) with hd
+  have hd_ne : d ≠ 0 := by rw [hd, ← LinearEquiv.coe_det]; exact Units.ne_zero _
+  set c : F := d⁻¹ with hc
+  have hwLI := rep_pair_li y0 y1 hy
+  set bw := Basis.sumExtend hwLI with hbw
+  haveI : Fintype (Fin 2 ⊕ (Basis.sumExtendIndex hwLI)) := FiniteDimensional.fintypeBasisIndex bw
+  have hwval : ∀ i : Fin 2, bw (Sum.inl i) = ![y0.rep, y1.rep] i := by
+    intro i
+    simp only [hbw, Basis.sumExtend, Basis.coe_reindex, Function.comp_apply, Equiv.symm_symm]
+    rw [Basis.coe_extend]; rfl
+  have hw0 : bw (Sum.inl 0) = y0.rep := by simpa using hwval 0
+  have hw1 : bw (Sum.inl 1) = y1.rep := by simpa using hwval 1
+  set dg : (Fin 2 ⊕ Basis.sumExtendIndex hwLI) → F := fun j => if j = Sum.inl 1 then c else 1
+    with hdg
+  set D : (n → F) →ₗ[F] (n → F) := Matrix.toLin bw bw (Matrix.diagonal dg) with hD
+  have hDval : ∀ j, D (bw j) = dg j • bw j := by
+    intro j
+    rw [hD, Matrix.toLin_self]
+    simp [Matrix.diagonal_apply, Finset.sum_ite_eq']
+  have hDdet : LinearMap.det D = c := by
+    rw [hD, LinearMap.det_toLin, Matrix.det_diagonal]
+    rw [Finset.prod_eq_single (Sum.inl (1 : Fin 2))]
+    · simp [hdg]
+    · intro b _ hb; simp [hdg, hb]
+    · intro h; exact absurd (Finset.mem_univ _) h
+  set P : (n → F) →ₗ[F] (n → F) := D ∘ₗ (T : (n → F) →ₗ[F] (n → F)) with hP
+  have hPdet : LinearMap.det P = 1 := by
+    rw [hP, LinearMap.det_comp, hDdet, ← hd, hc, inv_mul_cancel₀ hd_ne]
+  have hP0 : P x0.rep = y0.rep := by
+    rw [hP, LinearMap.comp_apply, LinearEquiv.coe_coe, hT0, ← hw0, hDval]
+    simp [hdg, hw0]
+  have hP1 : P x1.rep = c • y1.rep := by
+    rw [hP, LinearMap.comp_apply, LinearEquiv.coe_coe, hT1, ← hw1, hDval]
+    simp [hdg, hw1]
+  have hGdet : (LinearMap.toMatrix' P).det = 1 := by rw [LinearMap.det_toMatrix', hPdet]
+  refine ⟨⟨LinearMap.toMatrix' P, hGdet⟩, ?_, ?_⟩
+  · conv_lhs => rw [← Projectivization.mk_rep x0]
+    rw [Projectivization.smul_mk, ← Projectivization.mk_rep y0, Projectivization.mk_eq_mk_iff]
+    refine ⟨1, ?_⟩
+    show (1 : Fˣ) • y0.rep = (LinearMap.toMatrix' P).mulVec x0.rep
+    rw [one_smul, LinearMap.toMatrix'_mulVec, hP0]
+  · conv_lhs => rw [← Projectivization.mk_rep x1]
+    rw [Projectivization.smul_mk, ← Projectivization.mk_rep y1, Projectivization.mk_eq_mk_iff]
+    refine ⟨Units.mk0 c (inv_ne_zero hd_ne), ?_⟩
+    show (Units.mk0 c (inv_ne_zero hd_ne) : Fˣ) • y1.rep = (LinearMap.toMatrix' P).mulVec x1.rep
+    rw [LinearMap.toMatrix'_mulVec, hP1, Units.smul_def, Units.val_mk0]
 
 /-- **`PSL(n,F)` is 2-transitive on `ℙ^{n-1}`** (on points), inherited from the `SL` action
 through the surjection `SL ↠ PSL` (modulo the disclosed `exists_sl_maps_two_points`). -/

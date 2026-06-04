@@ -260,7 +260,7 @@ theorem perpComp_mem_perp {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Matrix.J l F 
       dotProduct_smul, spForm_self, hef, smul_eq_mul, mul_zero, mul_one]
     ring
   · simp only [perpComp, mulVec_add, mulVec_sub, mulVec_smul, dotProduct_add, dotProduct_sub,
-      dotProduct_smul, spForm_self, hef, hfe, smul_eq_mul, mul_zero]
+      dotProduct_smul, spForm_self, hfe, smul_eq_mul, mul_zero]
     ring
 
 /-- The complement projection recovers `x` modulo `⟨e,f⟩`: `x = perpComp e f x − ω(f,x)·e
@@ -269,6 +269,47 @@ theorem perpComp_mem_perp {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Matrix.J l F 
 theorem perpComp_add_span (e f x : (l ⊕ l) → F) :
     x = perpComp e f x - (f ⬝ᵥ (Matrix.J l F *ᵥ x)) • e + (e ⬝ᵥ (Matrix.J l F *ᵥ x)) • f := by
   simp only [perpComp]; abel
+
+/-- **The symplectic form `ω` is non-degenerate**: if `ω(u,v) = 0` for every `v`, then `u = 0`.
+Because `J` is invertible (`J² = -1`), `J·v` ranges over all vectors, reducing to the
+non-degeneracy of the dot product. -/
+theorem spForm_nondegenerate {u : (l ⊕ l) → F}
+    (h : ∀ v, u ⬝ᵥ (Matrix.J l F *ᵥ v) = 0) : u = 0 := by
+  funext i
+  have hw : Matrix.J l F *ᵥ (-(Matrix.J l F *ᵥ Pi.single i 1)) = Pi.single i 1 := by
+    rw [mulVec_neg, mulVec_mulVec, J_squared, neg_mulVec, one_mulVec, neg_neg]
+  have hi := h (-(Matrix.J l F *ᵥ Pi.single i 1))
+  rw [hw, dotProduct_single, mul_one] at hi
+  exact hi
+
+/-- **`ω` restricts non-degenerately to `⟨e,f⟩⊥`**: for `u ∈ ⟨e,f⟩⊥` non-zero (`ω(e,u)=ω(f,u)=0`),
+there is a `z ∈ ⟨e,f⟩⊥` with `ω(u,z) ≠ 0`. Proof: were `ω(u,·)` zero on all of `⟨e,f⟩⊥`, then —
+since `u ∈ ⟨e,f⟩⊥` makes `ω(u,e)=ω(u,f)=0` too, and `V = ⟨e,f⟩ ⊕ ⟨e,f⟩⊥` (`perpComp_add_span`,
+`perpComp_mem_perp`) — `ω(u,·)` would vanish on all of `V`, forcing `u=0` (`spForm_nondegenerate`).
+This is the relative non-degeneracy that powers transitivity **within** the complement (using
+pair-fixing transvections) — the inductive step of the generation core. -/
+theorem perp_form_ne_of_mem_perp {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1)
+    {u : (l ⊕ l) → F} (hue : e ⬝ᵥ (Matrix.J l F *ᵥ u) = 0)
+    (huf : f ⬝ᵥ (Matrix.J l F *ᵥ u) = 0) (hu : u ≠ 0) :
+    ∃ z, e ⬝ᵥ (Matrix.J l F *ᵥ z) = 0 ∧ f ⬝ᵥ (Matrix.J l F *ᵥ z) = 0 ∧
+      u ⬝ᵥ (Matrix.J l F *ᵥ z) ≠ 0 := by
+  by_contra hcon
+  apply hu
+  apply spForm_nondegenerate
+  intro x
+  have hue' : u ⬝ᵥ (Matrix.J l F *ᵥ e) = 0 := by rw [spForm_skew, hue, neg_zero]
+  have huf' : u ⬝ᵥ (Matrix.J l F *ᵥ f) = 0 := by rw [spForm_skew, huf, neg_zero]
+  have hperp := perpComp_mem_perp hef x
+  have hz : u ⬝ᵥ (Matrix.J l F *ᵥ perpComp e f x) = 0 := by
+    by_contra hne
+    exact hcon ⟨perpComp e f x, hperp.1, hperp.2, hne⟩
+  have key : u ⬝ᵥ (Matrix.J l F *ᵥ perpComp e f x)
+      = u ⬝ᵥ (Matrix.J l F *ᵥ x) + (f ⬝ᵥ (Matrix.J l F *ᵥ x)) * (u ⬝ᵥ (Matrix.J l F *ᵥ e))
+        - (e ⬝ᵥ (Matrix.J l F *ᵥ x)) * (u ⬝ᵥ (Matrix.J l F *ᵥ f)) := by
+    simp only [perpComp, mulVec_add, mulVec_sub, mulVec_smul, dotProduct_add, dotProduct_sub,
+      dotProduct_smul, smul_eq_mul]
+  rw [hz, hue', huf', mul_zero, mul_zero, add_zero, sub_zero] at key
+  exact key.symm
 
 /-- **DISCLOSED AXIOM (generation core — stabilizer of a hyperbolic pair).** A symplectic `g`
 fixing a hyperbolic pair `(e,f)` (`ω(e,f)=1`) **pointwise** lies in the transvection subgroup
@@ -532,6 +573,7 @@ theorem pspQuasiPreprimitive [Nonempty l] :
   haveI := pspPreprimitive (l := l) (F := F)
   inferInstance
 
+omit [Fintype l] in
 /-- **`ℙ²ⁿ⁻¹(F)` is nontrivial** for `Nonempty l` (dimension `2n ≥ 2`): the projective points
 `[ê_{inl i₀}]` and `[ê_{inr i₀}]` are distinct (different support ⇒ not scalar multiples). -/
 theorem projectivization_nontrivial [Nonempty l] :

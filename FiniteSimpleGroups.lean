@@ -26,6 +26,7 @@ import FiniteSimpleGroups.SpIwasawa
 import FiniteSimpleGroups.SpLieType
 import FiniteSimpleGroups.SpSmallField
 import FiniteSimpleGroups.UnitaryFoundation
+import FiniteSimpleGroups.UnitarySimple
 import FiniteSimpleGroups.UnitaryTransvection
 import FiniteSimpleGroups.Wielandt
 import FiniteSimpleGroups.AschbacherDichotomy

@@ -1419,6 +1419,36 @@ theorem exists_su_hyperbolic_scale_gen {C : Finset (Fin n)} {e f : Fin n → Uni
   · rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, hg1f, Matrix.mulVec_smul, hg2e, smul_smul,
       hscaleF]
 
+/-- **Hyperbolic partner staying in `offSU C`.** The partner construction of
+`exists_hyperbolic_partner` (`w = d⁻¹·e_k + t·z`, where `z_k ≠ 0`) automatically lands in `offSU C`
+when `z ∈ offSU C`: the lone coordinate `k` lies in `Cᶜ` (since `z_k ≠ 0`), so the `e_k`-part and the
+`t·z`-part both vanish on `C`. The relative version of `exists_hyperbolic_partner` — first step of
+the within-`offSU C` connectivity needed for `UExactLineTrans`. -/
+theorem exists_hyperbolic_partner_offSU {C : Finset (Fin n)} {z : Fin n → UnitaryField p}
+    (hz : z ≠ 0) (hziso : star z ⬝ᵥ z = 0) (hzoff : offSU p C z) :
+    ∃ w : Fin n → UnitaryField p, star w ⬝ᵥ w = 0 ∧ star z ⬝ᵥ w = 1 ∧ offSU p C w := by
+  obtain ⟨k, hk⟩ := Function.ne_iff.mp hz
+  rw [Pi.zero_apply] at hk
+  set d : UnitaryField p := star (z k) with hd
+  have hd0 : d ≠ 0 := by rw [hd]; exact star_ne_zero.mpr hk
+  set w₁ : Fin n → UnitaryField p := Pi.single k d⁻¹ with hw1
+  have hkC : k ∉ C := fun h => hk (hzoff k h)
+  have hzw1 : star z ⬝ᵥ w₁ = 1 := by
+    rw [hw1, dotProduct_single, Pi.star_apply, ← hd, mul_inv_cancel₀ hd0]
+  have hw1z : star w₁ ⬝ᵥ z = 1 := by rw [dotProduct_star_swap, hzw1, star_one]
+  have hw1w1 : star w₁ ⬝ᵥ w₁ = d⁻¹ * star d⁻¹ := by
+    rw [hw1, ← Pi.single_star, single_dotProduct, Pi.single_eq_same, mul_comm]
+  obtain ⟨t, ht⟩ := UnitaryField.exists_add_star_eq_neg_norm p d⁻¹
+  refine ⟨w₁ + t • z, ?_, ?_, offSU_add p (offSU_single p hkC d⁻¹) (offSU_smul p t hzoff)⟩
+  · have hss : star (w₁ + t • z) = star w₁ + star t • star z := by
+      funext i
+      simp only [Pi.add_apply, Pi.smul_apply, Pi.star_apply, smul_eq_mul, star_add, star_mul']
+    rw [hss]
+    simp only [add_dotProduct, dotProduct_add, smul_dotProduct, dotProduct_smul, smul_eq_mul,
+      hw1w1, hziso, hzw1, hw1z, mul_zero, mul_one, add_zero]
+    linear_combination ht
+  · rw [dotProduct_add, dotProduct_smul, hzw1, hziso, smul_eq_mul, mul_zero, add_zero]
+
 /-! ### Explicit coordinate hyperbolic pair (with span recovery) for the generation induction
 
 The genAux dimension induction peels a pair of unfixed coordinates `{i,j}` at a time. The isotropic

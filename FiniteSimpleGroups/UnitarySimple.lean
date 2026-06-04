@@ -935,6 +935,28 @@ theorem PSU_isSimpleGroup_of_generate_of_qpp (hn : 3 ≤ n) (hp : 5 ≤ p)
   exact (psuIwasawaStructure p n hgen).isSimpleGroup
     (commutator_PSU_eq_top_of_generate p n hn hp hgen) (psuFaithful p n hn)
 
+/-- **`PSU_n(F_{p²})` is simple** (`n ≥ 3`, `p ≥ 5`), with quasi-preprimitivity decomposed into its
+two classical constituents — `hpt` (the `IsoPoint` action is pretransitive: unitary Witt transitivity
+on isotropic points) and `hblk` (its only blocks are trivial) — via the mathlib bridge
+`IsPreprimitive.isQuasiPreprimitive`. These two, together with the Witt generation `hgen`, are the
+**only** remaining inputs; everything else is machine-checked. Axiom-clean. The unitary analogue of
+the `SpN.pspPreprimitive`-based assembly; the recognized textbook targets for the remaining PSU work
+(point-stabilizer = a maximal parabolic). -/
+theorem PSU_isSimpleGroup_of_generate (hn : 3 ≤ n) (hp : 5 ≤ p)
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
+        (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤)
+    (hpt : letI := psuAction p n;
+      MulAction.IsPretransitive (PSUConcrete n p) (IsoPoint p n))
+    (hblk : letI := psuAction p n; ∀ {B : Set (IsoPoint p n)},
+      MulAction.IsBlock (PSUConcrete n p) B → MulAction.IsTrivialBlock B) :
+    IsSimpleGroup (PSUConcrete n p) := by
+  letI := psuAction p n
+  haveI : MulAction.IsPretransitive (PSUConcrete n p) (IsoPoint p n) := hpt
+  haveI : MulAction.IsPreprimitive (PSUConcrete n p) (IsoPoint p n) :=
+    { isTrivialBlock_of_isBlock := hblk }
+  exact PSU_isSimpleGroup_of_generate_of_qpp p n hn hp hgen inferInstance
+
 end Iwasawa
 
 end FiniteSimpleGroups.PSU

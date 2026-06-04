@@ -382,6 +382,67 @@ theorem exists_uPerp_form_both_ne {e f : n → F} (hef : star e ⬝ᵥ f = 1)
     · exact ⟨z₂, ⟨hz2e, hz2f⟩, huz2, hz2⟩
   · exact ⟨z₁, ⟨hz1e, hz1f⟩, hz1, hwz1⟩
 
+/-! ### Determinant base case of the generation induction
+
+The terminal step of the Dieudonné dimension induction: a special-unitary `g` (`star g * g = 1`,
+`det g = 1`) fixing every standard basis vector but one is the identity. The `k`-th column is
+orthogonal to the fixed `eᵢ` (`i ≠ k`), forcing it to `(c_k)_k • eₖ`; the determinant equals
+`(c_k)_k` (all other columns standard), and `det g = 1` pins it to `eₖ`. This is the unitary
+analogue of the symplectic `sp_eq_one_of_FixS_univ` (refined by the `det` for the lone anisotropic
+coordinate of odd-dimensional unitary spaces). Discharged by Aristotle (project
+`c861683e`), re-verified axiom-clean in-kernel. -/
+
+set_option maxHeartbeats 800000 in
+/-- The columns of a unitary matrix are orthonormal for the standard Hermitian form:
+`⟨g·x, g·y⟩ = ⟨x,y⟩`, from `star g * g = 1`. (Variant of `u_preserves_form` with the explicit
+unitarity equation as hypothesis.) -/
+theorem u_preserves_form' {g : Matrix n n F} (hg : star g * g = 1) (x y : n → F) :
+    star (g *ᵥ x) ⬝ᵥ (g *ᵥ y) = star x ⬝ᵥ y := by
+  convert congr_arg (fun m => star x ⬝ᵥ m *ᵥ y) hg using 1
+  · simp +decide [Matrix.dotProduct_mulVec]
+    congr! 1
+    ext i; simp +decide [Matrix.mul_apply, Matrix.vecMul, dotProduct]
+    simp +decide [Matrix.mulVec, dotProduct, Finset.mul_sum _ _ _, mul_assoc, mul_comm]
+    exact Finset.sum_comm
+  · simp +decide
+
+set_option maxHeartbeats 1600000 in
+/-- **Determinant base case.** A special-unitary matrix (`star g * g = 1`, `det g = 1`) fixing every
+standard basis vector but one is the identity. Terminal case of the `SU` generation induction. -/
+theorem u_eq_one_of_fixes_all_but_one {g : Matrix n n F}
+    (hu : star g * g = 1) (hdet : g.det = 1) {k : n}
+    (hfix : ∀ i, i ≠ k → g *ᵥ Pi.single i 1 = Pi.single i 1) :
+    g = 1 := by
+  have hc : g *ᵥ (Pi.single k 1 : n → F)
+      = (g *ᵥ (Pi.single k 1 : n → F)) k • (Pi.single k 1 : n → F) := by
+    have hc : ∀ i ≠ k, (g *ᵥ (Pi.single k 1 : n → F)) i = 0 := by
+      intro i hi
+      have := u_preserves_form' hu (Pi.single i 1) (Pi.single k 1)
+      simp_all +decide [dotProduct]
+      simp_all +decide [Pi.single_apply]
+      rw [Finset.sum_eq_single i] at this <;> aesop
+    ext i; by_cases hi : i = k <;> simp +decide [*]
+  have hdet_eq : (g *ᵥ (Pi.single k 1 : n → F)) k = g.det := by
+    have hdet_eq : g = Matrix.updateCol (1 : Matrix n n F) k (g *ᵥ (Pi.single k 1 : n → F)) := by
+      ext i j; by_cases hij : j = k <;> simp +decide [hij]
+      specialize hfix j hij; replace hfix := congr_fun hfix i
+      simp_all +singlePass [Matrix.mulVec, dotProduct]
+      simp_all +decide [Pi.single_apply, Matrix.one_apply]
+    conv_rhs => rw [hdet_eq]
+    rw [Matrix.det_apply']
+    rw [Finset.sum_eq_single (Equiv.refl n)] <;>
+      simp +contextual [Matrix.one_apply, Matrix.updateCol_apply]
+    intro b hb
+    by_cases hbk : b k = k
+    · rw [Finset.prod_eq_zero_iff.mpr]
+      · exact Or.inr rfl
+      · grind +qlia
+    · rw [Finset.prod_eq_zero (Finset.mem_univ (b k))] <;> simp +decide [hbk]
+  rw [hdet_eq, hdet] at hc
+  ext i j; by_cases hij : j = k <;> simp_all +decide [Matrix.mulVec, funext_iff]
+  · by_cases hi : i = k <;> aesop
+  · by_cases hi : i = j <;> aesop
+
 /-! ### The center of `SU_n(F_{p²})` is the scalar matrices (`n ≥ 3`)
 
 Instantiating the geometric crux over the concrete Hermitian field `F_{p²} = UnitaryField p`.

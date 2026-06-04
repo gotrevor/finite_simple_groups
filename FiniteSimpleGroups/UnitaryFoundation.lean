@@ -67,6 +67,33 @@ noncomputable instance : StarRing (UnitaryField p) where
 /-- Sanity: `star` is genuinely the nontrivial Frobenius, not the identity — `star x = x^p`. -/
 theorem star_apply (x : UnitaryField p) : star x = x ^ p := star_pow p x
 
+/-- `F_{p²}` as an `F_p = ZMod p`-algebra (inherited from `GaloisField p 2`). This exposes the
+finite-field norm `Algebra.norm (ZMod p) : F_{p²} → F_p`, which equals the Hermitian norm
+`x ↦ x · star x = x^{p+1}` (see `algebraMap_norm_eq_mul_star`). -/
+noncomputable instance : Algebra (ZMod p) (UnitaryField p) :=
+  inferInstanceAs (Algebra (ZMod p) (GaloisField p 2))
+
+/-- **The Hermitian norm is the field norm**: `algebraMap (Algebra.norm c) = c · star c`. Both are
+`c^{p+1}`: the field-norm exponent is `(|F_{p²}|−1)/(|F_p|−1) = (p²−1)/(p−1) = p+1`, and
+`c · star c = c · c^p = c^{p+1}`. -/
+theorem algebraMap_norm_eq_mul_star (c : UnitaryField p) :
+    (algebraMap (ZMod p) (UnitaryField p)) (Algebra.norm (ZMod p) c) = c * star c := by
+  have hp2 : 2 ≤ p := (Fact.out : p.Prime).two_le
+  have hcardK' : Nat.card (UnitaryField p) = p ^ 2 := by
+    rw [Nat.card_eq_fintype_card]; exact card_eq p
+  have hcardK : Nat.card (ZMod p) = p := by rw [Nat.card_eq_fintype_card, ZMod.card]
+  have hE : (Nat.card (UnitaryField p) - 1) / (Nat.card (ZMod p) - 1) = p + 1 := by
+    rw [hcardK', hcardK, show p ^ 2 - 1 = (p + 1) * (p - 1) from by simpa using sq_tsub_sq p 1,
+      Nat.mul_div_cancel _ (by omega : 0 < p - 1)]
+  rw [FiniteField.algebraMap_norm_eq_pow, hE, star_pow, pow_succ, mul_comm]
+
+/-- **`−1` is a Hermitian norm**: there is `c ∈ F_{p²}` with `c · star c = −1`. (The finite-field
+norm `F_{p²}* → F_p*` is surjective, and `−1 ∈ F_p`.) This is the seed of isotropic-vector
+existence: `(c, 1, 0, …)` is then isotropic, since `star c · c + 1 = −1 + 1 = 0`. -/
+theorem exists_norm_neg_one : ∃ c : UnitaryField p, c * star c = -1 := by
+  obtain ⟨c, hc⟩ := FiniteField.norm_surjective (ZMod p) (UnitaryField p) (-1)
+  exact ⟨c, by rw [← algebraMap_norm_eq_mul_star, hc, map_neg, map_one]⟩
+
 end UnitaryField
 
 /-- **The concrete special unitary group `SU_n(F_p)`** — now well-formed because `UnitaryField p`

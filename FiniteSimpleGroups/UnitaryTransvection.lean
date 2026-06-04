@@ -233,6 +233,24 @@ noncomputable def uRootSubgroup (v : n → α) (hv : star v ⬝ᵥ v = 0) :
 instance (v : n → α) (hv : star v ⬝ᵥ v = 0) : IsMulCommutative (uRootSubgroup v hv) := by
   unfold uRootSubgroup; infer_instance
 
+/-- **Membership in the root subgroup**: `y ∈ uRootSubgroup v` iff `y = τ_{v,a}` for some
+trace-zero `a`. The unitary analogue of `mem_spTransvecGroup`. -/
+theorem mem_uRootSubgroup {v : n → α} (hv : star v ⬝ᵥ v = 0)
+    {y : Matrix.specialUnitaryGroup n α} :
+    y ∈ uRootSubgroup v hv ↔ ∃ (a : α) (ha : a + star a = 0), uTransvecSU v a hv ha = y := by
+  rw [uRootSubgroup, MonoidHom.mem_range]
+  constructor
+  · rintro ⟨m, rfl⟩
+    exact ⟨_, mem_traceZero.mp (Multiplicative.toAdd m).2, rfl⟩
+  · rintro ⟨a, ha, rfl⟩
+    exact ⟨Multiplicative.ofAdd (⟨a, mem_traceZero.mpr ha⟩ : traceZero α), rfl⟩
+
+/-- **The root subgroup depends only on the centre vector** (the isotropy proof is irrelevant):
+equal centres give equal root subgroups. -/
+theorem uRootSubgroup_congr {v w : n → α} (h : v = w) (hv : star v ⬝ᵥ v = 0)
+    (hw : star w ⬝ᵥ w = 0) : uRootSubgroup v hv = uRootSubgroup w hw := by
+  subst h; rfl
+
 /-- **Conjugation in the group**: `g · τ_{v,a} · g⁻¹ = τ_{g·v, a}` for `g ∈ SU`. The unitary
 analogue of `spTransvecSp_conj`; uses `(g⁻¹).val = star g.val = g.valᴴ` to land on
 `uTransvection_conjH`. -/
@@ -247,6 +265,22 @@ theorem uTransvecSU_conj (g : Matrix.specialUnitaryGroup n α) (v : n → α) (a
       Matrix.star_eq_conjTranspose]
   simp only [Submonoid.coe_mul, uTransvecSU_coe, hcoeInv]
   exact uTransvection_conjH (Matrix.specialUnitaryGroup_le_unitaryGroup g.2) v a
+
+/-- **Conjugation-equivariance of the root subgroup**: `g · (uRootSubgroup v) · g⁻¹ =
+uRootSubgroup (g·v)` for `g ∈ SU`. The Iwasawa `is_conj` input (and exhibits `uRootSubgroup v`
+as normal in the line stabiliser). Unitary analogue of `spTransvecGroup_conj`. -/
+theorem uRootSubgroup_conj (g : Matrix.specialUnitaryGroup n α) {v : n → α}
+    (hv : star v ⬝ᵥ v = 0) :
+    (uRootSubgroup v hv).map (MulAut.conj g)
+      = uRootSubgroup ((g : Matrix n n α) *ᵥ v)
+          (u_isotropic_of_mem (Matrix.specialUnitaryGroup_le_unitaryGroup g.2) hv) := by
+  ext y
+  simp only [Subgroup.mem_map, mem_uRootSubgroup]
+  constructor
+  · rintro ⟨x, ⟨a, ha, rfl⟩, rfl⟩
+    exact ⟨a, ha, (uTransvecSU_conj g v a hv ha).symm⟩
+  · rintro ⟨a, ha, rfl⟩
+    exact ⟨uTransvecSU v a hv ha, ⟨a, ha, rfl⟩, uTransvecSU_conj g v a hv ha⟩
 
 /-! ### Nontriviality of the root subgroup (over a field)
 
@@ -286,6 +320,45 @@ theorem uRootSubgroup_ne_bot {v : ι → F} (hv : v ≠ 0) (hiso : star v ⬝ᵥ
   refine ⟨⟨uTransvecSU v a hiso hatr, ⟨Multiplicative.ofAdd ⟨a, hatr⟩, rfl⟩⟩, ?_⟩
   intro hh
   exact uTransvecSU_ne_one hv ha0 hiso hatr (by simpa using Subtype.ext_iff.mp hh)
+
+/-- **The root subgroup depends only on the line `[v]`**: scaling `v` by a nonzero `c` leaves
+`uRootSubgroup` unchanged (reparametrize the trace-zero `a ↦ a·N(c)`, `uTransvection_smul_vec`;
+the norm `N(c) = c·star c` is a nonzero fixed-field scalar, so `a ↦ a·N(c)` is a trace-zero
+bijection). Unitary analogue of `spTransvecGroup_smul`. -/
+theorem uRootSubgroup_smul {c : F} (hc : c ≠ 0) {v : ι → F} (hv : star v ⬝ᵥ v = 0)
+    (hcv : star (c • v) ⬝ᵥ (c • v) = 0) :
+    uRootSubgroup (c • v) hcv = uRootSubgroup v hv := by
+  have hcc : c * star c ≠ 0 := mul_ne_zero hc (star_ne_zero.mpr hc)
+  have hccH : star (c * star c) = c * star c := by rw [star_mul', star_star, mul_comm]
+  ext y
+  rw [mem_uRootSubgroup, mem_uRootSubgroup]
+  constructor
+  · rintro ⟨a, ha, rfl⟩
+    refine ⟨a * (c * star c), ?_, ?_⟩
+    · rw [star_mul', hccH, eq_neg_of_add_eq_zero_right ha]; ring
+    · apply Subtype.ext
+      rw [uTransvecSU_coe, uTransvecSU_coe]
+      exact (uTransvection_smul_vec c a v).symm
+  · rintro ⟨a, ha, rfl⟩
+    refine ⟨a * (c * star c)⁻¹, ?_, ?_⟩
+    · have ht : star ((c * star c)⁻¹) = (c * star c)⁻¹ := by rw [star_inv₀, hccH]
+      rw [star_mul', ht, eq_neg_of_add_eq_zero_right ha]; ring
+    · apply Subtype.ext
+      rw [uTransvecSU_coe, uTransvecSU_coe, uTransvection_smul_vec]
+      congr 1
+      rw [mul_assoc, inv_mul_cancel₀ hcc, mul_one]
+
+/-- **The root subgroup of a representative of `[v]` equals that of `v`** (line-invariance for the
+projective `Tline` family). Unitary analogue of `spTransvecGroup_rep`. -/
+theorem uRootSubgroup_rep {v : ι → F} (hv : v ≠ 0) (hiso : star v ⬝ᵥ v = 0)
+    (hrep : star (Projectivization.mk F v hv).rep ⬝ᵥ (Projectivization.mk F v hv).rep = 0) :
+    uRootSubgroup ((Projectivization.mk F v hv).rep) hrep = uRootSubgroup v hiso := by
+  obtain ⟨c, hc⟩ := (Projectivization.mk_eq_mk_iff' F _ v (Projectivization.rep_nonzero _) hv).mp
+    (Projectivization.mk_rep _)
+  have hcne : c ≠ 0 := by
+    rintro rfl; rw [zero_smul] at hc; exact (Projectivization.rep_nonzero _) hc.symm
+  have hcviso : star (c • v) ⬝ᵥ (c • v) = 0 := by rw [hc]; exact hrep
+  exact (uRootSubgroup_congr hc.symm hrep hcviso).trans (uRootSubgroup_smul hcne hiso hcviso)
 
 end Field
 

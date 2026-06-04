@@ -744,4 +744,197 @@ theorem nonempty_isoPoint (hn : 2 ≤ n) : Nonempty (IsoPoint p n) := by
 
 end Faithful
 
+/-! ### The Iwasawa structure on `PSU = SU/Z ↷ IsoPoint`
+
+The unitary analogue of `SpN.pspIwasawaStructure`. The family `Tline x` is the root subgroup
+`uRootSubgroup x.rep` of the isotropic line `x`, pushed to `PSU = SU/Z`. Its three Iwasawa
+obligations:
+
+* `is_comm`: each `Tline x` is abelian (the `IsMulCommutative` instance on `uRootSubgroup`,
+  preserved by `Subgroup.map`);
+* `is_conj`: conjugation-equivariance `Tline (g • x) = conj g • Tline x` (via `uRootSubgroup_conj`
+  through the quotient, plus the line-invariance `uRootSubgroup_smul`/`_rep`);
+* `is_generator`: `iSup Tline = ⊤`, which reduces to the unitary Witt generation hypothesis (the
+  transvections generate `SU` — Step 3a, at Aristotle). Taken as a hypothesis here.
+-/
+
+section Iwasawa
+
+variable (p : ℕ) [Fact p.Prime] (n : ℕ)
+
+open UnitaryField
+
+open scoped Pointwise
+
+/-- The `PSU`-action of `mk g` equals the `SU`-action of `g` on an isotropic point. -/
+theorem psu_mk_smul (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) (x : IsoPoint p n) :
+    letI := psuAction p n
+    (QuotientGroup.mk g : PSUConcrete n p) • x = g • x := by
+  letI := psuAction p n
+  show psuPermHom p n (QuotientGroup.mk g) x = g • x
+  rw [psuPermHom_mk]
+  rfl
+
+/-- **The `PSU`-level root subgroup along the isotropic line `x`** — the image in `SU/Z` of
+`uRootSubgroup x.rep`. The Iwasawa family `T`. By `uRootSubgroup_rep`/`_smul` it depends only on
+the line `x`. -/
+noncomputable def Tline (x : IsoPoint p n) : Subgroup (PSUConcrete n p) :=
+  (uRootSubgroup x.1.rep x.2).map
+    (QuotientGroup.mk' (Subgroup.center (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))))
+
+instance (x : IsoPoint p n) : IsMulCommutative (Tline p n x) := by
+  unfold Tline; infer_instance
+
+/-- `Tline` of an explicit isotropic-point `[v]` equals the image of `uRootSubgroup v`
+(line-invariance). -/
+theorem Tline_mk (v : Fin n → UnitaryField p) (hv0 : v ≠ 0)
+    (hv : star v ⬝ᵥ v = 0)
+    (hpt : star (Projectivization.mk (UnitaryField p) v hv0).rep ⬝ᵥ
+      (Projectivization.mk (UnitaryField p) v hv0).rep = 0) :
+    Tline p n ⟨Projectivization.mk (UnitaryField p) v hv0, hpt⟩
+      = (uRootSubgroup v hv).map
+          (QuotientGroup.mk' (Subgroup.center (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)))) :=
+  congrArg (Subgroup.map (QuotientGroup.mk' (Subgroup.center _))) (uRootSubgroup_rep hv0 hv hpt)
+
+/-- **The family `Tline` generates `PSU`** — the Iwasawa `is_generator` obligation, modulo the
+unitary Witt generation hypothesis `hgen` (transvections generate `SU`). Each `τ_{v,a}` lies in
+`Tline [v]` (for `v ≠ 0`) or is `1` (for `v = 0`), so the generators descend to `iSup Tline = ⊤`
+in `SU/Z`. Unitary analogue of `SpN.Tline_iSup`. -/
+theorem Tline_iSup
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
+        (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤) :
+    iSup (Tline p n) = ⊤ := by
+  rw [eq_top_iff]
+  intro y _
+  obtain ⟨g, rfl⟩ := QuotientGroup.mk'_surjective
+    (Subgroup.center (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))) y
+  have hsub : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
+        (ha : a + star a = 0), h = uTransvecSU v a hv ha} ≤
+      (iSup (Tline p n)).comap (QuotientGroup.mk'
+        (Subgroup.center (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)))) := by
+    rw [Subgroup.closure_le]
+    rintro h ⟨v, a, hv, ha, rfl⟩
+    rw [SetLike.mem_coe, Subgroup.mem_comap]
+    by_cases hv0 : v = 0
+    · subst hv0
+      have h0 : uTransvecSU (0 : Fin n → UnitaryField p) a hv ha = 1 := by
+        apply Subtype.ext; simp [uTransvecSU_coe, uTransvection]
+      rw [h0, map_one]; exact one_mem _
+    · have hpt : star (Projectivization.mk (UnitaryField p) v hv0).rep ⬝ᵥ
+          (Projectivization.mk (UnitaryField p) v hv0).rep = 0 := (isIso_mk_iff p n hv0).mpr hv
+      have hmem : QuotientGroup.mk'
+            (Subgroup.center (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)))
+            (uTransvecSU v a hv ha) ∈
+          Tline p n ⟨Projectivization.mk (UnitaryField p) v hv0, hpt⟩ := by
+        rw [Tline_mk p n v hv0 hv hpt]
+        exact Subgroup.mem_map_of_mem _ (mem_uRootSubgroup hv |>.mpr ⟨a, ha, rfl⟩)
+      exact le_iSup (Tline p n) _ hmem
+  have hg : g ∈ (iSup (Tline p n)).comap (QuotientGroup.mk'
+      (Subgroup.center (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)))) := by
+    have h := hsub
+    rw [hgen] at h
+    exact h (Subgroup.mem_top g)
+  exact Subgroup.mem_comap.mp hg
+
+/-- **The Iwasawa structure on `PSU = SU/Z ↷ IsoPoint`** — the family `Tline` of abelian root
+subgroups (`is_comm`), conjugation-equivariant (`is_conj`, via `uRootSubgroup_conj` through the
+quotient) and generating (`is_generator`, `Tline_iSup`, modulo the Witt generation hypothesis
+`hgen`). Unitary analogue of `SpN.pspIwasawaStructure`. -/
+noncomputable def psuIwasawaStructure
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
+        (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤) :
+    letI := psuAction p n
+    MulAction.IwasawaStructure (PSUConcrete n p) (IsoPoint p n) :=
+  letI := psuAction p n
+  { T := Tline p n
+    is_comm := fun x => inferInstance
+    is_conj := fun g x => by
+      obtain ⟨g_SU, hg⟩ := QuotientGroup.mk_surjective g
+      have hne : (g_SU : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x.1.rep ≠ 0 := by
+        rw [← su_smul_vec_def]
+        exact (smul_ne_zero_iff_ne g_SU).mpr (Projectivization.rep_nonzero x.1)
+      have hgx1 : (g • x).1 = Projectivization.mk (UnitaryField p)
+          ((g_SU : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x.1.rep) hne := by
+        rw [← hg, psu_mk_smul p n g_SU x, isoPoint_smul_coe]
+        conv_lhs => rw [← Projectivization.mk_rep x.1]
+        rw [Projectivization.smul_mk]
+        rfl
+      have hiso2 : star ((g_SU : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x.1.rep) ⬝ᵥ
+          ((g_SU : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x.1.rep) = 0 :=
+        u_isotropic_of_mem (Matrix.specialUnitaryGroup_le_unitaryGroup g_SU.2) x.2
+      have hpar : uRootSubgroup ((g • x).1.rep) (g • x).2
+          = uRootSubgroup ((g_SU : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x.1.rep) hiso2 := by
+        have hmk : Projectivization.mk (UnitaryField p) ((g • x).1.rep)
+              (Projectivization.rep_nonzero _)
+            = Projectivization.mk (UnitaryField p)
+              ((g_SU : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x.1.rep) hne := by
+          rw [Projectivization.mk_rep]; exact hgx1
+        rw [Projectivization.mk_eq_mk_iff'] at hmk
+        obtain ⟨c, hc⟩ := hmk
+        have hcne : c ≠ 0 := by
+          rintro rfl; rw [zero_smul] at hc
+          exact (Projectivization.rep_nonzero (g • x).1) hc.symm
+        have hcviso : star (c • ((g_SU : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x.1.rep)) ⬝ᵥ
+            (c • ((g_SU : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x.1.rep)) = 0 := by
+          rw [hc]; exact (g • x).2
+        rw [← uRootSubgroup_smul hcne hiso2 hcviso]
+        exact uRootSubgroup_congr hc.symm (g • x).2 hcviso
+      rw [show (MulAut.conj g) • Tline p n x = (Tline p n x).map (MulAut.conj g) from
+            Subgroup.toSubmonoid_inj.mp rfl]
+      show Tline p n (g • x) = (Tline p n x).map (MulAut.conj g)
+      unfold Tline
+      rw [hpar, ← uRootSubgroup_conj g_SU x.2]
+      simp only [Subgroup.map_map]
+      congr 1
+      refine MonoidHom.ext fun z => ?_
+      change (QuotientGroup.mk' (Subgroup.center _))
+          ((g_SU : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) * z * g_SU⁻¹)
+        = MulAut.conj g ((QuotientGroup.mk' (Subgroup.center _)) z)
+      rw [MulAut.conj_apply, map_mul, map_mul, map_inv, ← hg]
+      rfl
+    is_generator := Tline_iSup p n hgen }
+
+/-- **`PSU = SU/Z` is perfect** (`n ≥ 3`, `p ≥ 5`), modulo the unitary Witt generation hypothesis
+`hgen`. Descends `commutator_SU_eq_top_of_generate` along the surjection `SU ↠ SU/Z`, exactly as
+`SpN.commutator_PSp_eq_top`. -/
+theorem commutator_PSU_eq_top_of_generate (hn : 3 ≤ n) (hp : 5 ≤ p)
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
+        (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤) :
+    commutator (PSUConcrete n p) = ⊤ := by
+  set G := Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) with hG
+  let f := QuotientGroup.mk' (Subgroup.center G)
+  have hf : Function.Surjective f := QuotientGroup.mk'_surjective _
+  have hmap : commutator (PSUConcrete n p) = Subgroup.map f (commutator G) := by
+    show ⁅(⊤ : Subgroup (PSUConcrete n p)), ⊤⁆ = Subgroup.map f ⁅(⊤ : Subgroup G), ⊤⁆
+    rw [Subgroup.map_commutator, Subgroup.map_top_of_surjective f hf]
+  rw [hmap, commutator_SU_eq_top_of_generate p hn hp hgen, Subgroup.map_top_of_surjective f hf]
+
+/-- **`PSU_n(F_{p²}) = SU/Z` is simple** (`n ≥ 3`, `p ≥ 5`) — the Iwasawa criterion
+(`IwasawaStructure.isSimpleGroup`) assembled from all five machine-checked obligations
+(`Nontrivial` = `PSU_nontrivial`; `FaithfulSMul` = `psuFaithful`; perfectness =
+`commutator_PSU_eq_top_of_generate`; the `IwasawaStructure` `psuIwasawaStructure`), **modulo two
+outstanding inputs taken as hypotheses**: the unitary Witt generation `hgen` (transvections
+generate `SU` — Step 3a, at Aristotle) and quasi-preprimitivity `hqpp` of the isotropic-point
+action (the deep geometric core — Step 2c). The unitary analogue of
+`SpN.PSpn_isSimpleGroup_of_perfect`; this is the axiom-clean reduction of `PSU_isSimpleGroup`. -/
+theorem PSU_isSimpleGroup_of_generate_of_qpp (hn : 3 ≤ n) (hp : 5 ≤ p)
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
+        (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤)
+    (hqpp : letI := psuAction p n;
+      MulAction.IsQuasiPreprimitive (PSUConcrete n p) (IsoPoint p n)) :
+    IsSimpleGroup (PSUConcrete n p) := by
+  letI := psuAction p n
+  haveI : Nontrivial (PSUConcrete n p) := PSU_nontrivial p hn
+  haveI : FaithfulSMul (PSUConcrete n p) (IsoPoint p n) := psuFaithful p n hn
+  haveI : MulAction.IsQuasiPreprimitive (PSUConcrete n p) (IsoPoint p n) := hqpp
+  exact (psuIwasawaStructure p n hgen).isSimpleGroup
+    (commutator_PSU_eq_top_of_generate p n hn hp hgen) (psuFaithful p n hn)
+
+end Iwasawa
+
 end FiniteSimpleGroups.PSU

@@ -672,5 +672,130 @@ noncomputable instance pslQuasiPreprimitive (q : ℕ) [Fact (Nat.Prime q)] :
     MulAction.isPreprimitive_of_is_two_pretransitive (psl_two_pretrans q)
   inferInstance
 
+/-! ### Transvection subgroups — groundwork for the Iwasawa structure
+
+The last Iwasawa obligation is an `IwasawaStructure (PSL 2 q) ℙ¹`: a
+conjugation-equivariant family `T : ℙ¹ → Subgroup (PSL 2 q)` of abelian subgroups
+generating the group. We take `T x` = image in PSL of the **transvection subgroup
+along the line `x`**: `transvecGroup v = { transSL v c : c ∈ F }`, where
+`transSL v c = I + c·(v ⊗ vrot)` (`vrot = (−v₁, v₀)`) is the transvection fixing
+`[v]`. The crux is `trans_mul_comm`: conjugation carries `transSL v c` to
+`transSL (g·v) c` *exactly* (for `det g = 1`, since `gᵀ⁻¹·vrot = (g·v)rot`), which
+makes the family conjugation-equivariant. This section builds that machinery up to
+the abelian PSL-level family `Tline`; the `IwasawaStructure` record assembling it
+(conjugation-equivariance `Tline_conj`, generation) is in progress — see
+`PENDING_WORK §D`. -/
+
+def transMat (v : Fin 2 → F) (c : F) : Matrix (Fin 2) (Fin 2) F :=
+  !![1 - c * v 0 * v 1, c * v 0 * v 0; -(c * v 1 * v 1), 1 + c * v 0 * v 1]
+
+theorem trans_mul_comm (g : Matrix (Fin 2) (Fin 2) F) (hg : g.det = 1)
+    (v : Fin 2 → F) (c : F) :
+    g * transMat v c = transMat (g.mulVec v) c * g := by
+  rw [Matrix.det_fin_two] at hg
+  ext i j
+  fin_cases i <;> fin_cases j <;>
+    simp only [transMat, Matrix.mul_apply, Fin.sum_univ_two, Matrix.mulVec, dotProduct,
+      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+      Matrix.of_apply, Matrix.cons_val', Matrix.empty_val', Matrix.cons_val_fin_one,
+      Fin.zero_eta, Fin.mk_one, Fin.isValue]
+  · linear_combination (c * (g 0 0 * v 0 + g 0 1 * v 1) * v 1) * hg
+  · linear_combination (-(c * (g 0 0 * v 0 + g 0 1 * v 1) * v 0)) * hg
+  · linear_combination (c * (g 1 0 * v 0 + g 1 1 * v 1) * v 1) * hg
+  · linear_combination (-(c * (g 1 0 * v 0 + g 1 1 * v 1) * v 0)) * hg
+
+def transSL (v : Fin 2 → F) (c : F) : SpecialLinearGroup (Fin 2) F :=
+  ⟨transMat v c, by simp only [transMat, Matrix.det_fin_two_of]; ring⟩
+
+@[simp] theorem transSL_val (v : Fin 2 → F) (c : F) : (transSL v c).val = transMat v c := rfl
+
+theorem transMat_mul (v : Fin 2 → F) (c c' : F) :
+    transMat v c * transMat v c' = transMat v (c + c') := by
+  ext i j; fin_cases i <;> fin_cases j <;>
+    simp only [transMat, Matrix.mul_fin_two, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.head_cons, Matrix.of_apply, Matrix.cons_val', Matrix.empty_val',
+      Matrix.cons_val_fin_one, Fin.zero_eta, Fin.mk_one, Fin.isValue] <;> ring
+
+theorem transSL_mul (v : Fin 2 → F) (c c' : F) :
+    transSL v c * transSL v c' = transSL v (c + c') := by
+  apply Subtype.ext; simp only [SpecialLinearGroup.coe_mul, transSL_val]; exact transMat_mul v c c'
+
+theorem transSL_zero (v : Fin 2 → F) : transSL v 0 = 1 := by
+  apply Subtype.ext
+  simp only [transSL_val, transMat, mul_zero, zero_mul, sub_zero, add_zero, neg_zero,
+    SpecialLinearGroup.coe_one]
+  ext i j; fin_cases i <;> fin_cases j <;> simp [Matrix.one_apply]
+
+/-- The additive parameter `c ↦ transSL v c` as a monoid hom from `Multiplicative F`. -/
+def transHom (v : Fin 2 → F) : Multiplicative F →* SpecialLinearGroup (Fin 2) F where
+  toFun c := transSL v c.toAdd
+  map_one' := transSL_zero v
+  map_mul' a b := (transSL_mul v _ _).symm
+
+@[simp] theorem transHom_apply (v : Fin 2 → F) (c : Multiplicative F) :
+    transHom v c = transSL v (Multiplicative.toAdd c) := rfl
+
+/-- **The conjugate of a transvection-along-`v` is a transvection-along-`g·v`** (no
+rescaling) — the SL-level identity powering Iwasawa conjugation-equivariance. -/
+theorem transSL_conj (g : SpecialLinearGroup (Fin 2) F) (v : Fin 2 → F) (c : F) :
+    g * transSL v c * g⁻¹ = transSL (g.val.mulVec v) c := by
+  rw [mul_inv_eq_iff_eq_mul]
+  apply Subtype.ext
+  show g.val * (transSL v c).val = (transSL (g.val.mulVec v) c).val * g.val
+  simp only [transSL_val]
+  exact trans_mul_comm g.val g.2 v c
+
+/-- The transvection subgroup along a line: `{ transSL v c : c ∈ F }`. -/
+def transvecGroup (v : Fin 2 → F) : Subgroup (SpecialLinearGroup (Fin 2) F) :=
+  (transHom v).range
+
+instance (v : Fin 2 → F) : IsMulCommutative (transvecGroup v) := by
+  unfold transvecGroup; infer_instance
+
+theorem mem_transvecGroup {v : Fin 2 → F} {y : SpecialLinearGroup (Fin 2) F} :
+    y ∈ transvecGroup v ↔ ∃ c : F, transSL v c = y := by
+  constructor
+  · rintro ⟨c, rfl⟩; exact ⟨c.toAdd, rfl⟩
+  · rintro ⟨c, rfl⟩; exact ⟨Multiplicative.ofAdd c, rfl⟩
+
+/-- Conjugating `transvecGroup v` by `g` gives `transvecGroup (g·v)`. -/
+theorem transvecGroup_conj (g : SpecialLinearGroup (Fin 2) F) (v : Fin 2 → F) :
+    (transvecGroup v).map (MulAut.conj g) = transvecGroup (g.val.mulVec v) := by
+  ext y
+  simp only [Subgroup.mem_map, mem_transvecGroup]
+  constructor
+  · rintro ⟨x, ⟨c, rfl⟩, rfl⟩
+    exact ⟨c, (transSL_conj g v c).symm⟩
+  · rintro ⟨c, rfl⟩
+    exact ⟨transSL v c, ⟨c, rfl⟩, transSL_conj g v c⟩
+
+/-- Scaling the line representative by a nonzero `a` doesn't change the transvection
+subgroup. -/
+theorem transMat_smul (a : F) (v : Fin 2 → F) (c : F) :
+    transMat (a • v) c = transMat v (a ^ 2 * c) := by
+  simp only [transMat, Pi.smul_apply, smul_eq_mul]; ring_nf
+
+theorem transvecGroup_smul (a : F) (ha : a ≠ 0) (v : Fin 2 → F) :
+    transvecGroup (a • v) = transvecGroup v := by
+  apply le_antisymm <;> rw [SetLike.le_def] <;> intro y hy <;>
+    rw [mem_transvecGroup] at hy ⊢ <;> obtain ⟨c, rfl⟩ := hy
+  · exact ⟨a ^ 2 * c, by apply Subtype.ext; rw [transSL_val, transSL_val, transMat_smul]⟩
+  · refine ⟨(a ^ 2)⁻¹ * c, ?_⟩
+    apply Subtype.ext
+    rw [transSL_val, transSL_val, transMat_smul, ← mul_assoc, mul_inv_cancel₀ (pow_ne_zero 2 ha),
+      one_mul]
+
+/-! ### PSL-level transvection subgroups and the Iwasawa structure -/
+
+/-- `Tline x` = image in `PSL(2,q)` of the transvection subgroup along the line `x`
+(using the chosen representative `x.rep`). -/
+noncomputable def Tline (q : ℕ) [Fact (Nat.Prime q)] (x : P1 q) : Subgroup (PSL 2 q) :=
+  (transvecGroup x.rep).map (QuotientGroup.mk' (Subgroup.center _))
+
+instance (q : ℕ) [Fact (Nat.Prime q)] (x : P1 q) : IsMulCommutative (Tline q x) := by
+  unfold Tline; infer_instance
+
+
+
 end SL2
 end FiniteSimpleGroups

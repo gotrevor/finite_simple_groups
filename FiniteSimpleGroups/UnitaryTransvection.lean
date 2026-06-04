@@ -248,4 +248,56 @@ theorem uTransvecSU_conj (g : Matrix.specialUnitaryGroup n α) (v : n → α) (a
   simp only [Submonoid.coe_mul, uTransvecSU_coe, hcoeInv]
   exact uTransvection_conjH (Matrix.specialUnitaryGroup_le_unitaryGroup g.2) v a
 
+/-! ### Nontriviality of the root subgroup (over a field)
+
+The Iwasawa structure requires the root subgroups to be *nontrivial*. Over a field, a transvection
+`τ_{v,a}` is the identity only in the degenerate cases `v = 0` or `a = 0` (the rank-one term
+`a·(v ⊗ star v)` vanishes iff `a = 0` or `v = 0`), so a nonzero trace-zero `a` at a nonzero `v`
+gives `uRootSubgroup v ≠ ⊥`. Over `F_{q²}` such an `a` exists (`UnitaryField.exists_traceZero_ne_zero`)
+and isotropic `v ≠ 0` exist for `n ≥ 2` (`UnitaryField.exists_isotropic`). -/
+
+section Field
+variable {F : Type*} [Field F] [StarRing F] {ι : Type*} [DecidableEq ι] [Fintype ι]
+
+omit [Fintype ι] in
+/-- **A nontrivial transvection is not the identity** (over a field): for `v ≠ 0` and `a ≠ 0`,
+`τ_{v,a} ≠ 1`, since `a·(v ⊗ star v) = 0` forces `a = 0` or `v = 0`. -/
+theorem uTransvection_ne_one {v : ι → F} (hv : v ≠ 0) {a : F} (ha : a ≠ 0) :
+    uTransvection v a ≠ 1 := by
+  rw [uTransvection]
+  intro h
+  rw [add_eq_left, smul_eq_zero] at h
+  rcases h with h | h
+  · exact ha h
+  · rw [vecMulVec_eq_zero] at h
+    exact h.elim hv (fun h' => hv (star_eq_zero.mp h'))
+
+/-- The packaged `SU`-element `τ_{v,a}` is `≠ 1` for `v ≠ 0`, `a ≠ 0` (isotropic, trace-zero). -/
+theorem uTransvecSU_ne_one {v : ι → F} (hv : v ≠ 0) {a : F} (ha : a ≠ 0)
+    (hiso : star v ⬝ᵥ v = 0) (htr : a + star a = 0) : uTransvecSU v a hiso htr ≠ 1 := fun h =>
+  uTransvection_ne_one hv ha (by rw [← uTransvecSU_coe v a hiso htr, h]; rfl)
+
+/-- **The root subgroup is nontrivial** at a nonzero isotropic `v`, given a nonzero trace-zero
+scalar. This is the nondegeneracy input to the unitary Iwasawa structure on `PSU`. -/
+theorem uRootSubgroup_ne_bot {v : ι → F} (hv : v ≠ 0) (hiso : star v ⬝ᵥ v = 0)
+    (ha : ∃ a : F, a ≠ 0 ∧ a + star a = 0) : uRootSubgroup v hiso ≠ ⊥ := by
+  obtain ⟨a, ha0, hatr⟩ := ha
+  rw [Subgroup.ne_bot_iff_exists_ne_one]
+  refine ⟨⟨uTransvecSU v a hiso hatr, ⟨Multiplicative.ofAdd ⟨a, hatr⟩, rfl⟩⟩, ?_⟩
+  intro hh
+  exact uTransvecSU_ne_one hv ha0 hiso hatr (by simpa using Subtype.ext_iff.mp hh)
+
+end Field
+
+/-- **Capstone (the Iwasawa data is live over `F_{p²}` for `n ≥ 2`)**: there is a nonzero isotropic
+vector `v` whose root subgroup `uRootSubgroup v` is nontrivial. So the `PSU`-action set (isotropic
+points) is nonempty AND each root subgroup is nondegenerate — the two existence inputs the unitary
+Iwasawa structure needs, both now machine-checked. (Combines `UnitaryField.exists_isotropic` and
+`UnitaryField.exists_traceZero_ne_zero` via `uRootSubgroup_ne_bot`.) -/
+theorem exists_isotropic_uRootSubgroup_ne_bot (p : ℕ) [Fact p.Prime] (n : ℕ) (hn : 2 ≤ n) :
+    ∃ (v : Fin n → UnitaryField p) (hiso : star v ⬝ᵥ v = 0),
+      v ≠ 0 ∧ uRootSubgroup v hiso ≠ ⊥ := by
+  obtain ⟨v, hv, hiso⟩ := UnitaryField.exists_isotropic p n hn
+  exact ⟨v, hiso, hv, uRootSubgroup_ne_bot hv hiso (UnitaryField.exists_traceZero_ne_zero p)⟩
+
 end FiniteSimpleGroups.PSU

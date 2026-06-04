@@ -106,6 +106,37 @@ theorem uTransvection_apply_self (v : n → α) (a : α) (hv : star v ⬝ᵥ v =
     uTransvection v a *ᵥ v = v := by
   rw [uTransvection_mulVec, hv, mul_zero, zero_smul, add_zero]
 
+/-- **The unitary group preserves the Hermitian form**: for `g ∈ unitaryGroup` and all `x, y`,
+`⟨g·x, g·y⟩ = ⟨x,y⟩`, i.e. `star (g *ᵥ x) ⬝ᵥ (g *ᵥ y) = star x ⬝ᵥ y`. The defining isometry
+property (`gᴴ g = 1`), via the adjoint identity `star (g·x) = star x ᵥ* gᴴ`. Keeps isotropic
+vectors isotropic under the action — the geometric input to the `PSU`-action on isotropic points. -/
+theorem u_preserves_form {g : Matrix n n α} (hg : g ∈ Matrix.unitaryGroup n α) (x y : n → α) :
+    star (g *ᵥ x) ⬝ᵥ (g *ᵥ y) = star x ⬝ᵥ y := by
+  have hgg : gᴴ * g = 1 := by
+    have h := Matrix.mem_unitaryGroup_iff'.mp hg
+    rwa [Matrix.star_eq_conjTranspose] at h
+  rw [star_mulVec, ← dotProduct_mulVec, mulVec_mulVec, hgg, one_mulVec]
+
+/-- **The unitary action preserves isotropy**: if `v` is isotropic and `g ∈ unitaryGroup`, then
+`g·v` is isotropic. So `g` carries the centre of `τ_{v,a}` to a valid centre `g·v`. -/
+theorem u_isotropic_of_mem {g : Matrix n n α} (hg : g ∈ Matrix.unitaryGroup n α)
+    {v : n → α} (hv : star v ⬝ᵥ v = 0) : star (g *ᵥ v) ⬝ᵥ (g *ᵥ v) = 0 := by
+  rw [u_preserves_form hg, hv]
+
+/-- **Conjugation equivariance of unitary transvections.** For `g ∈ unitaryGroup` and all `v, a`,
+`g · τ_{v,a} · g⁻¹ = τ_{g·v, a}`. This is the conjugation input to the `PSU` Iwasawa structure
+(the unitary analogue of `spTransvection_conj`). The rank-one factor `v ⊗ star v` conjugates to
+`(g·v) ⊗ ((star v) ᵥ* gᴴ)`, and `(star v) ᵥ* gᴴ = star (g·v)` is the adjoint identity. -/
+theorem uTransvection_conj {g : Matrix n n α} (hg : g ∈ Matrix.unitaryGroup n α)
+    (v : n → α) (a : α) :
+    g * uTransvection v a * g⁻¹ = uTransvection (g *ᵥ v) a := by
+  have hggH : g * gᴴ = 1 := by
+    have h := Matrix.mem_unitaryGroup_iff.mp hg
+    rwa [Matrix.star_eq_conjTranspose] at h
+  have hinv : g⁻¹ = gᴴ := Matrix.inv_eq_right_inv hggH
+  rw [hinv, uTransvection, uTransvection, mul_add, mul_one, mul_smul_comm, add_mul, hggH,
+    smul_mul_assoc, mul_vecMulVec, vecMulVec_mul, vecMul_conjTranspose, star_star]
+
 /-- The unitary transvection packaged as an element of `specialUnitaryGroup n α` (for isotropic
 `v` and trace-zero `a`). -/
 noncomputable def uTransvecSU (v : n → α) (a : α) (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0) :

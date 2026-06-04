@@ -103,4 +103,66 @@ theorem dirTransSL_conj (g : SpecialLinearGroup n F) (v φ : n → F) (h : φ �
   simp only [dirTransSL_val]
   exact dirTransMat_conj g v φ
 
+/-! ### The direction-`v` transvection subgroup and its conjugation equivariance -/
+
+/-- The linear functional `φ ↦ φ ⬝ᵥ v` on row vectors (used to cut out the codirection space). -/
+def dotRightₗ (v : n → F) : (n → F) →ₗ[F] F where
+  toFun φ := φ ⬝ᵥ v
+  map_add' a b := add_dotProduct a b v
+  map_smul' c a := by simp [smul_dotProduct]
+
+/-- The codirection space `{φ : φ(v)=0}` (the (n-1)-dim space of functionals killing `v`). -/
+def dirKer (v : n → F) : Submodule F (n → F) := LinearMap.ker (dotRightₗ v)
+
+theorem mem_dirKer {v φ : n → F} : φ ∈ dirKer v ↔ φ ⬝ᵥ v = 0 := LinearMap.mem_ker
+
+/-- The parametrizing hom `Multiplicative {φ : φ(v)=0} → SL(n,F)`, `φ ↦ 1 + v⊗φ`; an
+additive-to-multiplicative embedding of the abelian codirection space. -/
+def dirTransHom (v : n → F) : Multiplicative (dirKer v) →* SpecialLinearGroup n F where
+  toFun φ := dirTransSL v (Multiplicative.toAdd φ : dirKer v).val
+              (mem_dirKer.mp (Multiplicative.toAdd φ).property)
+  map_one' := by
+    show dirTransSL v (0 : dirKer v).val _ = 1
+    exact dirTransSL_zero v
+  map_mul' a b := by
+    apply Subtype.ext
+    show dirTransMat v ((Multiplicative.toAdd a + Multiplicative.toAdd b : dirKer v) : n → F)
+        = dirTransMat v (Multiplicative.toAdd a : dirKer v).val
+          * dirTransMat v (Multiplicative.toAdd b : dirKer v).val
+    rw [Submodule.coe_add, ← dirTransMat_mul (mem_dirKer.mp (Multiplicative.toAdd a).property)]
+
+/-- **The direction-`v` transvection subgroup** of `SL(n,F)** — the unipotent radical of the
+stabilizer of the line `[v]`, an abelian subgroup `{1 + v⊗φ : φ(v)=0} ≅ {φ : φ(v)=0}`. -/
+def dirTransvecGroup (v : n → F) : Subgroup (SpecialLinearGroup n F) := (dirTransHom v).range
+
+instance (v : n → F) : IsMulCommutative (dirTransvecGroup v) := by
+  unfold dirTransvecGroup; infer_instance
+
+theorem mem_dirTransvecGroup {v : n → F} {y : SpecialLinearGroup n F} :
+    y ∈ dirTransvecGroup v ↔ ∃ φ : n → F, ∃ h : φ ⬝ᵥ v = 0, dirTransSL v φ h = y := by
+  constructor
+  · rintro ⟨φ, rfl⟩
+    exact ⟨(Multiplicative.toAdd φ : dirKer v).val,
+      mem_dirKer.mp (Multiplicative.toAdd φ).property, rfl⟩
+  · rintro ⟨φ, h, rfl⟩
+    have hmem : φ ∈ dirKer v := mem_dirKer.mpr h
+    exact ⟨(⟨φ, hmem⟩ : dirKer v), rfl⟩
+
+theorem dirTransvecGroup_conj (g : SpecialLinearGroup n F) (v : n → F) :
+    (dirTransvecGroup v).map (MulAut.conj g) = dirTransvecGroup (g.val *ᵥ v) := by
+  ext y
+  simp only [Subgroup.mem_map, mem_dirTransvecGroup]
+  constructor
+  · rintro ⟨x, ⟨φ, h, rfl⟩, rfl⟩
+    refine ⟨φ ᵥ* g⁻¹.val, dotProduct_constraint_conj g h, ?_⟩
+    exact (dirTransSL_conj g v φ h).symm
+  · rintro ⟨φ, h, rfl⟩
+    have hc : (φ ᵥ* g.val) ⬝ᵥ v = 0 := (dotProduct_mulVec φ g.val v).symm.trans h
+    refine ⟨dirTransSL v (φ ᵥ* g.val) hc, ⟨φ ᵥ* g.val, hc, rfl⟩, ?_⟩
+    show g * dirTransSL v (φ ᵥ* g.val) hc * g⁻¹ = dirTransSL (g.val *ᵥ v) φ h
+    rw [dirTransSL_conj g v (φ ᵥ* g.val) hc]
+    apply Subtype.ext
+    show dirTransMat (g.val *ᵥ v) ((φ ᵥ* g.val) ᵥ* g⁻¹.val) = dirTransMat (g.val *ᵥ v) φ
+    rw [vecMul_vecMul, sl_mul_inv, vecMul_one]
+
 end FiniteSimpleGroups.SLn

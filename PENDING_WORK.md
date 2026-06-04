@@ -299,59 +299,62 @@ SLnIwasawa direction-`v` transvection algebra → subgroup → `Tline` → recor
 **Aristotle:** `card_SL2` (`|SL(2,q)| = q(q²-1)`, job `28df03ca`) — DONE & ported
 (`aceed22`); useful for `|PSL(2,q)|` and the order tables.
 
-## F. ◐ ACTIVE — `PSp_{2n}(q)` simplicity: **Iwasawa REDUCED to 3 disclosed axioms** (2026-06-04)
+## F. ◐ ACTIVE — `PSp_{2n}(q)` simplicity: **Iwasawa REDUCED to 2 disclosed axioms** (2026-06-04 PM)
 
 **`PSp n q`** in `LieType.lean` = `symplecticGroup (Fin n) (ZMod q) ⧸ center` (mathlib's
 `Matrix.symplecticGroup`, form `J = fromBlocks 0 (-1) 1 0` on `(Fin n ⊕ Fin n)`).
-`axiom PSp_isSimpleGroup (n q) (2 ≤ n) (¬(n=2∧q=2))` is the LieType target.
+`axiom PSp_isSimpleGroup (n q) (2 ≤ n) (¬(n=2∧q=2))` is the LieType target (NOT yet wired to
+`PSpn_isSimpleGroup_of_iwasawa`).
 
-**HEADLINE (2026-06-04):** `SpN.PSpn_isSimpleGroup_of_iwasawa [Nonempty l] :
-IsSimpleGroup (symplecticGroup l F ⧸ center)` is PROVEN modulo **exactly three** disclosed
-geometric axioms — the symplectic mirror of the SLn arc. `#print axioms` =
-`[propext, Classical.choice, Quot.sound, sp_transvec_closure_eq_top, commutator_PSp_eq_top,
-pspQuasiPreprimitive]`. Every other Iwasawa obligation is machine-checked & axiom-clean.
+**HEADLINE (2026-06-04 PM lap):** `SpN.PSpn_isSimpleGroup_of_iwasawa [Nonempty l]
+(hlam : ∃ lam:F, lam≠0 ∧ lam²≠1) : IsSimpleGroup (symplecticGroup l F ⧸ center)`.
+`#print axioms` = `[propext, Classical.choice, Quot.sound, pspQuasiPreprimitive,
+sp_stab_hyperbolic_le]` — **down from 3 deep axioms to 2.** This lap:
+- **Perfectness DISCHARGED.** `commutator_PSp_eq_top` is now a THEOREM. The deep "PSp perfect"
+  axiom was replaced by the elementary `sp_scaling_exists`, which was THEN ALSO discharged
+  (see next). Engine: `spTransvecSp_commutator` `[g,τ_{v,a}]=τ_{v,(λ²-1)a}` when `g·v=λv`,
+  so `τ_{v,c}=⁅g,τ_{v,c/(λ²-1)}⁆∈commutator` when `λ²≠1`. The `hlam` (∃λ≠0,λ²≠1, i.e. |F|≥4)
+  hypothesis is the HONEST field-size condition — it now correctly EXCLUDES the non-simple
+  `PSp(4,2)≅S₆` (the old axiom unsoundly claimed it simple/perfect).
+- **Scaling DISCHARGED.** `sp_scaling_exists` (∀v≠0,λ≠0 ∃g∈Sp: g·v=λv) is a machine-checked
+  THEOREM: `spDiag λ = fromBlocks (λ•1) 0 0 (λ⁻¹•1)` is symplectic (`spDiag_mem`) and scales
+  `inl`-vectors by λ; conjugate by a transvection product (transitivity) to scale any v.
+- **Generation NARROWED.** `sp_transvec_closure_eq_top` is now a THEOREM resting only on the new
+  core axiom `sp_stab_hyperbolic_le`. The whole transitivity machinery is machine-checked:
+  `exists_sp_transvecGen_maps` (Sp transitive on nonzero vectors via transvections — both the
+  ω≠0 single-transvection case and the orthogonal-case z-bridge),
+  `exists_sp_transvecFixing_maps_mate` (transvections fixing e transitive on e's hyperbolic
+  mates, no field-size hyp — degenerate case routed through f''=f'+e),
+  `exists_sp_transvecGen_maps_pair` (Sp transitive on hyperbolic pairs via `sp_preserves_form`).
 
-**Files (all axiom-clean except the 3 disclosed axioms):**
-- `SpTransvection.lean` — `spTransvection v c := 1 + c•(v ⊗ J·v)`; `spForm_self` (ω alternating),
-  `spTransvection_mem` (∈ Sp), `_det=1`, `_mul` (1-param group), `_conj`
-  (`g·τ_{v,c}·g⁻¹=τ_{g·v,c}`, the is_conj core), `_mulVec` (geometric action `τ(w)=w+c·ω(w,v)·v`),
-  `_smul_vec` (line reparam `τ_{a·v,c}=τ_{v,c·a²}`); group-level `spTransvecSp`,
-  `spTransvecHom`, `spTransvecGroup v` (abelian root subgroup, `IsMulCommutative`),
-  `spTransvecGroup_conj`.
-- `SpAction.lean` — `mulVec` action of `Sp` on `(l⊕l)→F` + projective action on ℙ²ⁿ⁻¹.
-- `SpSimple.lean` — **faithfulness** (`ker(toPermHom)=center`, both directions):
-  `eq_scalar_of_fixes` (fixes every line ⇒ scalar, the SLn argument), `sp_mem_center_of_smul_eq`
-  (⇒ ker⊆center), `sp_center_fixes_line` (central ⇒ fixes lines, via `_conj`+rank-1, the
-  symplectic content), `pspPermHom`/`pspAction`/`pspFaithful`, `PSp_nontrivial`,
-  `spTransvecGroup_smul`/`_rep` (line-invariance).
-- `SpIwasawa.lean` — `Tline` family, `Tline_iSup` (is_generator), `pspIwasawaStructure` (the
-  record), the 3 axioms, and the `PSpn_isSimpleGroup_of_iwasawa` assembly.
+**THE TWO REMAINING DISCLOSED AXIOMS (attack paths):**
+1. **`sp_stab_hyperbolic_le`** (generation core) — a symplectic `g` fixing a hyperbolic pair
+   `(e,f)` (`ω(e,f)=1`) pointwise lies in `⨆_v spTransvecGroup v`. This is the genuine
+   **dimension induction**: `g` fixes `⟨e,f⟩` pointwise and restricts to `Sp` on `⟨e,f⟩⊥`
+   (dim `2n-2`), where transvections generate by induction and extend back. *Needs an
+   orthogonal-complement / restriction-of-form development not yet in mathlib for this concrete
+   `(l⊕l)→F` model (the recursion changes the index type — awkward; consider `Fin n`→`Fin(n-1)`
+   or an abstract symplectic-space layer).* Submitted to Aristotle 2026-06-04 PM as
+   `8522edf3-fdae-4924-9549-2eb53e1a8f50` (faithful stub `/tmp/aristotle-spstab/SpStab.lean`);
+   likely walls (no mathlib infra) but free grind.
+2. **`pspQuasiPreprimitive`** — `PSp` quasi-preprimitive on ℙ²ⁿ⁻¹. `Sp` is transitive on points
+   (`exists_sp_transvecGen_maps` gives it) but **NOT 2-transitive** (preserves `ω`), so the SLn
+   2-transitivity→primitive route is unavailable. Needs the maximal-parabolic /
+   isotropic-line-stabilizer primitivity argument (point-stab of a projective line = a maximal
+   parabolic ⟹ primitive ⟹ quasi-preprimitive via `IsPreprimitive.isQuasiPreprimitive`).
 
-**THE THREE REMAINING DISCLOSED AXIOMS (attack paths):**
-1. **`sp_transvec_closure_eq_top`** — symplectic transvections generate `Sp(2n,F)`
-   (`⨆_v spTransvecGroup v = ⊤`). The is_generator wall. Analogue of the Aristotle-discharged
-   `transvecSL_closure_eq_top`, but mathlib has NO symplectic Witt/Eichler infra → multi-lap.
-   *Path:* (a) **`Sp` transitive on nonzero vectors** via transvections — given `u,w≠0`: if
-   `ω(u,w)≠0`, `τ_{w-u, 1/ω(u,w)}(u)=w` (one transvection, from `spTransvection_mulVec` +
-   `spForm_self`); if `ω(u,w)=0`, bridge through a `z` with `ω(u,z),ω(z,w)≠0` (exists by
-   non-degeneracy). (b) Then induct on dimension / use that the transvection group acts
-   transitively on hyperbolic pairs ⇒ generates (Eichler). Ref: Grove "Classical Groups",
-   Artin "Geometric Algebra". `spTransvection_mulVec` (DONE) is the foundation for (a).
-2. **`commutator_PSp_eq_top`** — `PSp` perfect. Given generation, reduces to "each
-   transvection is a commutator in `Sp(2n)`, `n≥2`" (analogue of `SLn.transvecSL_mem_commutator`
-   via a symplectic Steinberg relation; type `Cₙ` root system, long+short roots) ⇒ `commutator
-   Sp = ⊤` ⇒ descend to `Sp/Z`. Carries the field-size side-condition (excludes `PSp(4,2)≅S₆`).
-3. **`pspQuasiPreprimitive`** — `PSp` quasi-preprimitive on ℙ²ⁿ⁻¹. `Sp` is transitive (Witt =
-   path (a) above gives transitivity on points) but **NOT 2-transitive** (preserves `ω`), so
-   primitivity needs the maximal-parabolic / isotropic-line-stabilizer argument, NOT the SLn
-   2-transitivity route. Possibly: blocks ↔ isotropic-line-stabilizer maximal.
+**Files** — `SpTransvection.lean` (transvection algebra + `sp_preserves_form`,
+`spTransvecSp_commutator`, `spTransvecSp_inv`, `_apply_self`/`_apply_of_orth`),
+`SpAction.lean`, `SpSimple.lean` (faithfulness), `SpIwasawa.lean` (ALL the transitivity
+lemmas, perfectness chain, `spDiag`+`sp_scaling_exists`, generation reduction, the 2 axioms,
+assembly). All machine-checked except the 2 axioms.
 
-**NEXT LAP:** start the generation axiom via **`sp_transitive_on_vectors`** (path 1a) — it's
-the shared prerequisite for BOTH generation (1) and transitivity-half of primitivity (3), and
-`spTransvection_mulVec` is already in place. Then "each transvection is a commutator" (2).
-**Aristotle:** generation (1) is the analogue of an Aristotle-solved brick but has no mathlib
-infra (corpus: likely walls); submit only when the shared key is idle (a foreign job was
-RUNNING at lap end 2026-06-04 — do NOT preempt).
+**NEXT LAP:** (a) harvest the Aristotle stabilizer-core result if it returned (verify in-kernel
++ `#print axioms`, port onto repo defs); (b) if it walled, start the orthogonal-complement
+layer for `sp_stab_hyperbolic_le`, OR pivot to `pspQuasiPreprimitive` (maximal-parabolic
+primitivity); (c) eventually WIRE `PSpn_isSimpleGroup_of_iwasawa` into LieType's
+`PSp_isSimpleGroup` (specialise `l:=Fin n`, `F:=ZMod q`, supply `hlam` from `q≥4`, handle the
+`n≥2`/`(2,2)` exclusion).
 
 ## C. Soundness-audit TODO (cheap, valuable — flagged 2026-06-03)
 

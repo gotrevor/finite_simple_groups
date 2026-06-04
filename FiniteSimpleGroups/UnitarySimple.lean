@@ -447,6 +447,52 @@ theorem exists_common_nonorth_isotropic (hn : 3 ≤ n) :
       · intro h0; rw [h0, dotProduct_zero] at hzw1; exact one_ne_zero hzw1.symm
       · rw [hzw1]; exact one_ne_zero
 
+/-- **Isotropic separation, given a perpendicular partner — MACHINE-CHECKED.** If `x, y` are
+isotropic with `⟨x,y⟩ = 0` and there is an isotropic `v` with `⟨x,v⟩ = 1` and `⟨y,v⟩ = 0` (a
+hyperbolic partner of `x` lying in `y^⊥`), then there is an isotropic `s` with `⟨x,s⟩ = 0` and
+`⟨y,s⟩ ≠ 0`. Explicit witness: with `w` a hyperbolic partner of `y` (`⟨y,w⟩ = 1`), `α = ⟨x,w⟩` and
+`γ = α·⟨w,v⟩`, the vector `s = w - α·v + γ·y` is isotropic (the choice `γ = α·⟨w,v⟩` makes the
+self-product trace `-(αω + star(αω)) + (γ + star γ)` cancel), with `⟨x,s⟩ = 0` and `⟨y,s⟩ = 1`. This
+discharges ALL of the separation's algebra; the only input it consumes beyond the standard
+hyperbolic-partner lemma is the perpendicular partner `v` — the unitary Witt-extension atom (`∃`
+isotropic partner of `x` inside `y^⊥`). For `n ≥ 4`; vacuous for `n = 3`. -/
+theorem exists_isotropic_perp_nonperp_of_perp_partner (hn : 3 ≤ n)
+    {x y v : Fin n → UnitaryField p}
+    (hyiso : star y ⬝ᵥ y = 0) (hy0 : y ≠ 0)
+    (hperp : star x ⬝ᵥ y = 0)
+    (hviso : star v ⬝ᵥ v = 0) (hxv : star x ⬝ᵥ v = 1) (hyv : star y ⬝ᵥ v = 0) :
+    ∃ s : Fin n → UnitaryField p, s ≠ 0 ∧ star s ⬝ᵥ s = 0 ∧
+      star x ⬝ᵥ s = 0 ∧ star y ⬝ᵥ s ≠ 0 := by
+  obtain ⟨w, hwiso, hyw⟩ := exists_hyperbolic_partner p hn y hy0 hyiso
+  have hwy : star w ⬝ᵥ y = 1 := by rw [dotProduct_star_swap, hyw, star_one]
+  have hvy : star v ⬝ᵥ y = 0 := by rw [dotProduct_star_swap, hyv, star_zero]
+  set α : UnitaryField p := star x ⬝ᵥ w with hα
+  set ω : UnitaryField p := star w ⬝ᵥ v with hω
+  set γ : UnitaryField p := α * ω with hγ
+  set s : Fin n → UnitaryField p := w - α • v + γ • y with hs
+  have hxs : star x ⬝ᵥ s = 0 := by
+    rw [hs]
+    simp only [dotProduct_add, dotProduct_sub, dotProduct_smul, smul_eq_mul, hxv, hperp, ← hα,
+      mul_one, mul_zero, add_zero, sub_self]
+  have hys : star y ⬝ᵥ s = 1 := by
+    rw [hs]
+    simp only [dotProduct_add, dotProduct_sub, dotProduct_smul, smul_eq_mul, hyw, hyv, hyiso,
+      mul_zero, sub_zero, add_zero]
+  refine ⟨s, ?_, ?_, hxs, ?_⟩
+  · intro h0; rw [h0, dotProduct_zero] at hys; exact one_ne_zero hys.symm
+  · have hvw : star v ⬝ᵥ w = star ω := by rw [hω, dotProduct_star_swap]
+    have hstar : star s = star w - star α • star v + star γ • star y := by
+      rw [hs]; funext i
+      simp only [Pi.add_apply, Pi.sub_apply, Pi.smul_apply, Pi.star_apply, smul_eq_mul,
+        star_add, star_sub, star_mul', mul_comm]
+    rw [hstar, hs]
+    simp only [add_dotProduct, sub_dotProduct, smul_dotProduct, dotProduct_add, dotProduct_sub,
+      dotProduct_smul, smul_eq_mul, hwiso, hviso, hyiso, hwy, hvy, hyw, hyv, ← hω,
+      mul_zero, sub_zero, add_zero, mul_one]
+    rw [hvw, show star (α * ω) = star α * star ω from star_mul' α ω]
+    ring
+  · rw [hys]; exact one_ne_zero
+
 /-- **Transvection transitivity, non-orthogonal case** (the unitary Witt transitivity core that
 needs NO form classification): for nonzero isotropic `v, w` with `⟨v,w⟩ = β ≠ 0`, the element
 `g = τ_{v,b}·τ_{w,a} ∈ SU` maps `v` to the nonzero multiple `(a·star β)·w` of `w`. The trick: a
@@ -1320,6 +1366,47 @@ theorem PSU_isSimpleGroup_of_generate_of_eichler (hn : 3 ≤ n) (hp : 5 ≤ p)
     IsSimpleGroup (PSUConcrete n p) :=
   PSU_isSimpleGroup_of_generate p n hn hp hgen
     (fun {_B} hB => psu_isTrivialBlock_of_isBlock p n hn hT1 hT2 hSep hB)
+
+/-- **The isotropic-separation hypothesis `hSep` reduces to the perpendicular-partner atom.** Given
+that distinct perpendicular isotropic points `x ≠ y` admit an isotropic `v` with `⟨x,v⟩ = 1` and
+`⟨y,v⟩ = 0` (`hPP` — a hyperbolic partner of `x` inside `y^⊥`, the unitary Witt-extension atom), the
+full separation `hSep` follows by the machine-checked `exists_isotropic_perp_nonperp_of_perp_partner`.
+This isolates the entire remaining separation content into the single clean existence `hPP`. -/
+theorem hSep_of_perp_partner (hn : 3 ≤ n)
+    (hPP : letI := psuAction p n; ∀ {x y : IsoPoint p n}, x ≠ y →
+      star x.1.rep ⬝ᵥ y.1.rep = 0 → ∃ v : Fin n → UnitaryField p, star v ⬝ᵥ v = 0 ∧
+        star x.1.rep ⬝ᵥ v = 1 ∧ star y.1.rep ⬝ᵥ v = 0) :
+    ∀ {x y : IsoPoint p n}, x ≠ y → star x.1.rep ⬝ᵥ y.1.rep = 0 →
+      ∃ s : Fin n → UnitaryField p, s ≠ 0 ∧ star s ⬝ᵥ s = 0 ∧
+        star x.1.rep ⬝ᵥ s = 0 ∧ star y.1.rep ⬝ᵥ s ≠ 0 := by
+  letI := psuAction p n
+  intro x y hxy hperp
+  obtain ⟨v, hviso, hxv, hyv⟩ := hPP hxy hperp
+  exact exists_isotropic_perp_nonperp_of_perp_partner p hn y.2
+    (Projectivization.rep_nonzero y.1) hperp hviso hxv hyv
+
+/-- **`PSU_n(F_{p²})` is simple** (`n ≥ 3`, `p ≥ 5`), general `n`, reduced to the **minimal** set of
+geometric atoms: the Witt generation `hgen`, the non-perp transitivity `hT1`, the perp transitivity
+`hT2`, and the perpendicular-partner existence `hPP` (from which the full separation is recovered by
+`hSep_of_perp_partner`). Every remaining hypothesis is now a single clean Eichler/Witt-extension
+statement — no compound separation algebra remains. For `n = 3` use
+`psu3_isSimpleGroup_of_generate_of_T1` (only `hgen` + `hT1`; perp atoms vacuous). -/
+theorem PSU_isSimpleGroup_of_generate_of_eichler' (hn : 3 ≤ n) (hp : 5 ≤ p)
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
+        (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤)
+    (hT1 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep ≠ 0 → star x.1.rep ⬝ᵥ y'.1.rep ≠ 0 →
+        ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+    (hT2 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep = 0 → star x.1.rep ⬝ᵥ y'.1.rep = 0 →
+        y ≠ x → y' ≠ x → ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+    (hPP : letI := psuAction p n; ∀ {x y : IsoPoint p n}, x ≠ y →
+      star x.1.rep ⬝ᵥ y.1.rep = 0 → ∃ v : Fin n → UnitaryField p, star v ⬝ᵥ v = 0 ∧
+        star x.1.rep ⬝ᵥ v = 1 ∧ star y.1.rep ⬝ᵥ v = 0) :
+    IsSimpleGroup (PSUConcrete n p) :=
+  PSU_isSimpleGroup_of_generate_of_eichler p n hn hp hgen hT1 hT2
+    (fun hxy hperp => hSep_of_perp_partner p n hn hPP hxy hperp)
 
 end Iwasawa
 

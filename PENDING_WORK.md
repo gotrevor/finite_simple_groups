@@ -329,20 +329,26 @@ sp_stab_hyperbolic_le]` — **down from 3 deep axioms to 2.** This lap:
 
 **THE TWO REMAINING DISCLOSED AXIOMS (attack paths):**
 1. **`sp_stab_hyperbolic_le`** (generation core) — a symplectic `g` fixing a hyperbolic pair
-   `(e,f)` (`ω(e,f)=1`) pointwise lies in `⨆_v spTransvecGroup v`. This is the genuine
-   **dimension induction**: `g` fixes `⟨e,f⟩` pointwise and restricts to `Sp` on `⟨e,f⟩⊥`
-   (dim `2n-2`), where transvections generate by induction and extend back. **Building blocks
-   DONE** (machine-checked, in `SpIwasawa.lean`): `sp_fixing_preserves_perp` (`g` maps `⟨e,f⟩⊥`
-   into itself) and `spTransvection_fixes_pair` (complement transvections fix the pair — the
-   "extend back" direction). **THE GAP**: identify `⟨e,f⟩⊥` as a symplectic space of dim `2n-2`
-   and recurse — the concrete `(l⊕l)→F` model does NOT recurse naturally (the complement isn't
-   of the form `(l'⊕l')→F`). *Paths:* (i) an **abstract symplectic-space layer** (vector space +
-   nondegenerate alternating form) with the generation theorem proved once, then specialise;
-   (ii) a **coordinate Gaussian-elimination** directly: use complement transvections to zero out
-   `g`'s action one basis vector at a time (no explicit recursion). Submitted to Aristotle
-   2026-06-04 PM as `8522edf3-fdae-4924-9549-2eb53e1a8f50` (stub `/tmp/aristotle-spstab/SpStab.lean`,
-   still IN_PROGRESS at lap end — POLL `aristotle tasks <uuid>` next lap, harvest if COMPLETED);
-   likely walls (no mathlib infra) but free grind.
+   `(e,f)` (`ω(e,f)=1`) pointwise lies in `⨆_v spTransvecGroup v`. The **dimension induction**:
+   `g` restricts to `Sp` on `⟨e,f⟩⊥`, where transvections generate. **COMPLEMENT INFRASTRUCTURE
+   NOW COMPLETE & machine-checked** (all in `SpIwasawa.lean`, the path-(ii) coordinate route — NO
+   abstract recursion needed):
+   - `perpComp e f x = x + ω(f,x)·e − ω(e,x)·f`, `perpComp_mem_perp`, `perpComp_add_span` — the
+     explicit `V = ⟨e,f⟩ ⊕ ⟨e,f⟩⊥` decomposition on coordinates.
+   - `spForm_nondegenerate` (global) + `perp_form_ne_of_mem_perp` (relative non-degeneracy on
+     `⟨e,f⟩⊥`).
+   - `exists_perp_form_both_ne` + `exists_perp_transvecGen_maps` — **transitivity within `⟨e,f⟩⊥`
+     by pair-fixing transvections** (the inductive engine: maps any `u→w` in `⟨e,f⟩⊥` by transvecs
+     that fix `(e,f)`).
+   - `sp_fixing_preserves_perp` (`g` preserves `⟨e,f⟩⊥`), `spTransvection_fixes_pair` (extend back).
+   **THE ONLY REMAINING GAP**: the induction *bookkeeping/termination* — iterate
+   `exists_perp_transvecGen_maps` to reduce `g|_⟨e,f⟩⊥` to the identity, with a well-founded
+   measure (the dimension/rank of the subspace where `g ≠ id`, decreasing by ≥1 each step). Likely
+   shape: strong induction on `Fintype.card l`, OR a measure on `Module.rank` of `ker(g-1)ᶜ`. The
+   geometric content is all done; this is the formalization of "peel off one fixed hyperbolic pair
+   at a time". Aristotle job `8522edf3-fdae-4924-9549-2eb53e1a8f50` (bare-statement stub, no infra)
+   still IN_PROGRESS at lap end — POLL `aristotle tasks <uuid>`; if it walled, RESUBMIT with the
+   complement lemmas above inlined as a richer stub.
 2. **`pspQuasiPreprimitive`** — `PSp` quasi-preprimitive on ℙ²ⁿ⁻¹. `Sp` is transitive on points
    (`exists_sp_transvecGen_maps` gives it) but **NOT 2-transitive** (preserves `ω`), so the SLn
    2-transitivity→primitive route is unavailable. Needs the maximal-parabolic /

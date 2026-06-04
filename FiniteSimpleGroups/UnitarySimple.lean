@@ -339,21 +339,73 @@ theorem exists_hyperbolic_partner (_hn : 3 ≤ n) :
     linear_combination ht
   · rw [dotProduct_add, dotProduct_smul, hzw1, hziso, smul_eq_mul, mul_zero, add_zero]
 
-/-- **GEOMETRY AXIOM — connectivity, the perpendicular case** (the ONE remaining PSU-faithfulness
-axiom, now narrowed to `z₂ ⊥ z₁`). For nonzero isotropic `z₁, z₂` with `⟨z₂,z₁⟩ = 0`, `n ≥ 3`,
-there is a common non-orthogonal isotropic `u`. Take a hyperbolic partner `w₁` of `z₁`
-(`⟨z₁,w₁⟩ = 1`, `w₁` isotropic); if `⟨z₂,w₁⟩ ≠ 0` then `u = w₁` works, so the genuine content is
-`z₂ ⊥ z₁` **and** `z₂ ⊥ w₁`, i.e. `z₂ ∈ H^⊥` for the hyperbolic plane `H = ⟨z₁,w₁⟩`. For `n = 3`
-this is **vacuous** (`H^⊥` is 1-dim nondegenerate, hence anisotropic, so has no isotropic `z₂`);
-for `n ≥ 4`, a hyperbolic partner `w₂` of `z₂` inside `H^⊥` gives `u = w₁ + w₂` (isotropic since
-`w₁ ⊥ w₂`, `⟨z₁,u⟩ = ⟨z₂,u⟩ = 1`). TODO(discharge): needs the orthogonal-complement /
-partner-within-subspace machinery. The non-perpendicular case (`⟨z₂,z₁⟩ ≠ 0`) is machine-checked in
+/-- **Connectivity, the perpendicular case — MACHINE-CHECKED** (formerly the last PSU-faithfulness
+axiom). For nonzero isotropic `z₁, z₂` with `⟨z₂,z₁⟩ = 0`, `n ≥ 3`, there is a common
+non-orthogonal isotropic `u`. Take a hyperbolic partner `w₁` of `z₁` (`⟨z₁,w₁⟩ = 1`, `w₁`
+isotropic). If `⟨z₂,w₁⟩ ≠ 0`, then `u = w₁` works. Otherwise `z₂ ⊥ z₁` **and** `z₂ ⊥ w₁`, i.e.
+`z₂ ∈ H^⊥` for the hyperbolic plane `H = ⟨z₁,w₁⟩`. The key trick that avoids any orthogonal-
+complement machinery: take *any* hyperbolic partner `w₂` of `z₂` (`⟨z₂,w₂⟩ = 1`), project it into
+`H^⊥` as `w₂' = w₂ - α·z₁ - β·w₁` (`α = ⟨w₁,w₂⟩`, `β = ⟨z₁,w₂⟩`), then re-isotropize. The
+projected self-product is `⟨w₂',w₂'⟩ = -(α·star β + β·star α)`, which is **automatically** of the
+form `-(x + star x)` with `x = α·star β`, so `w₂'' = w₂' + (α·star β)·z₂` is isotropic with the
+*explicit* scalar — no trace-surjectivity lemma needed. Then `u = w₁ + w₂'' = w₁ + w₂ - α·z₁ -
+β·w₁ + (α·star β)·z₂` is isotropic (it lives in `H ⊕ H^⊥`), with `⟨z₁,u⟩ = 1` and `⟨z₂,u⟩ = 1`.
+For `n = 3` the perpendicular sub-case is vacuous (`H^⊥` anisotropic), but the proof is uniform in
+`n` and does not rely on that. Discharged 2026-06-04. The non-perpendicular case is in
 `exists_common_nonorth_isotropic` below. -/
-axiom common_nonorth_isotropic_perp (hn : 3 ≤ n) :
+theorem common_nonorth_isotropic_perp (hn : 3 ≤ n) :
     ∀ z₁ z₂ : Fin n → UnitaryField p, z₁ ≠ 0 → z₂ ≠ 0 →
       star z₁ ⬝ᵥ z₁ = 0 → star z₂ ⬝ᵥ z₂ = 0 → star z₂ ⬝ᵥ z₁ = 0 →
       ∃ u : Fin n → UnitaryField p, u ≠ 0 ∧ star u ⬝ᵥ u = 0 ∧
-        star z₁ ⬝ᵥ u ≠ 0 ∧ star z₂ ⬝ᵥ u ≠ 0
+        star z₁ ⬝ᵥ u ≠ 0 ∧ star z₂ ⬝ᵥ u ≠ 0 := by
+  intro z₁ z₂ h1 h2 h1iso h2iso hperp
+  obtain ⟨w₁, hw1iso, hzw1⟩ := exists_hyperbolic_partner p hn z₁ h1 h1iso
+  have hw1z : star w₁ ⬝ᵥ z₁ = 1 := by rw [dotProduct_star_swap, hzw1, star_one]
+  rcases eq_or_ne (star z₂ ⬝ᵥ w₁) 0 with hc1 | hc1
+  · -- genuine perpendicular case: `z₂ ⊥ z₁` and `z₂ ⊥ w₁`
+    obtain ⟨w₂, hw2iso, hzw2⟩ := exists_hyperbolic_partner p hn z₂ h2 h2iso
+    set α : UnitaryField p := star w₁ ⬝ᵥ w₂ with hα
+    set β : UnitaryField p := star z₁ ⬝ᵥ w₂ with hβ
+    set t : UnitaryField p := α * star β with ht
+    -- the off-diagonal inner products of the basis `{w₁, w₂, z₁, z₂}` not already in context
+    have hAw1z2 : star w₁ ⬝ᵥ z₂ = 0 := by rw [dotProduct_star_swap, hc1, star_zero]
+    have hAw2w1 : star w₂ ⬝ᵥ w₁ = star α := by rw [dotProduct_star_swap, ← hα]
+    have hAw2z1 : star w₂ ⬝ᵥ z₁ = star β := by rw [dotProduct_star_swap, ← hβ]
+    have hAw2z2 : star w₂ ⬝ᵥ z₂ = 1 := by rw [dotProduct_star_swap, hzw2, star_one]
+    have hAz1z2 : star z₁ ⬝ᵥ z₂ = 0 := by rw [dotProduct_star_swap, hperp, star_zero]
+    have hstart : star t = β * star α := by rw [ht, star_mul', star_star, mul_comm]
+    set u : Fin n → UnitaryField p := w₁ + w₂ - α • z₁ - β • w₁ + t • z₂ with hu
+    have hstar : star u =
+        star w₁ + star w₂ - star α • star z₁ - star β • star w₁ + star t • star z₂ := by
+      rw [hu]; funext i
+      simp only [Pi.add_apply, Pi.sub_apply, Pi.smul_apply, Pi.star_apply, smul_eq_mul,
+        star_add, star_sub, star_mul', mul_comm]
+    have hz1u : star z₁ ⬝ᵥ u = 1 := by
+      rw [hu]
+      simp only [dotProduct_add, dotProduct_sub, dotProduct_smul, smul_eq_mul, hzw1, h1iso,
+        hAz1z2, ← hβ]
+      ring
+    have hz2u : star z₂ ⬝ᵥ u = 1 := by
+      rw [hu]
+      simp only [dotProduct_add, dotProduct_sub, dotProduct_smul, smul_eq_mul, hc1, hzw2, hperp,
+        h2iso]
+      ring
+    refine ⟨u, ?_, ?_, ?_, ?_⟩
+    · intro h0
+      rw [h0, dotProduct_zero] at hz2u
+      exact one_ne_zero hz2u.symm
+    · rw [hstar, hu]
+      simp only [add_dotProduct, sub_dotProduct, smul_dotProduct, dotProduct_add, dotProduct_sub,
+        dotProduct_smul, smul_eq_mul, hw1iso, hw2iso, hw1z, hzw1, h1iso, h2iso, hzw2,
+        hAw1z2, hAw2w1, hAw2z1, hAw2z2, hAz1z2, hc1, hperp, ← hα, ← hβ]
+      rw [ht, hstart]
+      ring
+    · rw [hz1u]; exact one_ne_zero
+    · rw [hz2u]; exact one_ne_zero
+  · -- `⟨z₂,w₁⟩ ≠ 0`: `u = w₁` is a common non-orthogonal isotropic
+    refine ⟨w₁, ?_, hw1iso, ?_, hc1⟩
+    · intro h0; rw [h0, dotProduct_zero] at hzw1; exact one_ne_zero hzw1.symm
+    · rw [hzw1]; exact one_ne_zero
 
 /-- **Diameter-2 connectivity of the isotropic non-orthogonality graph** (`n ≥ 3`). Any two nonzero
 isotropic `z₁, z₂` have a common non-orthogonal isotropic `u`. The non-perpendicular case

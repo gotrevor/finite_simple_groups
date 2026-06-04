@@ -366,7 +366,7 @@ This lap discharged BOTH former core axioms and wired into LieType:
   - `exists_traceZero_ne_zero : ∃ a≠0, a+star a=0` (Frobenius nontrivial via
     `orderOf_frobeniusAlgHom=finrank=2`) — `uRootSubgroup` NONTRIVIALITY.
 
-- ✅ **Step 2 FAITHFULNESS (kernel = center) — DONE up to ONE geometry axiom** (2026-06-04 PM,
+- ✅ **Step 2 FAITHFULNESS (kernel = center) — FULLY AXIOM-FREE** (2026-06-04 PM/eve,
   `UnitarySimple.lean`). The crux `g∈SU fixing every isotropic line ⟹ scalar` is machine-checked:
   - `su_fixes_isotropic_imp_scalar` (AXIOM-CLEAN): proved from geometry facts as hypotheses, via
     the form-relation engine `lambda_form_relation` + the **hyperbolic-pair collapse**
@@ -377,12 +377,17 @@ This lap discharged BOTH former core axioms and wired into LieType:
     `su_center_le_scalar` / `su_scalar_mem_center` / `su_mem_center_iff_scalar` (center = scalars,
     `n≥3`), `su_fixes_isotropic_imp_central` (ker⊆center half), `PSU_nontrivial` (Iwasawa
     `Nontrivial` obligation), and the SU-action on `n→F` / `ℙ(Fⁿ)`.
-  - Geometry facts: `isotropic_span` and `exists_hyperbolic_partner` **DISCHARGED** this lap
-    (axiom-clean; new `UnitaryFoundation` lemmas: `exists_star_ne_self`, `exists_two_norm_neg_one`,
-    `algebraMap_trace_eq_add_star`, `exists_add_star_eq_neg_norm`). **ONE axiom remains**:
-    `exists_common_nonorth_isotropic` (diameter-2 connectivity; full case-analysis in its
-    docstring — cases 1–2 elementary ~40 lines, case 3 needs `H^⊥` partner-within-subspace,
-    vacuous for `n=3`). `su_center_le_scalar` `#print axioms` = `[…, exists_common_nonorth_isotropic]`.
+  - Geometry facts: ALL THREE **DISCHARGED** (axiom-clean). `isotropic_span` +
+    `exists_hyperbolic_partner` (new `UnitaryFoundation` lemmas `exists_star_ne_self`,
+    `exists_two_norm_neg_one`, `algebraMap_trace_eq_add_star`, `exists_add_star_eq_neg_norm`); and
+    `exists_common_nonorth_isotropic` (diameter-2 connectivity). The last brick — the perpendicular
+    case `common_nonorth_isotropic_perp` — was discharged 2026-06-04 eve **without any H^⊥
+    machinery**: project any partner `w₂` of `z₂` into `H^⊥` (`w₂' = w₂ - α·z₁ - β·w₁`), then
+    re-isotropize with the *explicit* scalar `t = α·star β` (works because the projected
+    self-product `⟨w₂',w₂'⟩ = -(α·star β + β·star α)` is automatically of the form `-(x+star x)`).
+    Then `u = w₁ + w₂'' ` is the common non-orthogonal isotropic. `#print axioms su_center_le_scalar`
+    / `su_mem_center_iff_scalar` = `[propext, Classical.choice, Quot.sound]`. **The entire kernel=center
+    half of step-2 faithfulness is now axiom-free.**
 - **Step 2 REMAINING — the action on isotropic points + primitivity.** Define the SU-action on the
   ISOTROPIC ℙ-points subtype (not full ℙ — PSU isn't transitive on full ℙ); wire
   `su_fixes_isotropic_imp_central` + `su_central_fixes_isotropic_line` into `FaithfulSMul` (mirror

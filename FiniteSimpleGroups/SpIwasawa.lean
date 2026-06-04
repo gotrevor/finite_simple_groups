@@ -409,55 +409,328 @@ theorem sp_eq_one_of_fixes_perp {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Matrix.
   funext v
   rw [hv v, one_mulVec]
 
-/-- **DISCLOSED AXIOM (generation core — stabilizer of a hyperbolic pair).** A symplectic `g`
-fixing a hyperbolic pair `(e,f)` (`ω(e,f)=1`) **pointwise** lies in the transvection subgroup
-`⨆_v spTransvecGroup v`. This is the genuine remaining core of symplectic generation, the
-**dimension induction**: such a `g` fixes the hyperbolic plane `⟨e,f⟩` pointwise and restricts
-to `Sp` on `⟨e,f⟩⊥` (dimension `2n-2`), where transvections generate by induction and extend
-back. The transitivity reduction *to* this statement is machine-checked
-(`sp_transvec_closure_eq_top` below); only the complement/restriction development is missing. -/
-axiom sp_stab_hyperbolic_le {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1)
-    (g : symplecticGroup l F) (hge : (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e)
-    (hgf : (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f) :
-    g ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v)
+omit [Fintype l] in
+/-- The `inl i` standard basis vector as a `Sum.elim`. -/
+theorem single_inl_eq (i : l) :
+    (Pi.single (Sum.inl i) 1 : (l ⊕ l) → F) = Sum.elim (Pi.single i 1) (0 : l → F) := by
+  funext q
+  cases q with
+  | inl a => simp [Pi.single_apply, Sum.inl.injEq]
+  | inr a => simp
 
-/-- **The symplectic transvections generate `Sp(2n,F)`** (`⨆_v spTransvecGroup v = ⊤`),
-**reduced to the stabilizer core** `sp_stab_hyperbolic_le` via transitivity on hyperbolic pairs.
-For any `g`: when `l` is nonempty, pick a hyperbolic pair `(e,f)` (`exists_hyperbolic_pair`);
-`(g·e, g·f)` is again hyperbolic (`sp_preserves_form`), so a transvection product `t` matches `g`
-on it (`exists_sp_transvecGen_maps_pair`); then `t⁻¹g` fixes `(e,f)` pointwise, hence lies in the
-transvection subgroup (the core axiom), and `g = t·(t⁻¹g)` does too. When `l` is empty `Sp` is
-trivial. This replaces the former blanket generation axiom with the narrower stabilizer core. -/
+omit [Fintype l] in
+/-- The `inr i` standard basis vector as a `Sum.elim`. -/
+theorem single_inr_eq (i : l) :
+    (Pi.single (Sum.inr i) 1 : (l ⊕ l) → F) = Sum.elim (0 : l → F) (Pi.single i 1) := by
+  funext q
+  cases q with
+  | inr a => simp [Pi.single_apply, Sum.inr.injEq]
+  | inl a => simp
+
+/-- `J` sends the `inl i` standard basis vector to the `inr i` one. -/
+theorem J_mulVec_single_inl (i : l) :
+    Matrix.J l F *ᵥ Pi.single (Sum.inl i) 1 = Pi.single (Sum.inr i) 1 := by
+  rw [single_inl_eq, single_inr_eq, show Matrix.J l F = Matrix.fromBlocks 0 (-1) 1 0 from rfl,
+    fromBlocks_mulVec]
+  funext q
+  cases q with
+  | inl a => simp [one_mulVec, zero_mulVec, neg_mulVec]
+  | inr a => simp [one_mulVec, Pi.single_apply, Sum.inl.injEq]
+
+/-- `J` sends the `inr i` standard basis vector to `-(inl i)`. -/
+theorem J_mulVec_single_inr (i : l) :
+    Matrix.J l F *ᵥ Pi.single (Sum.inr i) 1 = - Pi.single (Sum.inl i) 1 := by
+  rw [single_inr_eq, single_inl_eq, show Matrix.J l F = Matrix.fromBlocks 0 (-1) 1 0 from rfl,
+    fromBlocks_mulVec]
+  funext q
+  cases q with
+  | inl a => simp [neg_mulVec, one_mulVec, Pi.single_apply, Sum.inr.injEq]
+  | inr a => simp [one_mulVec, zero_mulVec]
+
+/-- `ω(x, single(inl i)) = x(inr i)`. -/
+theorem spForm_single_inl (x : (l ⊕ l) → F) (i : l) :
+    x ⬝ᵥ (Matrix.J l F *ᵥ Pi.single (Sum.inl i) 1) = x (Sum.inr i) := by
+  rw [J_mulVec_single_inl, dotProduct_single, mul_one]
+
+/-- `ω(x, single(inr i)) = -x(inl i)`. -/
+theorem spForm_single_inr (x : (l ⊕ l) → F) (i : l) :
+    x ⬝ᵥ (Matrix.J l F *ᵥ Pi.single (Sum.inr i) 1) = - x (Sum.inl i) := by
+  rw [J_mulVec_single_inr, dotProduct_neg, dotProduct_single, mul_one]
+
+/-- **The `offS` perp**: vectors vanishing on the `S`-coordinates `{inl i, inr i : i ∈ S}`. The
+perp of the standard hyperbolic pairs indexed by `S`. -/
+def offS (S : Finset l) (x : (l ⊕ l) → F) : Prop :=
+  ∀ i ∈ S, x (Sum.inl i) = 0 ∧ x (Sum.inr i) = 0
+
+omit [Fintype l] [DecidableEq l] in
+theorem offS_sub {S : Finset l} {x y : (l ⊕ l) → F} (hx : offS S x) (hy : offS S y) :
+    offS S (x - y) := by
+  intro i hi
+  refine ⟨?_, ?_⟩
+  · rw [Pi.sub_apply, (hx i hi).1, (hy i hi).1, sub_zero]
+  · rw [Pi.sub_apply, (hx i hi).2, (hy i hi).2, sub_zero]
+
+omit [Fintype l] [DecidableEq l] in
+theorem offS_add {S : Finset l} {x y : (l ⊕ l) → F} (hx : offS S x) (hy : offS S y) :
+    offS S (x + y) := by
+  intro i hi
+  refine ⟨?_, ?_⟩
+  · rw [Pi.add_apply, (hx i hi).1, (hy i hi).1, add_zero]
+  · rw [Pi.add_apply, (hx i hi).2, (hy i hi).2, add_zero]
+
+omit [Fintype l] in
+/-- `single(inl j) ∈ offS S` when `j ∉ S`. -/
+theorem offS_single_inl {S : Finset l} {j : l} (hj : j ∉ S) :
+    offS S (Pi.single (Sum.inl j) 1 : (l ⊕ l) → F) := by
+  intro i hi
+  have hij : (Sum.inl i : l ⊕ l) ≠ Sum.inl j := fun h => hj (Sum.inl.inj h ▸ hi)
+  refine ⟨by rw [Pi.single_apply, if_neg hij], by rw [Pi.single_apply, if_neg Sum.inr_ne_inl]⟩
+
+omit [Fintype l] in
+theorem offS_single_inr {S : Finset l} {j : l} (hj : j ∉ S) :
+    offS S (Pi.single (Sum.inr j) 1 : (l ⊕ l) → F) := by
+  intro i hi
+  have hij : (Sum.inr i : l ⊕ l) ≠ Sum.inr j := fun h => hj (Sum.inr.inj h ▸ hi)
+  refine ⟨by rw [Pi.single_apply, if_neg Sum.inl_ne_inr], by rw [Pi.single_apply, if_neg hij]⟩
+
+/-- **Relative non-degeneracy in `offS S`** (direct coordinate algebra): for `x ∈ offS S`
+non-zero there is `z ∈ offS S` with `ω(x,z) ≠ 0`. -/
+theorem offS_form_nondeg {S : Finset l} {x : (l ⊕ l) → F} (hx : offS S x) (hx0 : x ≠ 0) :
+    ∃ z, offS S z ∧ x ⬝ᵥ (Matrix.J l F *ᵥ z) ≠ 0 := by
+  obtain ⟨p, hp⟩ := Function.ne_iff.mp hx0
+  rw [Pi.zero_apply] at hp
+  cases p with
+  | inl j =>
+    have hj : j ∉ S := fun h => hp (hx j h).1
+    exact ⟨Pi.single (Sum.inr j) 1, offS_single_inr hj, by
+      rw [spForm_single_inr]; exact neg_ne_zero.mpr hp⟩
+  | inr j =>
+    have hj : j ∉ S := fun h => hp (hx j h).2
+    exact ⟨Pi.single (Sum.inl j) 1, offS_single_inl hj, by
+      rw [spForm_single_inl]; exact hp⟩
+
+/-- `ω(single(inl i), v) = -v(inr i)` (the "left" form value, via skew + `spForm_single_inl`). -/
+theorem spForm_single_inl_left (v : (l ⊕ l) → F) (i : l) :
+    (Pi.single (Sum.inl i) 1 : (l ⊕ l) → F) ⬝ᵥ (Matrix.J l F *ᵥ v) = - v (Sum.inr i) := by
+  rw [spForm_skew, spForm_single_inl]
+
+/-- `ω(single(inr i), v) = v(inl i)`. -/
+theorem spForm_single_inr_left (v : (l ⊕ l) → F) (i : l) :
+    (Pi.single (Sum.inr i) 1 : (l ⊕ l) → F) ⬝ᵥ (Matrix.J l F *ᵥ v) = v (Sum.inl i) := by
+  rw [spForm_skew, spForm_single_inr, neg_neg]
+
+/-- `offS S` characterised by `ω`-orthogonality to the standard `S`-pairs (sign-free, the form
+useful for `sp_preserves_form`). -/
+theorem offS_iff_form {S : Finset l} {y : (l ⊕ l) → F} : offS S y ↔ ∀ i ∈ S,
+    Pi.single (Sum.inr i) 1 ⬝ᵥ (Matrix.J l F *ᵥ y) = 0 ∧
+      Pi.single (Sum.inl i) 1 ⬝ᵥ (Matrix.J l F *ᵥ y) = 0 := by
+  constructor
+  · intro h i hi
+    exact ⟨by rw [spForm_single_inr_left]; exact (h i hi).1,
+      by rw [spForm_single_inl_left, (h i hi).2, neg_zero]⟩
+  · intro h i hi
+    refine ⟨?_, ?_⟩
+    · rw [← spForm_single_inr_left y i]; exact (h i hi).1
+    · have h2 := (h i hi).2; rw [spForm_single_inl_left, neg_eq_zero] at h2; exact h2
+
+/-- **The pair-fixing predicate**: `g` fixes the standard hyperbolic pairs indexed by `S`. -/
+def FixS (S : Finset l) (g : symplecticGroup l F) : Prop :=
+  ∀ i ∈ S, (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ Pi.single (Sum.inl i) 1 = Pi.single (Sum.inl i) 1
+    ∧ (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ Pi.single (Sum.inr i) 1 = Pi.single (Sum.inr i) 1
+
+theorem FixS_mul {S : Finset l} {g h : symplecticGroup l F} (hg : FixS S g) (hh : FixS S h) :
+    FixS S (g * h) := fun i hi => by
+  rw [Submonoid.coe_mul]
+  exact ⟨by rw [← mulVec_mulVec, (hh i hi).1, (hg i hi).1],
+    by rw [← mulVec_mulVec, (hh i hi).2, (hg i hi).2]⟩
+
+/-- A transvection centred in `offS S` fixes every `S`-pair. -/
+theorem FixS_transvecSp {S : Finset l} {v : (l ⊕ l) → F} (hv : offS S v) (c : F) :
+    FixS S (spTransvecSp v c) := fun i hi => by
+  rw [spTransvecSp_coe]
+  refine ⟨spTransvection_apply_of_orth c ?_, spTransvection_apply_of_orth c ?_⟩
+  · rw [spForm_single_inl_left, (hv i hi).2, neg_zero]
+  · rw [spForm_single_inr_left]; exact (hv i hi).1
+
+/-- **A pair-fixing `g` preserves `offS S`.** Via `sp_preserves_form` (sign-free, `offS_iff_form`). -/
+theorem offS_preserved {S : Finset l} {g : symplecticGroup l F} (hg : FixS S g)
+    {x : (l ⊕ l) → F} (hx : offS S x) : offS S ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ x) := by
+  rw [offS_iff_form] at hx ⊢
+  intro i hi
+  refine ⟨?_, ?_⟩
+  · rw [← (hg i hi).2, sp_preserves_form g.2]; exact (hx i hi).1
+  · rw [← (hg i hi).1, sp_preserves_form g.2]; exact (hx i hi).2
+
+/-- **Relative `exists_form_both_ne` in `offS S`**: for `x, w ∈ offS S` non-zero there is
+`z ∈ offS S` with `ω(x,z) ≠ 0` and `ω(w,z) ≠ 0`. -/
+theorem offS_form_both_ne {S : Finset l} {x w : (l ⊕ l) → F}
+    (hx : offS S x) (hx0 : x ≠ 0) (hw : offS S w) (hw0 : w ≠ 0) :
+    ∃ z, offS S z ∧ x ⬝ᵥ (Matrix.J l F *ᵥ z) ≠ 0 ∧ w ⬝ᵥ (Matrix.J l F *ᵥ z) ≠ 0 := by
+  obtain ⟨z₁, hz1S, hz1⟩ := offS_form_nondeg hx hx0
+  obtain ⟨z₂, hz2S, hz2⟩ := offS_form_nondeg hw hw0
+  by_cases hwz1 : w ⬝ᵥ (Matrix.J l F *ᵥ z₁) = 0
+  · by_cases hxz2 : x ⬝ᵥ (Matrix.J l F *ᵥ z₂) = 0
+    · exact ⟨z₁ + z₂, offS_add hz1S hz2S,
+        by rw [mulVec_add, dotProduct_add, hxz2, add_zero]; exact hz1,
+        by rw [mulVec_add, dotProduct_add, hwz1, zero_add]; exact hz2⟩
+    · exact ⟨z₂, hz2S, hxz2, hz2⟩
+  · exact ⟨z₁, hz1S, hz1, hwz1⟩
+
+/-- **Relative transitivity on vectors in `offS S` by pair-fixing transvections.** For
+`x, w ∈ offS S` non-zero there is `g ∈ ⟨transvecs⟩` with `FixS S g` and `g·x = w`. -/
+theorem offS_transvecGen_maps {S : Finset l} {x w : (l ⊕ l) → F}
+    (hx : offS S x) (hx0 : x ≠ 0) (hw : offS S w) (hw0 : w ≠ 0) :
+    ∃ g : symplecticGroup l F,
+      g ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) ∧ FixS S g ∧
+        (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ x = w := by
+  obtain ⟨z, hzS, hxz, hwz⟩ := offS_form_both_ne hx hx0 hw hw0
+  have hzw : z ⬝ᵥ (Matrix.J l F *ᵥ w) ≠ 0 := by rw [spForm_skew]; exact neg_ne_zero.mpr hwz
+  have hzx : offS S (z - x) := offS_sub hzS hx
+  have hwz' : offS S (w - z) := offS_sub hw hzS
+  set t1 := spTransvecSp (z - x) (x ⬝ᵥ (Matrix.J l F *ᵥ z))⁻¹ with ht1def
+  set t2 := spTransvecSp (w - z) (z ⬝ᵥ (Matrix.J l F *ᵥ w))⁻¹ with ht2def
+  have ht1x : (t1 : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ x = z := by
+    rw [ht1def, spTransvecSp_coe]; exact spTransvection_maps_of_form_ne hxz
+  have ht2z : (t2 : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ z = w := by
+    rw [ht2def, spTransvecSp_coe]; exact spTransvection_maps_of_form_ne hzw
+  refine ⟨t2 * t1, mul_mem
+    (le_iSup spTransvecGroup (w - z) (mem_spTransvecGroup.mpr ⟨_, rfl⟩))
+    (le_iSup spTransvecGroup (z - x) (mem_spTransvecGroup.mpr ⟨_, rfl⟩)),
+    FixS_mul (FixS_transvecSp hwz' _) (FixS_transvecSp hzx _), ?_⟩
+  rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1x, ht2z]
+
+/-- **Base case**: a symplectic `g` fixing every standard basis vector is the identity. -/
+theorem sp_eq_one_of_FixS_univ {g : symplecticGroup l F} (hg : FixS Finset.univ g) : g = 1 := by
+  apply Subtype.ext
+  show (g : Matrix (l ⊕ l) (l ⊕ l) F) = 1
+  ext q p
+  have hp : (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ Pi.single p 1 = Pi.single p 1 := by
+    cases p with
+    | inl i => exact (hg i (Finset.mem_univ i)).1
+    | inr i => exact (hg i (Finset.mem_univ i)).2
+  have hentry : ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ Pi.single p 1) q
+      = (g : Matrix (l ⊕ l) (l ⊕ l) F) q p := by
+    rw [mulVec_single_one]; rfl
+  rw [← hentry, hp, Matrix.one_apply, Pi.single_apply]
+
+/-- Relative one-step transvection fixing `e` and the `S`-pairs (centre in `offS S`). -/
+theorem offS_transvecFixing_step {S : Finset l} {e a b : (l ⊕ l) → F}
+    (hba : offS S (b - a)) (hne : a ⬝ᵥ (Matrix.J l F *ᵥ b) ≠ 0)
+    (horth : e ⬝ᵥ (Matrix.J l F *ᵥ (b - a)) = 0) :
+    ∃ t : symplecticGroup l F, t ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) ∧ FixS S t ∧
+      (t : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e ∧ (t : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ a = b := by
+  refine ⟨spTransvecSp (b - a) (a ⬝ᵥ (Matrix.J l F *ᵥ b))⁻¹,
+    le_iSup spTransvecGroup (b - a) (mem_spTransvecGroup.mpr ⟨_, rfl⟩),
+    FixS_transvecSp hba _, ?_, ?_⟩
+  · rw [spTransvecSp_coe]; exact spTransvection_apply_of_orth _ horth
+  · rw [spTransvecSp_coe]; exact spTransvection_maps_of_form_ne hne
+
+/-- **Relative transitivity on hyperbolic mates of `e` in `offS S`** (fixing `e` and the
+`S`-pairs). No field-size hypothesis (degenerate case routed through `f'' = f' + e`). -/
+theorem offS_transvecFixing_maps_mate {S : Finset l} {e f f' : (l ⊕ l) → F}
+    (heS : offS S e) (hfS : offS S f) (hf'S : offS S f')
+    (hef : e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1) (hef' : e ⬝ᵥ (Matrix.J l F *ᵥ f') = 1) :
+    ∃ g : symplecticGroup l F, g ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) ∧ FixS S g ∧
+      (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e ∧ (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f' := by
+  by_cases hff' : f ⬝ᵥ (Matrix.J l F *ᵥ f') = 0
+  · set f'' := f' + e with hf''
+    have hf''S : offS S f'' := offS_add hf'S heS
+    have hfe : f ⬝ᵥ (Matrix.J l F *ᵥ e) = -1 := by rw [spForm_skew, hef]
+    have h1 : f ⬝ᵥ (Matrix.J l F *ᵥ f'') ≠ 0 := by
+      rw [hf'', mulVec_add, dotProduct_add, hff', hfe, zero_add]; norm_num
+    have h2 : f'' ⬝ᵥ (Matrix.J l F *ᵥ f') ≠ 0 := by
+      rw [hf'', add_dotProduct, spForm_self f', hef', zero_add]; norm_num
+    have h3 : e ⬝ᵥ (Matrix.J l F *ᵥ (f'' - f)) = 0 := by
+      rw [mulVec_sub, dotProduct_sub, hf'', mulVec_add, dotProduct_add, hef', spForm_self e, hef]
+      ring
+    have h4 : e ⬝ᵥ (Matrix.J l F *ᵥ (f' - f'')) = 0 := by
+      rw [mulVec_sub, dotProduct_sub, hf'', mulVec_add, dotProduct_add, hef', spForm_self e]
+      ring
+    obtain ⟨t1, ht1, hf1, ht1e, ht1f⟩ := offS_transvecFixing_step (offS_sub hf''S hfS) h1 h3
+    obtain ⟨t2, ht2, hf2, ht2e, ht2f⟩ := offS_transvecFixing_step (offS_sub hf'S hf''S) h2 h4
+    refine ⟨t2 * t1, mul_mem ht2 ht1, FixS_mul hf2 hf1, ?_, ?_⟩
+    · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1e, ht2e]
+    · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1f, ht2f]
+  · obtain ⟨t, ht, hf1, hte, htf⟩ := offS_transvecFixing_step (offS_sub hf'S hfS) hff'
+      (by rw [mulVec_sub, dotProduct_sub, hef', hef, sub_self])
+    exact ⟨t, ht, hf1, hte, htf⟩
+
+/-- **Relative transitivity on hyperbolic pairs in `offS S`** (fixing the `S`-pairs). -/
+theorem offS_transvecGen_maps_pair {S : Finset l} {e f e' f' : (l ⊕ l) → F}
+    (heS : offS S e) (hfS : offS S f) (he'S : offS S e') (hf'S : offS S f')
+    (hef : e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1) (he'f' : e' ⬝ᵥ (Matrix.J l F *ᵥ f') = 1) :
+    ∃ g : symplecticGroup l F, g ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) ∧ FixS S g ∧
+      (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e' ∧ (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f' := by
+  have he0 : e ≠ 0 := by rintro rfl; rw [zero_dotProduct] at hef; exact zero_ne_one hef
+  have he'0 : e' ≠ 0 := by rintro rfl; rw [zero_dotProduct] at he'f'; exact zero_ne_one he'f'
+  obtain ⟨t1, ht1, hf1, ht1e⟩ := offS_transvecGen_maps heS he0 he'S he'0
+  have ht1fS : offS S ((t1 : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f) := offS_preserved hf1 hfS
+  have hmate : e' ⬝ᵥ (Matrix.J l F *ᵥ ((t1 : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f)) = 1 := by
+    rw [← ht1e, sp_preserves_form t1.2 e f, hef]
+  obtain ⟨t2, ht2, hf2, ht2e, ht2f⟩ :=
+    offS_transvecFixing_maps_mate he'S ht1fS hf'S hmate he'f'
+  refine ⟨t2 * t1, mul_mem ht2 ht1, FixS_mul hf2 hf1, ?_, ?_⟩
+  · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1e, ht2e]
+  · rw [Submonoid.coe_mul, ← mulVec_mulVec]; exact ht2f
+
+/-- **The generation induction.** Any symplectic `g` fixing the standard hyperbolic pairs
+indexed by `S` lies in `⨆_v spTransvecGroup v`. Strong induction on `Sᶜ.card`: when `S ≠ univ`
+peel one more standard pair `i₁ ∉ S` — map the (preserved) hyperbolic pair `(g·e_{i₁},g·f_{i₁})`
+back to `(e_{i₁},f_{i₁})` by a pair-fixing transvection product `t` (so `t·g` fixes `S ∪ {i₁}`),
+recurse, and `g = t⁻¹·(t·g)`. Base `S = univ`: `g` fixes every standard basis vector ⟹ `g = 1`. -/
+theorem genAux_le : ∀ (n : ℕ) (S : Finset l) (g : symplecticGroup l F),
+    Sᶜ.card ≤ n → FixS S g → g ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) := by
+  intro n
+  induction n with
+  | zero =>
+    intro S g hSn hg
+    have hSuniv : S = Finset.univ :=
+      (Finset.compl_eq_empty_iff S).mp (Finset.card_eq_zero.mp (Nat.le_zero.mp hSn))
+    subst hSuniv
+    rw [sp_eq_one_of_FixS_univ hg]; exact one_mem _
+  | succ n ih =>
+    intro S g hSn hg
+    by_cases hScard : Sᶜ.card ≤ n
+    · exact ih S g hScard hg
+    · have hSc : Sᶜ.Nonempty := Finset.card_pos.mp (by omega)
+      obtain ⟨i₁, hi₁c'⟩ := hSc
+      rw [Finset.mem_compl] at hi₁c'
+      have heS : offS S (Pi.single (Sum.inr i₁) 1 : (l ⊕ l) → F) := offS_single_inr hi₁c'
+      have hfS : offS S (Pi.single (Sum.inl i₁) 1 : (l ⊕ l) → F) := offS_single_inl hi₁c'
+      have hef : (Pi.single (Sum.inr i₁) 1 : (l ⊕ l) → F) ⬝ᵥ
+          (Matrix.J l F *ᵥ Pi.single (Sum.inl i₁) 1) = 1 := by
+        rw [spForm_single_inl, Pi.single_eq_same]
+      have he'S := offS_preserved hg heS
+      have hf'S := offS_preserved hg hfS
+      have he'f' : ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ Pi.single (Sum.inr i₁) 1) ⬝ᵥ
+          (Matrix.J l F *ᵥ ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ Pi.single (Sum.inl i₁) 1)) = 1 := by
+        rw [sp_preserves_form g.2]; exact hef
+      obtain ⟨t, htmem, htfix, hte', htf'⟩ :=
+        offS_transvecGen_maps_pair he'S hf'S heS hfS he'f' hef
+      have hfix : FixS (insert i₁ S) (t * g) := by
+        intro i hi
+        rw [Finset.mem_insert] at hi
+        rcases hi with rfl | hiS
+        · rw [Submonoid.coe_mul]
+          exact ⟨by rw [← mulVec_mulVec]; exact htf', by rw [← mulVec_mulVec]; exact hte'⟩
+        · exact (FixS_mul htfix hg) i hiS
+      have hss : (insert i₁ S)ᶜ ⊂ Sᶜ := by
+        rw [Finset.ssubset_iff_of_subset (Finset.compl_subset_compl.mpr (Finset.subset_insert i₁ S))]
+        exact ⟨i₁, Finset.mem_compl.mpr hi₁c', by simp⟩
+      have hcard : (insert i₁ S)ᶜ.card ≤ n := by
+        have := Finset.card_lt_card hss; omega
+      have hmem : (t * g) ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) :=
+        ih (insert i₁ S) (t * g) hcard hfix
+      have hgeq : g = t⁻¹ * (t * g) := by group
+      rw [hgeq]; exact mul_mem (inv_mem htmem) hmem
+
+/-- **The symplectic transvections generate `Sp(2n,F)`** — fully machine-checked, no
+`sp_stab_hyperbolic_le` axiom. Instantiates `genAux_le` at `S = ∅`. -/
 theorem sp_transvec_closure_eq_top :
     (⨆ v : (l ⊕ l) → F, spTransvecGroup v) = (⊤ : Subgroup (symplecticGroup l F)) := by
   rw [eq_top_iff]
   intro g _
-  cases isEmpty_or_nonempty l with
-  | inl hempty =>
-    haveI := hempty
-    have hsub : Subsingleton (symplecticGroup l F) :=
-      ⟨fun a b => Subtype.ext (funext fun i => isEmptyElim i)⟩
-    rw [Subsingleton.elim g 1]
-    exact one_mem _
-  | inr hne =>
-    obtain ⟨e, f, hef⟩ := exists_hyperbolic_pair (l := l) (F := F)
-    have hgef : ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e) ⬝ᵥ
-        (Matrix.J l F *ᵥ ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f)) = 1 := by
-      rw [sp_preserves_form g.2 e f]; exact hef
-    obtain ⟨t, ht, hte, htf⟩ := exists_sp_transvecGen_maps_pair hef hgef
-    have hge : t • e = g • e := by rw [smul_vec_def, smul_vec_def]; exact hte
-    have hgf : t • f = g • f := by rw [smul_vec_def, smul_vec_def]; exact htf
-    have hfix_e : ((t⁻¹ * g : symplecticGroup l F) : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e := by
-      show (t⁻¹ * g : symplecticGroup l F) • e = e
-      rw [SemigroupAction.mul_smul, ← hge, inv_smul_smul]
-    have hfix_f : ((t⁻¹ * g : symplecticGroup l F) : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f := by
-      show (t⁻¹ * g : symplecticGroup l F) • f = f
-      rw [SemigroupAction.mul_smul, ← hgf, inv_smul_smul]
-    have hmem : (t⁻¹ * g) ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) :=
-      sp_stab_hyperbolic_le hef (t⁻¹ * g) hfix_e hfix_f
-    have hsplit : g = t * (t⁻¹ * g) := by group
-    rw [hsplit]
-    exact mul_mem ht hmem
+  exact genAux_le (∅ : Finset l)ᶜ.card ∅ g le_rfl (fun i hi => absurd hi (Finset.notMem_empty i))
 
 /-- **The `PSp(2n,F)`-level transvection subgroup along the line `x`** — the image in `Sp/Z` of
 `spTransvecGroup x.rep`. The Iwasawa family `T`. By `spTransvecGroup_rep`/`_smul` it depends

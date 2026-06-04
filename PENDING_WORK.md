@@ -299,7 +299,22 @@ SLnIwasawa direction-`v` transvection algebra → subgroup → `Tline` → recor
 **Aristotle:** `card_SL2` (`|SL(2,q)| = q(q²-1)`, job `28df03ca`) — DONE & ported
 (`aceed22`); useful for `|PSL(2,q)|` and the order tables.
 
-## F. ◐ ACTIVE — `PSp_{2n}(q)` simplicity: **Iwasawa REDUCED to 2 disclosed axioms** (2026-06-04 PM)
+## F. ◐ ACTIVE — `PSp_{2n}(q)` simplicity: **Iwasawa REDUCED to 1 disclosed axiom** (2026-06-04)
+
+**UPDATE (2026-06-04, this lap): GENERATION CORE `sp_stab_hyperbolic_le` FULLY DISCHARGED.**
+`#print axioms PSpn_isSimpleGroup_of_iwasawa` = `[propext, Classical.choice, Quot.sound,
+psp_isTrivialBlock_of_isBlock]` — **down to ONE core axiom.** `sp_transvec_closure_eq_top`
+(symplectic transvections generate `Sp`) is now `[propext, Classical.choice, Quot.sound]`,
+machine-checked via the **ambient standard-basis induction** (the design recorded below): the
+`offS S` perp toolkit (`offS_form_nondeg`/`offS_form_both_ne`/`offS_transvecGen_maps`/
+`offS_transvecFixing_maps_mate`/`offS_transvecGen_maps_pair`) + `FixS`/`offS_preserved` +
+`sp_eq_one_of_FixS_univ` + the strong induction `genAux_le` on `Sᶜ.card`. All in `SpIwasawa.lean`.
+The old `axiom sp_stab_hyperbolic_le` and the perp-of-one-pair toolkit (`perpComp` etc.) are now
+superseded/dead (kept for the record). **The Aristotle `8522edf3` (spstab) bare-stub job is now
+MOOT** — this local proof beat it. **ONLY REMAINING PSp axiom: `psp_isTrivialBlock_of_isBlock`
+(primitivity core, §F.2 below).** That is now the highest-value PSp target.
+
+## F (historical). `PSp_{2n}(q)` simplicity: Iwasawa REDUCED to 2 disclosed axioms (2026-06-04 PM)
 
 **`PSp n q`** in `LieType.lean` = `symplecticGroup (Fin n) (ZMod q) ⧸ center` (mathlib's
 `Matrix.symplecticGroup`, form `J = fromBlocks 0 (-1) 1 0` on `(Fin n ⊕ Fin n)`).
@@ -326,6 +341,30 @@ sp_stab_hyperbolic_le]` — **down from 3 deep axioms to 2.** This lap:
   `exists_sp_transvecFixing_maps_mate` (transvections fixing e transitive on e's hyperbolic
   mates, no field-size hyp — degenerate case routed through f''=f'+e),
   `exists_sp_transvecGen_maps_pair` (Sp transitive on hyperbolic pairs via `sp_preserves_form`).
+
+**REFINED ATTACK ON CORE 1 (2026-06-04 PM, this lap) — the ambient standard-basis induction.**
+Sidesteps BOTH the abstract-submodule layer AND the subtype/reindex transport. Key insight: use
+the **standard hyperbolic pairs** `e_i := single(inr i)`, `f_i := single(inl i)` (`ω(e_i,f_i)=1`
+under `J = fromBlocks 0 (-1) 1 0`). Then the perp of a coordinate set `S : Finset l` is the clean
+coordinate subspace `offS S := {x : ∀ i∈S, x(inl i)=0 ∧ x(inr i)=0}`, and:
+  - **relative non-degeneracy is DIRECT coordinate algebra** (no iterated `perpComp`): `x∈offS S`,
+    `x≠0` ⟹ some off-`S` coord `p` has `x p≠0`; the matching standard basis vector (`single(inr j)`
+    or `single(inl j)`, `j∉S`) is in `offS S` and `ω`-pairs with `x` (`ω(x,single(inr j))=-x(inl j)`,
+    `ω(x,single(inl j))=x(inr j)`).
+  - **transvection centred in `offS S` fixes every `S`-pair** (`single(inl i)⬝ᵥJv=-v(inr i)=0`,
+    `single(inr i)⬝ᵥJv=v(inl i)=0` for `i∈S`).
+  - **`g` fixing all `S`-pairs preserves `offS S`** via `sp_preserves_form`
+    (`(g·x)(inl i)=ω(single(inr i),g·x)=ω(single(inr i),x)=x(inl i)=0`).
+This makes the WHOLE generation theorem fall out of ONE induction on `Sᶜ.card`, proving
+`genAux S g (∀i∈S, g fixes pair i) : g∈⟨transvecs⟩` and instantiating at `S=∅` ⟹ **eliminates
+`sp_stab_hyperbolic_le` entirely** (`sp_transvec_closure_eq_top := genAux ∅`). Step: pick `i₁∉S`,
+map the hyperbolic pair `(g·e_{i₁},g·f_{i₁})` (in `offS S`) back to `(e_{i₁},f_{i₁})` by `t∈⟨transvecs⟩`
+fixing `S`-pairs (`offS`-relative transitivity on hyperbolic pairs), so `t·g` fixes `S∪{i₁}`, IH.
+Base `S=univ`: `g` fixes all standard basis vecs ⟹ `g=1` (`(g*ᵥsingle p)_q=g q p=δ`). Lemmas to
+build (each a faithful `offS`-mirror of an existing `⟨e,f⟩⊥` lemma): `offS_form_nondeg`,
+`offS_form_both_ne`, `offS_transvecGen_maps` (vectors), `offS_transvecFixing_maps_mate`,
+`offS_transvecGen_maps_pair`, `offS_preserved`, the base, the strong-induction wiring.
+Developing in scratch `/tmp/spgen` (imports SpIwasawa), port + replace axiom when green.
 
 **THE TWO REMAINING DISCLOSED AXIOMS (attack paths):**
 1. **`sp_stab_hyperbolic_le`** (generation core) — a symplectic `g` fixing a hyperbolic pair

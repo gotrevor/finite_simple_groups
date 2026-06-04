@@ -171,9 +171,10 @@ axiom PSU_isSimpleGroup
 -- `PSp_isSimpleGroup` is no longer an axiom here: it is the downstream **theorem**
 -- `FiniteSimpleGroups.PSp_isSimpleGroup` (in `SpLieType.lean`), assembled from the symplectic
 -- Iwasawa criterion `SpN.PSpn_isSimpleGroup_of_iwasawa`. It carries `[Fact (Nat.Prime q)]` (the
--- composite-`q` soundness fix, as for PSL) and rests on the single geometric axiom
--- `SpN.sp_stab_transitive_on_perp_lines` (Δ₀ perp-line Witt transitivity) plus a `q ∈ {2,3}`
--- small-field residual.
+-- composite-`q` soundness fix, as for PSL). As of 2026-06-04 it is **fully axiom-clean**:
+-- `#print axioms PSp_isSimpleGroup = [propext, Classical.choice, Quot.sound]` — the Δ₀ perp-line
+-- Witt transitivity and the `q ∈ {2,3}` small-field perfectness residual are both discharged
+-- (the latter via the type-`Cₙ` Steinberg relations in `SpSmallField.lean`).
 
 axiom POmega_isSimpleGroup
     (n q : ℕ) [Group (POmega n q)]

@@ -299,13 +299,26 @@ SLnIwasawa direction-`v` transvection algebra → subgroup → `Tline` → recor
 **Aristotle:** `card_SL2` (`|SL(2,q)| = q(q²-1)`, job `28df03ca`) — DONE & ported
 (`aceed22`); useful for `|PSL(2,q)|` and the order tables.
 
-## F. ✅✅ — `PSp_{2n}(q)` simplicity: **AXIOM-CLEAN for q≥5; only `q∈{2,3}` perfectness left** (2026-06-04)
+## F. ✅✅✅ — `PSp_{2n}(q)` simplicity: **FULLY AXIOM-CLEAN for ALL valid (n,q)** (2026-06-04)
 
-**HEADLINE (2026-06-04, latest lap):** The entire symplectic Iwasawa criterion is now
-machine-checked with ZERO custom axioms:
+**HEADLINE (2026-06-04, latest lap — DONE):** The ENTIRE symplectic family simplicity is now
+machine-checked from first principles with ZERO custom axioms:
+- `#print axioms PSp_isSimpleGroup` = `[propext, Classical.choice, Quot.sound]`.
 - `#print axioms PSpn_isSimpleGroup_of_iwasawa` = `[propext, Classical.choice, Quot.sound]`.
-- `#print axioms PSp_isSimpleGroup` (the LieType-level **theorem**, in `SpLieType.lean`) =
-  `[propext, Classical.choice, Quot.sound, PSp_perfect_small_field]`.
+
+The last residual `PSp_perfect_small_field` (perfectness for `q∈{2,3}`) is now a **theorem**
+(see F.0). Two complementary type-`Cₙ` Steinberg engines in `SpSmallField.lean`:
+- **n=2 (⟹ q=3, char≠2):** `commutator_PSp_eq_top_char_ne_two` — `τ_{eᵢ,c}=⁅1+s·N₁,1+N₂⁆`,
+  structure constant `2` invertible. Built on `mem_one_add_rootN1/2` (symplectic membership via
+  the `vecMulVec`/`J`-on-basis algebra), `inv_one_add_smul`, `one_add_rootM_eq_spTransvection`.
+- **n≥3 (ANY field, char-free):** `commutator_PSp_eq_top_n3` — the rank-3 relations
+  `rootN1_steinberg`/`rootN2_steinberg` (const ±1) + `rootM_steinberg`
+  (`⁅1+N₁(i,j),1+a·M_j⁆ = (1+a·N₂(i,j))·τ_{eᵢ,·}`, long-root coeff **1**, survives char 2). Generic
+  helpers `group_comm_first_order`/`group_comm_second_order`. This is what makes `Sp(2n,2)` perfect.
+
+`SpLieType.PSp_perfect_small_field` dispatches n<3→char≠2, n≥3→rank-3. `PSp(4,2)≅S₆` excluded.
+
+**THE SYMPLECTIC FAMILY IS CLOSED. Next deep thread: PSU (§G below).**
 
 This lap discharged BOTH former core axioms and wired into LieType:
 1. **Primitivity `psp_isTrivialBlock_of_isBlock` → THEOREM.** Block combinatorics machine-checked:
@@ -325,7 +338,36 @@ This lap discharged BOTH former core axioms and wired into LieType:
    axiom is `PSp_perfect_small_field` : `commutator (PSp n q) = ⊤` for `q∈{2,3}`, `n≥2`,
    `¬(n=2∧q=2)`. `PSp(4,2)≅S₆` correctly excluded — it fails at perfectness, not primitivity.
 
-### F.0 ◐ NEXT — `PSp_perfect_small_field` (perfectness for q∈{2,3}, n≥2)
+### G. ◐ NEXT DEEP THREAD — `PSU_{n}(q)` simplicity (the unitary family)
+**Status:** `PSU n q` is still `opaque` in `LieType.lean` (NOT connected to a concrete group), so
+`axiom PSU_isSimpleGroup (n q)(3≤n)` is vacuous-ish. Discharging it is genuinely multi-lap:
+
+**Step 0 (foundation — the first brick):** connect the type. `PSU n q :=
+specialUnitaryGroup (Fin n) F_{q²} ⧸ center`, where `F_{q²}` carries `star = q-power Frobenius`.
+mathlib HAS: `Matrix.specialUnitaryGroup` (needs `[Field][StarRing]`, group instance + `star=inv`),
+`GaloisField p 2` (`Field` + `Finite`, char p, `frobenius _ p`), `FiniteField.pow_card`,
+`GaloisField.card p 2 : Nat.card = p²`. mathlib LACKS: any `StarRing` on a finite field.
+- **Crux brick:** build `StarRing F` with `star = frobenius` (q=p prime case: `GaloisField p 2`,
+  star x = x^p). Involution `(x^p)^p = x` = `x^(p²)=x` via `FiniteField.pow_card` (NB: GaloisField
+  has `Finite` not `Fintype` — `haveI := Fintype.ofFinite _`, then `Fintype.card = Nat.card = p²`).
+  star_add via `frobenius` being a `RingHom`; star_mul via commutativity. To avoid global-instance
+  diamonds, put the `Star/InvolutiveStar/StarMul/StarRing` instances on a **type synonym**
+  `def UnitaryField p := GaloisField p 2`. General `q=p^m`: `star = iterateFrobenius _ p m`.
+  → ready-to-submit Aristotle brick (account was busy w/ a foreign job at lap end; submit when free).
+**Step 1:** unitary transvections `τ_{v,a}(x)=x+a·⟨x,v⟩·v` + membership (mirror `spTransvection_mem`).
+**Step 2:** action on isotropic ℙ-points, faithful + quasi-preprimitive (mirror SpIwasawa primitivity).
+**Step 3:** `MulAction.IwasawaStructure` (mathlib criterion, same as PSL/PSp) + perfectness.
+The whole PSp scaffold (`SpIwasawa`/`SpTransvection`/`SpSmallField`) is the template to copy.
+
+**Other open classical axiom:** `POmega_isSimpleGroup` (n≥7) — also opaque, orthogonal geometry,
+hardest of the four (ε-type quadratic forms). After PSU.
+**NOT worth manual effort:** `alternatingGroup_isSimple` (general Aₙ) is a **pin-lag artifact** —
+landed in mathlib PR #36524, 11 days past our pin; collapses to a one-liner on `lake update`
+(corpus `mathlib-alternating-simple-pin-lag.md`). `SmallOrders.lean:104` (simple <60 ⟹ prime) is
+genuinely absent from mathlib but optional scaffold, not a blocker.
+
+### F.0 ✅ DONE — `PSp_perfect_small_field` (perfectness for q∈{2,3}) — NOW A THEOREM
+Discharged this lap (see F headline). The historical plan below is kept for reference.
 The genuine remaining core. PSp(2n,q) is perfect except Sp(2,2),Sp(2,3),Sp(4,2) (all excluded by
 `n≥2 ∧ ¬(n=2∧q=2)`). The `λ²≠1` commutator engine (`[g,τ_{v,a}]=τ_{v,(λ²-1)a}`) is useless for
 q∈{2,3} (no such λ). Needs the **symplectic Steinberg/Chevalley root relations** (type `C_n`):

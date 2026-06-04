@@ -837,6 +837,63 @@ theorem exists_su_fixes_maps_isotropic_mate_fixing_perp (x y y' : Fin n → Unit
     rw [Submonoid.coe_mul, uTransvecSU_coe, hEcoe, ← Matrix.mulVec_mulVec, hEz,
       uTransvection_mulVec, hxz, mul_zero, zero_smul, add_zero]
 
+/-- **Weyl/swap element of a hyperbolic plane as a 3-transvection product.** For an isotropic
+hyperbolic pair `(e,f)` (`⟨e,f⟩ = 1`, both isotropic) and a trace-zero `a ≠ 0`, the product
+`τ_{e,a}·τ_{f,-a⁻¹}·τ_{e,a} ∈ SU` sends `e ↦ -a⁻¹·f` and `f ↦ a·e`, fixing `⟨e,f⟩^⊥` pointwise.
+The off-diagonal scalar `-a⁻¹` is **automatically trace-zero** (`star a = -a ⟹ star(-a⁻¹) = a⁻¹`),
+so all three factors are genuine isotropic unitary transvections. This realises the Weyl group of the
+hyperbolic plane inside the transvection group — the seed of the diagonal torus
+`D_λ = w(a')·w(a) : e ↦ -a⁻¹a'·e, f ↦ (-a⁻¹a')⁻¹·f` (`λ = -a⁻¹a' ∈ F_q*`), used to fix scalars in
+the exact pair-transitivity of the generation induction. -/
+theorem exists_su_weyl_swap (e f : Fin n → UnitaryField p)
+    (hee : star e ⬝ᵥ e = 0) (hff : star f ⬝ᵥ f = 0) (hef : star e ⬝ᵥ f = 1)
+    {a : UnitaryField p} (ha0 : a ≠ 0) (ha : a + star a = 0) :
+    ∃ g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p),
+      (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ e = (-a⁻¹) • f ∧
+        (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f = a • e ∧
+        ∀ z : Fin n → UnitaryField p, star e ⬝ᵥ z = 0 → star f ⬝ᵥ z = 0 →
+          (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ z = z := by
+  have hfe : star f ⬝ᵥ e = 1 := by rw [dotProduct_star_swap, hef, star_one]
+  have hsa : star a = -a := by linear_combination ha
+  have ha' : (-a⁻¹) + star (-a⁻¹) = 0 := by
+    rw [star_neg, star_inv₀, hsa, inv_neg, neg_neg]; ring
+  have hab : a * (-a⁻¹) = -1 := by rw [mul_neg, mul_inv_cancel₀ ha0]
+  set b : UnitaryField p := -a⁻¹ with hb
+  -- the three transvection actions, applied right-to-left
+  have hcoe : ((uTransvecSU e a hee ha * uTransvecSU f b hff ha' * uTransvecSU e a hee ha :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) :
+      Matrix (Fin n) (Fin n) (UnitaryField p))
+      = uTransvection e a * uTransvection f b * uTransvection e a := by
+    simp only [Submonoid.coe_mul, uTransvecSU_coe]
+  refine ⟨uTransvecSU e a hee ha * uTransvecSU f b hff ha' * uTransvecSU e a hee ha, ?_, ?_, ?_⟩
+  · -- g·e = b•f
+    have e1 : uTransvection e a *ᵥ e = e := by
+      rw [uTransvection_mulVec, hee, mul_zero, zero_smul, add_zero]
+    have e2 : uTransvection f b *ᵥ e = e + b • f := by
+      rw [uTransvection_mulVec, hfe, mul_one]
+    have e3 : uTransvection e a *ᵥ (e + b • f) = b • f := by
+      rw [uTransvection_mulVec, dotProduct_add, hee, dotProduct_smul, hef, smul_eq_mul, mul_one,
+        zero_add, hab, neg_one_smul]
+      abel
+    rw [hcoe, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, e1, e2, e3]
+  · -- g·f = a•e
+    have e1 : uTransvection e a *ᵥ f = f + a • e := by
+      rw [uTransvection_mulVec, hef, mul_one]
+    have e2 : uTransvection f b *ᵥ (f + a • e) = a • e := by
+      rw [uTransvection_mulVec, dotProduct_add, hff, dotProduct_smul, hfe, smul_eq_mul, mul_one,
+        zero_add, mul_comm b a, hab, neg_one_smul]
+      abel
+    have e3 : uTransvection e a *ᵥ (a • e) = a • e := by
+      simp [uTransvection_mulVec, dotProduct_smul, hee]
+    rw [hcoe, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, e1, e2, e3]
+  · -- g fixes ⟨e,f⟩^⊥
+    intro z hez hfz
+    have e1 : uTransvection e a *ᵥ z = z := by
+      rw [uTransvection_mulVec, hez, mul_zero, zero_smul, add_zero]
+    have e2 : uTransvection f b *ᵥ z = z := by
+      rw [uTransvection_mulVec, hfz, mul_zero, zero_smul, add_zero]
+    rw [hcoe, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, e1, e2, e1]
+
 /-- **Non-orthogonal move fixing the ENTIRE common perp `⟨v,w⟩^⊥`.** For isotropic `v, w` with
 `⟨v,w⟩ ≠ 0`, the SAME element `g = τ_{v,b}·τ_{w,t} ∈ SU` mapping `v ↦ c·w` (`c ≠ 0`) fixes *every*
 `x` orthogonal to both centres (`⟨v,x⟩ = ⟨w,x⟩ = 0`) — because each transvection `τ_{u,·}` fixes

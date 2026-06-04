@@ -273,6 +273,16 @@ theorem su_fixes_isotropic_imp_scalar {g : Matrix n n F} (hg : g ∈ Matrix.unit
     simpa using hcol
   exact ⟨μ, by rw [← sub_eq_zero, ← hM_def, hM0]⟩
 
+/-- **Scalar matrices are central** (the easy converse). If `g ∈ SU` is `μ • 1` then it commutes
+with every element of `SU`. -/
+theorem su_scalar_mem_center {g : Matrix.specialUnitaryGroup n F} {μ : F}
+    (hg : (g : Matrix n n F) = μ • 1) :
+    g ∈ Subgroup.center (Matrix.specialUnitaryGroup n F) := by
+  rw [Subgroup.mem_center_iff]
+  intro h
+  apply Subtype.ext
+  rw [Submonoid.coe_mul, Submonoid.coe_mul, hg, smul_mul_assoc, one_mul, mul_smul_comm, mul_one]
+
 /-! ### The center of `SU_n(F_{p²})` is the scalar matrices (`n ≥ 3`)
 
 Instantiating the geometric crux over the concrete Hermitian field `F_{p²} = UnitaryField p`.
@@ -331,6 +341,29 @@ theorem su_center_le_scalar (hn : 3 ≤ n)
   rcases eq_or_ne z 0 with h0 | h0
   · exact ⟨1, by subst h0; simp⟩
   · exact su_central_fixes_isotropic_line g hg h0 hziso a ha0 ha
+
+/-- **`g ∈ SU` fixing every isotropic line is central** (`n ≥ 3`) — the `ker ⊆ center` half of
+faithfulness for the `PSU = SU/Z` action on isotropic points. Immediate from the geometric crux
+(`g` is scalar) and `su_scalar_mem_center`. -/
+theorem su_fixes_isotropic_imp_central (hn : 3 ≤ n)
+    (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p))
+    (hfix : ∀ z : Fin n → UnitaryField p, star z ⬝ᵥ z = 0 →
+      ∃ l : UnitaryField p, (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ z = l • z) :
+    g ∈ Subgroup.center (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) := by
+  obtain ⟨a, ha0, ha⟩ := UnitaryField.exists_traceZero_ne_zero p
+  obtain ⟨μ, hμ⟩ := su_fixes_isotropic_imp_scalar
+    (Matrix.specialUnitaryGroup_le_unitaryGroup g.2) hfix (exists_hyperbolic_partner p hn)
+    (exists_common_nonorth_isotropic p hn) (isotropic_span p hn) ⟨a, ha0, ha⟩
+    (UnitaryField.exists_isotropic p n (by omega))
+  exact su_scalar_mem_center hμ
+
+/-- **`g ∈ SU` is central iff it is a scalar matrix** (`n ≥ 3`). The center characterization
+underlying the faithfulness of `PSU = SU/Z`. -/
+theorem su_mem_center_iff_scalar (hn : 3 ≤ n)
+    (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) :
+    g ∈ Subgroup.center (Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) ↔
+      ∃ μ : UnitaryField p, (g : Matrix (Fin n) (Fin n) (UnitaryField p)) = μ • 1 :=
+  ⟨su_center_le_scalar p hn g, fun ⟨_, hμ⟩ => su_scalar_mem_center hμ⟩
 
 end Concrete
 

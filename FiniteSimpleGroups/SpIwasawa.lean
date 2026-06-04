@@ -256,17 +256,59 @@ theorem Tline_iSup : iSup (Tline (l := l) (F := F)) = ⊤ := by
     exact h (Subgroup.mem_top g)
   exact Subgroup.mem_comap.mp hg
 
-/-- **DISCLOSED AXIOM (scaling element).** For every non-zero `v` and every non-zero scalar
-`λ`, there is a symplectic `g` scaling the line `[v]` by `λ`: `g·v = λ·v`. This is **true over
-every field** (no field-size hypothesis): extend `v` to a hyperbolic pair `(v,w)` and take
-`g = diag(λ on v, λ⁻¹ on w, 1 on ⟨v,w⟩⊥)`, which preserves `ω` since `ω(λv,λ⁻¹w) = ω(v,w)`.
-It replaces the deep "PSp perfect" axiom: with it, perfectness is **machine-checked** below
-(`commutator_Sp_eq_top`) modulo only this elementary fact and the generation axiom. The
-narrow remaining brick — a concrete block-diagonal matrix membership — is an ideal Aristotle
-target. (Provable; only disclosed because the `⟨v,w⟩⊥` complement construction is not yet
-formalized.) -/
-axiom sp_scaling_exists (v : (l ⊕ l) → F) (hv : v ≠ 0) (lam : F) (hlam : lam ≠ 0) :
-    ∃ g : symplecticGroup l F, (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ v = lam • v
+/-- The **block-diagonal symplectic scaling matrix** `D(λ) = diag(λ·I, λ⁻¹·I)` on `l ⊕ l`:
+it scales the `inl`-subspace by `λ` and the `inr`-subspace by `λ⁻¹`. -/
+noncomputable def spDiag (lam : F) : Matrix (l ⊕ l) (l ⊕ l) F :=
+  Matrix.fromBlocks (lam • 1) 0 0 (lam⁻¹ • 1)
+
+/-- `D(λ)` is **symplectic** for `λ ≠ 0` (`D J Dᵀ = J` by block multiplication, the cross
+blocks giving `(λ·1)(λ⁻¹·1) = 1`). It preserves `ω` since `ω(λx, λ⁻¹y) = ω(x,y)`. -/
+theorem spDiag_mem {lam : F} (hlam : lam ≠ 0) : spDiag lam ∈ symplecticGroup l F := by
+  rw [SymplecticGroup.mem_iff, spDiag, fromBlocks_transpose]
+  rw [Matrix.J, fromBlocks_multiply, fromBlocks_multiply]
+  simp only [Matrix.mul_zero, Matrix.zero_mul, add_zero, zero_add, neg_zero, mul_neg_one,
+    neg_mul, transpose_smul, transpose_one, transpose_zero, smul_mul_smul_comm, Matrix.mul_one,
+    mul_inv_cancel₀ hlam, inv_mul_cancel₀ hlam, one_smul]
+
+/-- `D(λ)` scales every `inl`-supported vector by `λ`: `D(λ) ·ᵥ v = λ·v` when `v∘inr = 0`. -/
+theorem spDiag_mulVec_of_inr_zero (lam : F) {v : (l ⊕ l) → F}
+    (h : v ∘ Sum.inr = 0) : spDiag lam *ᵥ v = lam • v := by
+  have hr : ∀ j, v (Sum.inr j) = 0 := fun j => congrFun h j
+  rw [spDiag, fromBlocks_mulVec, h]
+  simp only [mulVec_zero, add_zero, zero_mulVec, smul_mulVec, one_mulVec]
+  ext i
+  cases i with
+  | inl i' => simp [Pi.smul_apply, Function.comp]
+  | inr j => simp [Pi.smul_apply, hr j]
+
+/-- **Scaling element (machine-checked).** For every non-zero `v` and non-zero scalar `λ`
+there is a symplectic `g` with `g·v = λ·v`. Construction: pick an `inl`-basis vector `u`
+(scaled by `λ` by the block-diagonal `D(λ)`, `spDiag_mem`/`spDiag_mulVec_of_inr_zero`) and
+an `h` (a transvection product, `exists_sp_transvecGen_maps`) mapping `u → v`; then
+`g = h · D(λ) · h⁻¹` scales `v` by `λ` (`g·v = h·(D·(h⁻¹·(h·u))) = h·(λ·u) = λ·v`). True over
+every field, no field-size hypothesis. Replaces the former perfectness axiom entirely. -/
+theorem sp_scaling_exists (v : (l ⊕ l) → F) (hv : v ≠ 0) (lam : F) (hlam : lam ≠ 0) :
+    ∃ g : symplecticGroup l F, (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ v = lam • v := by
+  obtain ⟨a, _⟩ := Function.ne_iff.mp hv
+  obtain ⟨i₀⟩ : Nonempty l := ⟨Sum.elim id id a⟩
+  set u : (l ⊕ l) → F := Pi.single (Sum.inl i₀) 1 with hu
+  have hu_inr : u ∘ Sum.inr = 0 := by
+    funext j
+    show Pi.single (Sum.inl i₀) (1 : F) (Sum.inr j) = 0
+    exact Pi.single_eq_of_ne Sum.inr_ne_inl 1
+  have hu0 : u ≠ 0 := by
+    intro hcon
+    have h1 : u (Sum.inl i₀) = 0 := by rw [hcon]; rfl
+    rw [hu, Pi.single_eq_same] at h1
+    exact one_ne_zero h1
+  obtain ⟨h, _, hhu⟩ := exists_sp_transvecGen_maps hu0 hv
+  refine ⟨h * ⟨spDiag lam, spDiag_mem hlam⟩ * h⁻¹, ?_⟩
+  have hscale : (⟨spDiag lam, spDiag_mem hlam⟩ : symplecticGroup l F) • u = lam • u := by
+    rw [smul_vec_def]; exact spDiag_mulVec_of_inr_zero lam hu_inr
+  have hhu' : h • u = v := hhu
+  show (h * ⟨spDiag lam, spDiag_mem hlam⟩ * h⁻¹ : symplecticGroup l F) • v = lam • v
+  rw [← hhu', SemigroupAction.mul_smul, SemigroupAction.mul_smul, inv_smul_smul, hscale,
+    smul_comm]
 
 /-- **Each symplectic transvection lies in the commutator subgroup** (given a scaling scalar
 `λ` with `λ² ≠ 1`). For `v ≠ 0`, `τ_{v,c} = ⁅g, τ_{v, c/(λ²-1)}⁆` where `g·v = λ·v`

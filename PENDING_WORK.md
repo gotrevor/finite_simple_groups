@@ -408,14 +408,26 @@ This lap discharged BOTH former core axioms and wired into LieType:
     `exists_common_nonorth_isotropic` ⇒ `exists_su_maps_isotropic` (SU transitive on isotropic lines)
     ⇒ `psu_isPretransitive` (descended to PSU↷IsoPoint). This was the worry-piece; it fell to the
     elementary Eichler move.
-  - **(b) block-triviality `psu_isTrivialBlock_of_isBlock` (REMAINING)** — the maximal-parabolic
-    primitivity core. Mirrors SpIwasawa's `psp_isTrivialBlock_of_isBlock` (T1 non-perp transitivity +
-    connectivity + assembly). The atom is **T1**: `Stab[x]` transitive on isotropic points non-orth to
-    `[x]`, which needs the unitary **Eichler/Siegel transformation** `E(x,h)` (fix `x`, translate the
-    hyperbolic partner by `h∈x^⊥`) — the same Eichler theory as generation. Connectivity
-    (`exists_common_nonorth_isotropic`) and the block-combinatorics template are already in hand;
-    once T1 lands the assembly is mechanical (copy `block_mem_of_nonperp`/`block_univ_of_nonperp_pair`).
-    GOOD ARISTOTLE CANDIDATE.
+  - **(b) block-triviality `psu_isTrivialBlock_of_isBlock` (PARTIAL)** — the maximal-parabolic
+    primitivity core. Mirrors SpIwasawa's `psp_isTrivialBlock_of_isBlock`.
+    - ✅ **NON-PERP HALF BUILT** (2026-06-04 night, `UnitarySimple.lean`, axiom-clean, takes T1 as
+      hyp): `form_rep_mk_right_smul`/`_left_smul` (form line-invariance bridges), `block_mem_of_nonperp`,
+      `block_univ_of_nonperp_pair` (a block with a non-perp pair is everything, via the proven
+      diameter-2 connectivity `exists_common_nonorth_isotropic`). Mirrors `SpN.block_*`.
+    - **T1 atom (REMAINING):** `Stab[x]` transitive on isotropic points non-orth to `[x]` — needs the
+      unitary **Eichler/Siegel transformation** (fix `x`, translate the hyperbolic partner by `h∈x^⊥`).
+      **AT ARISTOTLE** (project `19b0b4a0-94ac-43c7-849b-e0fd7b9c255f`).
+    - **PERP CASE (REMAINING):** distinct PERPENDICULAR isotropic block points. Needs (i) perp-
+      transitivity (`Stab[x]` transitive on isotropic points PERP to `[x]` — a 2nd Eichler lemma) and
+      (ii) an isotropic separation (∃ isotropic `s ⊥ x`, non-perp to `y`). **KEY SIMPLIFICATION for
+      n=3:** two distinct isotropic lines are NEVER perpendicular when n=3 (a 2-dim totally-isotropic
+      subspace can't sit in a nondeg dim-3 Hermitian space — Witt index ≤ 1). So for n=3 the perp case
+      is VACUOUS and block-triviality = non-perp half + this vacuity, needing only T1 (no perp-
+      transitivity). PROOF ROUTE for the vacuity: get `u` non-orth to both `x,y` (connectivity), note
+      `u∉span{x,y}`, so `{x,y,u}` is a basis of `F³`; the functional `⟨x,·⟩ - (⟨x,u⟩/⟨y,u⟩)⟨y,·⟩`
+      vanishes on the basis ⇒ is 0 ⇒ (nondeg, take `z=eᵢ`) `x` is a scalar multiple of `y`. ~50 lines
+      of `LinearIndependent`/spanning plumbing — clean NEXT-LAP target (discharges PSU(3,q) block-
+      triviality mod T1).
 - **Step 3a — generation.** Unitary transvections generate `SU` (the unitary Eichler/Witt
   theorem). DEEP core, mirrors `sp_stab_hyperbolic_le` / the ambient-induction generation proof.
   **Submitted to Aristotle 2026-06-04 eve (project `a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`)** as a

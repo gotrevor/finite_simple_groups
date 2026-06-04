@@ -1,12 +1,13 @@
 import Mathlib
 import FiniteSimpleGroups.LieType
+import FiniteSimpleGroups.PSLIwasawa
 
 /-!
-# `SL(2,F)` is perfect, and `PSL(2,q)` is perfect — the Iwasawa "perfect" obligation
+# `PSL(2,q)` is simple for prime `q ≥ 4` — all Iwasawa obligations, machine-checked
 
 `PSLIwasawa.lean` reduces `PSL_isSimpleGroup` for `PSL 2 q` (an `axiom` in
-`LieType.lean`) to the five Iwasawa obligations. This file **discharges one of
-them — perfectness** — from scratch and fully axiom-free:
+`LieType.lean`) to the Iwasawa obligations. This file **discharges all of
+them** — from scratch and fully axiom-free — and assembles `PSL2_isSimpleGroup`:
 
 * `SL2_perfect` : `commutator (SL(2,F)) = ⊤` for any field with `4 ≤ |F|`.
 * `PSL2_perfect` : `commutator (PSL 2 q) = ⊤` for `q` prime with `4 ≤ q`
@@ -29,11 +30,19 @@ them — perfectness** — from scratch and fully axiom-free:
   quasi-preprimitive. The geometric core (`exists_sl2_maps_ref`) carries the
   reference frame `([e₁],[e₂])` to any pair of distinct lines.
 
-Five of the six pieces feeding `PSL2_isSimpleGroup_of_iwasawa` are thus
-machine-checked here (perfect, nontrivial, the `ℙ¹` action, faithful,
-quasi-preprimitive); the one remaining is the unipotent `IwasawaStructure`
-(`T(line)` = stabilizer's transvection subgroup, conjugation-equivariant,
-generating via `transvections_generate`). See `PENDING_WORK §D`.
+* `pslIwasawa` : the unipotent `IwasawaStructure` — the family `Tline x`
+  (image in `PSL` of the transvection subgroup along the line `x`), each abelian,
+  conjugation-equivariant (`Tline_conj`, from `transSL_conj`), and generating
+  (`Tline_iSup`, via `transvections_generate`).
+
+All **six** pieces feeding `PSL2_isSimpleGroup_of_iwasawa` are thus
+machine-checked here. They assemble into
+
+* `PSL2_isSimpleGroup` : `IsSimpleGroup (PSL 2 q)` for every prime `q ≥ 4`,
+  `#print axioms`-clean (`[propext, Classical.choice, Quot.sound]`).
+
+This **discharges the deep CFSG `axiom PSL_isSimpleGroup` at `n = 2`** (the one
+tractable family case). See `PENDING_WORK §D`.
 
 Mathlib v4.29.1 has `PSL`/`SL` and the transvection machinery but **no** SL(2)
 perfectness and **no** PSL simplicity, so this is genuine new content, consistent
@@ -58,6 +67,7 @@ namespace SL2
 
 open Matrix
 open scoped commutatorElement
+open scoped Pointwise
 
 variable {F : Type*} [Field F] [DecidableEq F]
 
@@ -795,6 +805,112 @@ noncomputable def Tline (q : ℕ) [Fact (Nat.Prime q)] (x : P1 q) : Subgroup (PS
 instance (q : ℕ) [Fact (Nat.Prime q)] (x : P1 q) : IsMulCommutative (Tline q x) := by
   unfold Tline; infer_instance
 
+
+
+/-! ### The Iwasawa structure and simplicity of `PSL(2,q)`
+
+Assembling the four `IwasawaStructure` fields — `Tline` (the family of abelian
+transvection subgroups), conjugation-equivariance (`Tline_conj`), and generation
+(`Tline_iSup`) — discharges the final Iwasawa obligation. With the five obligations
+proved above, `PSL2_isSimpleGroup_of_iwasawa` then yields **`PSL(2,q)` simple for
+every prime `q ≥ 4`** (`PSL2_isSimpleGroup`), `#print axioms`-clean. This discharges
+`PSL_isSimpleGroup` (the deep CFSG `axiom` in `LieType`) at `n = 2`. -/
+
+/-- **Conjugation-equivariance of `Tline`** — the Iwasawa `is_conj` obligation:
+`T (g • x) = MulAut.conj g • T x`, from `transvecGroup_conj` (conjugating a
+transvection along `v` yields one along `g·v`) pushed through the quotient. -/
+theorem Tline_conj (q : ℕ) [Fact (Nat.Prime q)] (g : PSL 2 q) (x : P1 q) :
+    Tline q (g • x) = MulAut.conj g • Tline q x := by
+  obtain ⟨g_SL, hg⟩ := QuotientGroup.mk_surjective g
+  have hne : g_SL.val.mulVec x.rep ≠ 0 := by
+    rw [← smul_vec_def]; exact (smul_ne_zero_iff_ne g_SL).mpr (Projectivization.rep_nonzero x)
+  have hgx : g • x = Projectivization.mk (ZMod q) (g_SL.val.mulVec x.rep) hne := by
+    rw [← hg]
+    show g_SL • x = Projectivization.mk (ZMod q) (g_SL.val.mulVec x.rep) hne
+    conv_lhs => rw [← Projectivization.mk_rep x]
+    rw [Projectivization.smul_mk]
+    rfl
+  have hpar : transvecGroup ((g • x).rep) = transvecGroup (g_SL.val.mulVec x.rep) := by
+    have h2 : Projectivization.mk (ZMod q) ((g • x).rep) (Projectivization.rep_nonzero _)
+        = Projectivization.mk (ZMod q) (g_SL.val.mulVec x.rep) hne := by
+      rw [Projectivization.mk_rep]; exact hgx
+    rw [Projectivization.mk_eq_mk_iff] at h2
+    obtain ⟨a, ha⟩ := h2
+    rw [← ha, Units.smul_def]
+    exact transvecGroup_smul _ (Units.ne_zero a) _
+  rw [show (MulAut.conj g) • Tline q x = (Tline q x).map (MulAut.conj g) from
+        Subgroup.toSubmonoid_inj.mp rfl]
+  rw [Tline, Tline, hpar, ← transvecGroup_conj g_SL]
+  simp only [Subgroup.map_map]
+  congr 1
+  refine MonoidHom.ext fun z => ?_
+  change (QuotientGroup.mk' (Subgroup.center _)) (g_SL * z * g_SL⁻¹)
+      = MulAut.conj g ((QuotientGroup.mk' (Subgroup.center _)) z)
+  rw [MulAut.conj_apply, map_mul, map_mul, map_inv, ← hg]
+  rfl
+
+/-- `transvecGroup` of a representative of `[v]` equals that of `v` (line-invariance). -/
+theorem transvecGroup_rep (q : ℕ) [Fact (Nat.Prime q)] (v : Fin 2 → ZMod q) (hv : v ≠ 0) :
+    transvecGroup ((Projectivization.mk (ZMod q) v hv).rep) = transvecGroup v := by
+  have h2 : Projectivization.mk (ZMod q) ((Projectivization.mk (ZMod q) v hv).rep)
+        (Projectivization.rep_nonzero _) = Projectivization.mk (ZMod q) v hv := by
+    rw [Projectivization.mk_rep]
+  rw [Projectivization.mk_eq_mk_iff] at h2
+  obtain ⟨a, ha⟩ := h2
+  rw [← ha, Units.smul_def]
+  exact transvecGroup_smul _ (Units.ne_zero a) _
+
+theorem Tline_mk (q : ℕ) [Fact (Nat.Prime q)] (v : Fin 2 → ZMod q) (hv : v ≠ 0) :
+    Tline q (Projectivization.mk (ZMod q) v hv) = (transvecGroup v).map (QuotientGroup.mk' _) :=
+  congrArg (Subgroup.map (QuotientGroup.mk' (Subgroup.center _))) (transvecGroup_rep q v hv)
+
+theorem transSL_e1 (c : F) : transSL (![1, 0] : Fin 2 → F) c = upper c := by
+  apply Subtype.ext
+  simp only [transSL_val, upper_val, transMat]
+  norm_num
+
+theorem transSL_e2 (c : F) : transSL (![0, 1] : Fin 2 → F) c = lower (-c) := by
+  apply Subtype.ext
+  simp only [transSL_val, lower_val, transMat]
+  ext i j; fin_cases i <;> fin_cases j <;> norm_num
+
+
+theorem Tline_iSup (q : ℕ) [Fact (Nat.Prime q)] : iSup (Tline q) = ⊤ := by
+  rw [eq_top_iff]
+  intro y _
+  obtain ⟨y_SL, rfl⟩ := QuotientGroup.mk'_surjective (Subgroup.center _) y
+  -- every generator `mk'(upper c)`, `mk'(lower c)` lies in some `Tline`, so `S` lies
+  -- in the preimage of `iSup Tline`; `S` generates SL, so the preimage is `⊤`.
+  have hsub : S (F := ZMod q) ⊆ ((iSup (Tline q)).comap (QuotientGroup.mk' _) : Subgroup _) := by
+    rintro w (⟨c, rfl⟩ | ⟨c, rfl⟩)
+    · refine Subgroup.mem_comap.mpr (le_iSup (Tline q) (E1 q) ?_)
+      rw [E1, Tline_mk]
+      exact Subgroup.mem_map_of_mem _ (mem_transvecGroup.mpr ⟨c, transSL_e1 c⟩)
+    · refine Subgroup.mem_comap.mpr (le_iSup (Tline q) (E2 q) ?_)
+      rw [E2, Tline_mk]
+      exact Subgroup.mem_map_of_mem _ (mem_transvecGroup.mpr ⟨-c, by rw [transSL_e2, neg_neg]⟩)
+  have hmem : y_SL ∈ (iSup (Tline q)).comap (QuotientGroup.mk' _) := by
+    have h := (Subgroup.closure_le _).mpr hsub
+    rw [transvections_generate] at h
+    exact h (Subgroup.mem_top y_SL)
+  exact Subgroup.mem_comap.mp hmem
+
+
+/-- **The Iwasawa structure on `PSL(2,q) ↷ ℙ¹`.** -/
+noncomputable def pslIwasawa (q : ℕ) [Fact (Nat.Prime q)] :
+    MulAction.IwasawaStructure (PSL 2 q) (P1 q) where
+  T := Tline q
+  is_comm := fun x => inferInstance
+  is_conj := Tline_conj q
+  is_generator := Tline_iSup q
+
+/-- **`PSL(2,q)` is simple for every prime `q ≥ 4`** — the Iwasawa criterion
+applied to the action on `ℙ¹(F_q)`, with all six obligations machine-checked.
+This discharges `PSL_isSimpleGroup` at `n = 2` (for prime `q ≥ 4`). -/
+theorem PSL2_isSimpleGroup (q : ℕ) [Fact (Nat.Prime q)] (hq : 4 ≤ q) :
+    IsSimpleGroup (PSL 2 q) :=
+  haveI : Nontrivial (PSL 2 q) := PSL2_nontrivial q
+  PSL2_isSimpleGroup_of_iwasawa q (PSL2_perfect q hq) (pslIwasawa q) (pslFaithful q)
 
 
 end SL2

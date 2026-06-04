@@ -133,13 +133,22 @@ Representation level when it returns.
   `Co1/Co2/Co3` (`Sporadics.lean`).  Deep; intended.  **NB:** `PSL_isSimpleGroup` *for `n = 2`* is
   NOT in this bucket — it is the ACTIVE tractable thread, see §D.
 
-## D. ACTIVE THREAD — `PSL(2,q)` simplicity via Iwasawa (2026-06-03)
+## D. ✅ COMPLETE — `PSL(2,q)` simplicity via Iwasawa (DONE 2026-06-04)
 
-`PSL_isSimpleGroup` for `n = 2` is being discharged through
-`PSL2_isSimpleGroup_of_iwasawa` (`PSLIwasawa.lean`), which reduces it to **five
-Iwasawa obligations**.  mathlib v4.29.1 has the `PSL`/`SL` defs + transvection
-machinery but NO SL(2)/PSL simplicity, so this is genuine new content (consistent
-with the "one rule").  Progress (all in `FiniteSimpleGroups/SL2.lean`, `#print
+**`PSL2_isSimpleGroup (q) [Fact prime q] (hq : 4 ≤ q) : IsSimpleGroup (PSL 2 q)`
+is PROVEN and `#print axioms`-clean** (`[propext, Classical.choice, Quot.sound]`).
+This **discharges the deep CFSG `axiom PSL_isSimpleGroup` at `n = 2`** — the one
+tractable family case.  All six Iwasawa obligations are machine-checked in
+`FiniteSimpleGroups/SL2.lean`; the assembly is `PSL2_isSimpleGroup` via
+`PSL2_isSimpleGroup_of_iwasawa` (`PSLIwasawa.lean`).  mathlib v4.29.1 has the
+`PSL`/`SL` defs + transvection machinery but NO SL(2)/PSL simplicity, so this is
+genuine new content (consistent with the "one rule").
+
+**Next on this front (§D-followup):** the proven `PSL2_isSimpleGroup` is NOT yet
+wired into the `axiom PSL_isSimpleGroup` in `LieType.lean` — connect it (replace
+the `n = 2` uses, or specialize the axiom).  See "NEXT THREAD" at the bottom of §D.
+
+Progress (all in `FiniteSimpleGroups/SL2.lean`, `#print
 axioms`-clean — `[propext, Classical.choice, Quot.sound]`):
 
 - ✅ **perfect** `commutator (PSL 2 q) = ⊤` — `PSL2_perfect` (q prime ≥ 4), from
@@ -176,19 +185,26 @@ axioms`-clean — `[propext, Classical.choice, Quot.sound]`):
   reference frame `([e₁],[e₂]) ↦ ([v],[w])`; compose `g₂∘g₁⁻¹` for general pairs;
   push SL→PSL via `pslPermHom_mk_smul`.
 
-**Remaining 1 obligation (builds on `psl1Action` + `center_SL2` + `transvections_generate`):**
-1. `IwasawaStructure (PSL 2 q) ℙ¹` — the last piece `PSL2_isSimpleGroup_of_iwasawa`
-   needs.  Fields (mathlib `MulAction.IwasawaStructure`):
-   - `T : ℙ¹ → Subgroup (PSL 2 q)` — `T(line)` = image in PSL of the unipotent
-     subgroup fixing that line (the `upper`/`lower` transvection subgroup `≅ F⁺`).
-   - `is_comm : ∀ x, IsMulCommutative (T x)` — each `T x` abelian (transvections
-     `upper`/`lower` are an additive `F⁺`, via `upper_mul : upper s * upper t = upper (s+t)`).
-   - `is_conj : ∀ g x, T (g • x) = MulAut.conj g • T x` — conjugation-equivariance.
-   - `is_generator : iSup T = ⊤` — generation (`transvections_generate`, PROVEN).
-   HARD: the conjugation-equivariance + generation bookkeeping; attack paths in §D-next below.
+- ✅ **IwasawaStructure** `IwasawaStructure (PSL 2 q) ℙ¹` — `SL2.pslIwasawa`
+  (DONE 2026-06-04).  `T x = Tline q x` = image in PSL of the transvection subgroup
+  along the line `x` (`transvecGroup x.rep`).  `is_comm`: free (range of a CommGroup
+  hom).  `is_conj` (`Tline_conj`): `transSL_conj` shows conjugating a transvection
+  along `v` by `g ∈ SL` gives one along `g·v` *exactly* (no rescaling — because
+  `det g = 1 ⇒ gᵀ⁻¹·vrot = (g·v)rot`), pushed through `mk'`.  `is_generator`
+  (`Tline_iSup`): `transvecGroup e₁ = upper`s, `transvecGroup e₂ = lower`s
+  (`transSL_e1/e2`), which generate SL (`transvections_generate`) hence PSL.
+- ✅ **ASSEMBLY** `PSL2_isSimpleGroup` — feed all six into `PSL2_isSimpleGroup_of_iwasawa`.
 
-**Aristotle:** `card_SL2` (`|SL(2,q)| = q(q²-1)`, job `28df03ca`) grinding — useful
-for `|PSL(2,q)|` and the order tables; not on the critical path for simplicity.
+**NEXT THREAD — wire `PSL2_isSimpleGroup` into `axiom PSL_isSimpleGroup`.**
+`LieType.lean` declares `axiom PSL_isSimpleGroup (n q) … : IsSimpleGroup (PSL n q)`
+over an *opaque* `PSL`.  Our `SL2.PSL 2 q` is the *concrete* `SL(2,F_q)/center`.
+Investigate whether the opaque `LieType.PSL 2 q` can be defined as / shown equiv to
+the concrete one so the `n = 2` instance of the axiom becomes a theorem.  If the
+opaque carrier can't be touched without breaking `Classification.lean`, at minimum
+add a `theorem PSL2_isSimpleGroup` cross-reference and note the gap.
+
+**Aristotle:** `card_SL2` (`|SL(2,q)| = q(q²-1)`, job `28df03ca`) — DONE & ported
+(`aceed22`); useful for `|PSL(2,q)|` and the order tables.
 
 ## C. Soundness-audit TODO (cheap, valuable — flagged 2026-06-03)
 

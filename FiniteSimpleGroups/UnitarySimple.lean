@@ -2577,6 +2577,23 @@ theorem PSU_isSimpleGroup_modulo_generation (hn : 3 ≤ n) (hp : 5 ≤ p)
     IsSimpleGroup (PSUConcrete n p) :=
   PSU_isSimpleGroup_of_generate_of_T1 p n hn hp hgen (psu_hT1 p n)
 
+/-- **`PSU(n,q)` is simple, modulo the two isolated geometric atoms `UExactLineTrans` +
+`UExactMateTrans`** (`n ≥ 3`, `p ≥ 5`). The Witt-generation hypothesis `hgen` of
+`PSU_isSimpleGroup_modulo_generation` is supplied by the genAux dimension induction
+(`hgen_of_line_mate`), so PSU simplicity now reduces to exactly: exact single-vector transitivity
+within `offSU C` landing in `⟨transvections⟩` (`UExactLineTrans` — the deep third-dimension torus
+`exists_scale`) together with the torus-free mate step (`UExactMateTrans` — Eichler as a transvection
+product). All the surrounding generation bookkeeping is machine-checked. -/
+theorem PSU_isSimpleGroup_modulo_line_mate (hn : 3 ≤ n) (hp : 5 ≤ p)
+    (hline : UExactLineTrans p (n := n)) (hmate : UExactMateTrans p (n := n)) :
+    IsSimpleGroup (PSUConcrete n p) := by
+  have h2 : (2 : UnitaryField p) ≠ 0 := by
+    have h2' : ((2 : ℕ) : UnitaryField p) ≠ 0 := by
+      rw [Ne, CharP.cast_eq_zero_iff (UnitaryField p) p]
+      intro hdvd; have := Nat.le_of_dvd (by norm_num) hdvd; omega
+    simpa using h2'
+  exact PSU_isSimpleGroup_modulo_generation p n hn hp (hgen_of_line_mate p h2 hline hmate)
+
 end Iwasawa
 
 end FiniteSimpleGroups.PSU

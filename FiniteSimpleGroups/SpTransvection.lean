@@ -81,6 +81,14 @@ theorem spTransvection_mem (v : (l ⊕ l) → R) (c : R) :
   rw [hNJNt, hJNt, hNJ]
   simp [smul_neg]
 
+/-- **A symplectic transvection has determinant 1** — so it also lies in `SL`. The matrix
+determinant lemma `det(1 + u ⊗ w) = 1 + w ⬝ᵥ u` gives `1 + (J·v) ⬝ᵥ (c•v) = 1 + c·ω(v,v) = 1`
+(again the alternating identity `spForm_self`). -/
+theorem spTransvection_det (v : (l ⊕ l) → R) (c : R) : (spTransvection v c).det = 1 := by
+  rw [spTransvection, ← smul_vecMulVec, vecMulVec_eq (ι := Unit),
+    det_one_add_replicateCol_mul_replicateRow, dotProduct_smul,
+    dotProduct_comm, spForm_self, smul_zero, add_zero]
+
 /-- The symplectic transvection packaged as an element of `symplecticGroup l R`. -/
 noncomputable def spTransvecSp (v : (l ⊕ l) → R) (c : R) : symplecticGroup l R :=
   ⟨spTransvection v c, spTransvection_mem v c⟩

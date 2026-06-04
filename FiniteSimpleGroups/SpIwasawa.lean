@@ -909,17 +909,274 @@ theorem psp_isPretransitive [Nonempty l] :
   rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff]
   exact ⟨1, by rw [one_smul]; exact ((smul_vec_def g x.rep).trans hg).symm⟩
 
-/-- **DISCLOSED AXIOM (primitivity core — blocks are trivial).** Every block of the `PSp(2n,F)`
-action on `ℙ²ⁿ⁻¹` is trivial (a singleton or everything). This is the genuine remaining core of
-quasi-preprimitivity: unlike `SLn`, `Sp` is **not** 2-transitive (it preserves `ω`), so this
-needs the maximal-parabolic / isotropic-line-stabilizer primitivity argument — a block argument,
-not the `SLn` 2-transitivity route. With it + machine-checked pretransitivity
-(`psp_isPretransitive`), `IsPreprimitive` and hence quasi-preprimitivity follow. -/
-axiom psp_isTrivialBlock_of_isBlock [Nonempty l] :
+/-! ### Primitivity: discharging the block-triviality core (`psp_isTrivialBlock_of_isBlock`)
+
+The big primitivity axiom is reduced to the single clean **Δ₀-transitivity** statement
+`sp_stab_transitive_on_perp_lines` (the stabiliser of a vector acts transitively on the
+projective lines in its perp), plus machine-checked block combinatorics: T1 (non-perp
+transitivity, from `exists_sp_transvecFixing_maps_mate`), the connectivity of the
+non-orthogonality graph (`exists_form_both_ne`), and the rank-3 bootstrap. -/
+
+theorem form_smul_right (a : F) (v w : (l ⊕ l) → F) :
+    v ⬝ᵥ (Matrix.J l F *ᵥ (a • w)) = a * (v ⬝ᵥ (Matrix.J l F *ᵥ w)) := by
+  rw [mulVec_smul, dotProduct_smul, smul_eq_mul]
+
+theorem form_smul_left (a : F) (v w : (l ⊕ l) → F) :
+    (a • v) ⬝ᵥ (Matrix.J l F *ᵥ w) = a * (v ⬝ᵥ (Matrix.J l F *ᵥ w)) := by
+  rw [smul_dotProduct, smul_eq_mul]
+
+/-- **Separation for the standard dot product**: for `w ≠ 0` not proportional to `u`, there is
+a `t` with `u ⬝ᵥ t = 0` and `w ⬝ᵥ t ≠ 0`. Elementary 2×2-minor construction. -/
+theorem exists_dot_perp_nonperp {u w : (l ⊕ l) → F} (hw : w ≠ 0)
+    (hnp : ¬ ∃ a : F, w = a • u) :
+    ∃ t : (l ⊕ l) → F, u ⬝ᵥ t = 0 ∧ w ⬝ᵥ t ≠ 0 := by
+  obtain ⟨j, hj⟩ := Function.ne_iff.mp hw
+  rw [Pi.zero_apply] at hj
+  by_cases huj : u j = 0
+  · exact ⟨Pi.single j 1, by rw [dotProduct_single, mul_one]; exact huj,
+      by rw [dotProduct_single, mul_one]; exact hj⟩
+  · by_contra hcon
+    have hcon' : ∀ t : (l ⊕ l) → F, u ⬝ᵥ t = 0 → w ⬝ᵥ t = 0 := by
+      intro t ht; by_contra hwt; exact hcon ⟨t, ht, hwt⟩
+    apply hnp
+    refine ⟨w j * (u j)⁻¹, funext fun k => ?_⟩
+    have ht : u ⬝ᵥ (Pi.single k (u j) - Pi.single j (u k)) = 0 := by
+      rw [dotProduct_sub, dotProduct_single, dotProduct_single]; ring
+    have hw0 := hcon' _ ht
+    rw [dotProduct_sub, dotProduct_single, dotProduct_single] at hw0
+    rw [Pi.smul_apply, smul_eq_mul]
+    have h2 : w k * u j = w j * u k := by linear_combination hw0
+    field_simp
+    linear_combination h2
+
+/-- **Perp separation for the symplectic form**: for `w ≠ 0` not proportional to `u`, there is
+an `s` with `ω(u,s) = 0` and `ω(w,s) ≠ 0`. From `exists_dot_perp_nonperp` via `s = -J·t`. -/
+theorem exists_form_perp_nonperp {u w : (l ⊕ l) → F} (hw : w ≠ 0)
+    (hnp : ¬ ∃ a : F, w = a • u) :
+    ∃ s : (l ⊕ l) → F,
+      u ⬝ᵥ (Matrix.J l F *ᵥ s) = 0 ∧ w ⬝ᵥ (Matrix.J l F *ᵥ s) ≠ 0 := by
+  obtain ⟨t, h1, h2⟩ := exists_dot_perp_nonperp hw hnp
+  have hJ : Matrix.J l F *ᵥ (-(Matrix.J l F *ᵥ t)) = t := by
+    rw [mulVec_neg, mulVec_mulVec, J_squared, neg_mulVec, one_mulVec, neg_neg]
+  exact ⟨-(Matrix.J l F *ᵥ t), by rw [hJ]; exact h1, by rw [hJ]; exact h2⟩
+
+/-- The `PSp`-action of `mk g` equals the `Sp`-action of `g` on a projective point. -/
+theorem psp_mk_smul [Nonempty l] (g : symplecticGroup l F)
+    (x : Projectivization F ((l ⊕ l) → F)) :
+    letI := pspAction (l := l) (F := F)
+    (QuotientGroup.mk g : symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) • x
+      = (g : symplecticGroup l F) • x := by
+  letI := pspAction (l := l) (F := F)
+  show pspPermHom (QuotientGroup.mk g) x = g • x
+  rw [pspPermHom_mk]; rfl
+
+/-- `(mk g) • x` as the `mk` of `g ·ᵥ x.rep`. The workhorse for the projective block argument. -/
+theorem psp_smul_eq_mk [Nonempty l] (g : symplecticGroup l F)
+    (x : Projectivization F ((l ⊕ l) → F)) :
+    letI := pspAction (l := l) (F := F)
+    (QuotientGroup.mk g : symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) • x
+      = Projectivization.mk F ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ x.rep)
+          (by rw [← smul_vec_def]; exact (smul_ne_zero_iff_ne g).mpr x.rep_nonzero) := by
+  letI := pspAction (l := l) (F := F)
+  rw [psp_mk_smul]
+  conv_lhs => rw [← Projectivization.mk_rep x]
+  rw [Projectivization.smul_mk]
+  rfl
+
+/-- **DISCLOSED AXIOM (Δ₀ transitivity — perp-line Witt transitivity).** The stabiliser of a
+nonzero vector `v` acts transitively on the projective lines inside `v^⊥` (other than `⟨v⟩`).
+Out at Aristotle (`91082bf9`). -/
+axiom sp_stab_transitive_on_perp_lines {v u u' : (l ⊕ l) → F} (hv : v ≠ 0)
+    (huv : v ⬝ᵥ (Matrix.J l F *ᵥ u) = 0) (hu'v : v ⬝ᵥ (Matrix.J l F *ᵥ u') = 0)
+    (hu : u ≠ 0) (hu' : u' ≠ 0)
+    (hunv : ∀ a : F, u ≠ a • v) (hu'nv : ∀ a : F, u' ≠ a • v) :
+    ∃ (g : symplecticGroup l F) (c : F), c ≠ 0 ∧
+      (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ v = v ∧
+      (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ u = c • u'
+
+/-- **T1 (non-perp transitivity, projective).** If `[y]`, `[y']` are both non-perpendicular to
+`[x]`, there is `g ∈ PSp` fixing `[x]` and mapping `[y] → [y']`. -/
+theorem psp_stab_maps_nonperp [Nonempty l]
+    {x y y' : Projectivization F ((l ⊕ l) → F)}
+    (h1 : x.rep ⬝ᵥ (Matrix.J l F *ᵥ y.rep) ≠ 0)
+    (h2 : x.rep ⬝ᵥ (Matrix.J l F *ᵥ y'.rep) ≠ 0) :
+    letI := pspAction (l := l) (F := F)
+    ∃ g : symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F),
+      g • x = x ∧ g • y = y' := by
+  letI := pspAction (l := l) (F := F)
+  have hf : x.rep ⬝ᵥ (Matrix.J l F *ᵥ
+      ((x.rep ⬝ᵥ (Matrix.J l F *ᵥ y.rep))⁻¹ • y.rep)) = 1 := by
+    rw [form_smul_right, inv_mul_cancel₀ h1]
+  have hf' : x.rep ⬝ᵥ (Matrix.J l F *ᵥ
+      ((x.rep ⬝ᵥ (Matrix.J l F *ᵥ y'.rep))⁻¹ • y'.rep)) = 1 := by
+    rw [form_smul_right, inv_mul_cancel₀ h2]
+  obtain ⟨g, _, hgx, hgy⟩ := exists_sp_transvecFixing_maps_mate hf hf'
+  refine ⟨QuotientGroup.mk g, ?_, ?_⟩
+  · rw [psp_smul_eq_mk]
+    conv_rhs => rw [← Projectivization.mk_rep x]
+    rw [Projectivization.mk_eq_mk_iff']
+    exact ⟨1, by rw [one_smul]; exact hgx.symm⟩
+  · rw [psp_smul_eq_mk]
+    have hgyrep : (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ y.rep
+        = ((x.rep ⬝ᵥ (Matrix.J l F *ᵥ y.rep)) *
+            (x.rep ⬝ᵥ (Matrix.J l F *ᵥ y'.rep))⁻¹) • y'.rep := by
+      have hthis := hgy
+      rw [mulVec_smul] at hthis
+      have h3 := congrArg (fun z => (x.rep ⬝ᵥ (Matrix.J l F *ᵥ y.rep)) • z) hthis
+      simp only at h3
+      rw [smul_smul, mul_inv_cancel₀ h1, one_smul, smul_smul] at h3
+      exact h3
+    conv_rhs => rw [← Projectivization.mk_rep y']
+    rw [Projectivization.mk_eq_mk_iff']
+    exact ⟨_, hgyrep.symm⟩
+
+/-- **T2 (perp transitivity, projective).** From the Δ₀ axiom: if `[y]`, `[y']` are both
+perpendicular to `[x]` and distinct from `[x]`, there is `g ∈ PSp` fixing `[x]` mapping
+`[y] → [y']`. -/
+theorem psp_stab_maps_perp [Nonempty l]
+    {x y y' : Projectivization F ((l ⊕ l) → F)}
+    (hxy : x.rep ⬝ᵥ (Matrix.J l F *ᵥ y.rep) = 0)
+    (hxy' : x.rep ⬝ᵥ (Matrix.J l F *ᵥ y'.rep) = 0)
+    (hyx : y ≠ x) (hy'x : y' ≠ x) :
+    letI := pspAction (l := l) (F := F)
+    ∃ g : symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F),
+      g • x = x ∧ g • y = y' := by
+  letI := pspAction (l := l) (F := F)
+  have hunv : ∀ a : F, y.rep ≠ a • x.rep := by
+    intro a hcon; apply hyx
+    rw [← Projectivization.mk_rep y, ← Projectivization.mk_rep x, Projectivization.mk_eq_mk_iff']
+    exact ⟨a, hcon.symm⟩
+  have hu'nv : ∀ a : F, y'.rep ≠ a • x.rep := by
+    intro a hcon; apply hy'x
+    rw [← Projectivization.mk_rep y', ← Projectivization.mk_rep x, Projectivization.mk_eq_mk_iff']
+    exact ⟨a, hcon.symm⟩
+  obtain ⟨g, c, _, hgx, hgy⟩ := sp_stab_transitive_on_perp_lines x.rep_nonzero hxy hxy'
+    y.rep_nonzero y'.rep_nonzero hunv hu'nv
+  refine ⟨QuotientGroup.mk g, ?_, ?_⟩
+  · rw [psp_smul_eq_mk]
+    conv_rhs => rw [← Projectivization.mk_rep x]
+    rw [Projectivization.mk_eq_mk_iff']
+    exact ⟨1, by rw [one_smul]; exact hgx.symm⟩
+  · rw [psp_smul_eq_mk]
+    conv_rhs => rw [← Projectivization.mk_rep y']
+    rw [Projectivization.mk_eq_mk_iff']
+    exact ⟨c, hgy.symm⟩
+
+/-- Scaling bridge: the form value at `[(mk w)]` (right slot) is a nonzero multiple of the value
+at `w`. -/
+theorem form_rep_mk_right_smul (x : Projectivization F ((l ⊕ l) → F)) {w : (l ⊕ l) → F}
+    (hw : w ≠ 0) :
+    ∃ a : F, a ≠ 0 ∧ x.rep ⬝ᵥ (Matrix.J l F *ᵥ (Projectivization.mk F w hw).rep)
+        = a * (x.rep ⬝ᵥ (Matrix.J l F *ᵥ w)) := by
+  obtain ⟨a, ha⟩ := Projectivization.exists_smul_eq_mk_rep F w hw
+  exact ⟨a, a.ne_zero, by rw [← ha, Units.smul_def, form_smul_right]⟩
+
+/-- Scaling bridge: the form value at `[(mk w)]` (left slot) is a nonzero multiple of the value
+at `w`. -/
+theorem form_rep_mk_left_smul {w : (l ⊕ l) → F} (hw : w ≠ 0)
+    (y : Projectivization F ((l ⊕ l) → F)) :
+    ∃ a : F, a ≠ 0 ∧ (Projectivization.mk F w hw).rep ⬝ᵥ (Matrix.J l F *ᵥ y.rep)
+        = a * (w ⬝ᵥ (Matrix.J l F *ᵥ y.rep)) := by
+  obtain ⟨a, ha⟩ := Projectivization.exists_smul_eq_mk_rep F w hw
+  exact ⟨a, a.ne_zero, by rw [← ha, Units.smul_def, form_smul_left]⟩
+
+/-- **Block expansion via a non-perpendicular partner.** If `q, p' ∈ B` are non-perpendicular
+and `w` is any point non-perpendicular to `q`, then `w ∈ B`. The atom of the connectivity
+argument: `Stab([q])` is transitive on points non-perp to `[q]` (T1), and `B` is `Stab([q])`-
+invariant since `q ∈ B`. -/
+theorem block_mem_of_nonperp [Nonempty l]
+    {B : Set (Projectivization F ((l ⊕ l) → F))}
+    (hB : letI := pspAction (l := l) (F := F);
+      MulAction.IsBlock (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) B)
+    {q p' w : Projectivization F ((l ⊕ l) → F)} (hq : q ∈ B) (hp' : p' ∈ B)
+    (hqp' : q.rep ⬝ᵥ (Matrix.J l F *ᵥ p'.rep) ≠ 0)
+    (hqw : q.rep ⬝ᵥ (Matrix.J l F *ᵥ w.rep) ≠ 0) :
+    w ∈ B := by
+  letI := pspAction (l := l) (F := F)
+  obtain ⟨g, hgq, hgp'⟩ := psp_stab_maps_nonperp hqp' hqw
+  have hgB : g • B = B := hB.smul_eq_of_mem hq (by rw [hgq]; exact hq)
+  rw [← hgp', ← hgB]
+  exact Set.smul_mem_smul_set hp'
+
+/-- **Step 2 — a block with a non-perpendicular pair is everything.** Connectivity of the
+non-orthogonality graph (diameter `≤ 2`, `exists_form_both_ne`) plus `block_mem_of_nonperp`. -/
+theorem block_univ_of_nonperp_pair [Nonempty l]
+    {B : Set (Projectivization F ((l ⊕ l) → F))}
+    (hB : letI := pspAction (l := l) (F := F);
+      MulAction.IsBlock (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) B)
+    {p r : Projectivization F ((l ⊕ l) → F)} (hp : p ∈ B) (hr : r ∈ B)
+    (hpr : p.rep ⬝ᵥ (Matrix.J l F *ᵥ r.rep) ≠ 0) :
+    B = Set.univ := by
+  letI := pspAction (l := l) (F := F)
+  rw [Set.eq_univ_iff_forall]
+  intro t
+  by_cases hpt : p.rep ⬝ᵥ (Matrix.J l F *ᵥ t.rep) ≠ 0
+  · exact block_mem_of_nonperp hB hp hr hpr hpt
+  · have hpt0 : p.rep ⬝ᵥ (Matrix.J l F *ᵥ t.rep) = 0 := not_not.mp hpt
+    obtain ⟨z, hz1, hz2⟩ := exists_form_both_ne p.rep_nonzero t.rep_nonzero
+    have hz0 : z ≠ 0 := by rintro rfl; rw [mulVec_zero, dotProduct_zero] at hz1; exact hz1 rfl
+    set Z := Projectivization.mk F z hz0 with hZ
+    obtain ⟨a, ha0, haeq⟩ := form_rep_mk_right_smul p hz0
+    have hpZ : p.rep ⬝ᵥ (Matrix.J l F *ᵥ Z.rep) ≠ 0 := by
+      rw [hZ, haeq]; exact mul_ne_zero ha0 hz1
+    have hZB : Z ∈ B := block_mem_of_nonperp hB hp hr hpr hpZ
+    -- now Z non-perp to t : Z.rep ⬝ᵥ J t.rep ≠ 0
+    obtain ⟨b, hb0, hbeq⟩ := form_rep_mk_left_smul hz0 t
+    have hZt : Z.rep ⬝ᵥ (Matrix.J l F *ᵥ t.rep) ≠ 0 := by
+      rw [hZ, hbeq]; exact mul_ne_zero hb0 hz2
+    -- and Z non-perp to p : Z.rep ⬝ᵥ J p.rep ≠ 0  (skew of hpZ)
+    have hZp : Z.rep ⬝ᵥ (Matrix.J l F *ᵥ p.rep) ≠ 0 := by
+      rw [spForm_skew]; exact neg_ne_zero.mpr hpZ
+    exact block_mem_of_nonperp hB hZB hp hZp hZt
+
+/-- **Primitivity core, discharged modulo the Δ₀ axiom.** Every block of `PSp(2n,F)` on
+`ℙ²ⁿ⁻¹` is trivial. If the block is not a subsingleton, take two distinct points; a non-perp
+pair (directly, or produced via the Δ₀ axiom `psp_stab_maps_perp` + `exists_form_perp_nonperp`
+in the perp case) forces the block to be everything (`block_univ_of_nonperp_pair`). -/
+theorem psp_isTrivialBlock_of_isBlock [Nonempty l] :
     letI := pspAction (l := l) (F := F)
     ∀ {B : Set (Projectivization F ((l ⊕ l) → F))},
       MulAction.IsBlock (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) B →
-        MulAction.IsTrivialBlock B
+        MulAction.IsTrivialBlock B := by
+  letI := pspAction (l := l) (F := F)
+  intro B hB
+  by_cases hs : B.Subsingleton
+  · exact Or.inl hs
+  · right
+    rw [Set.not_subsingleton_iff] at hs
+    obtain ⟨x, hx, y, hy, hxy⟩ := hs
+    by_cases hxyperp : x.rep ⬝ᵥ (Matrix.J l F *ᵥ y.rep) ≠ 0
+    · exact block_univ_of_nonperp_pair hB hx hy hxyperp
+    · have hxy0 : x.rep ⬝ᵥ (Matrix.J l F *ᵥ y.rep) = 0 := not_not.mp hxyperp
+      have hnp : ¬ ∃ a : F, y.rep = a • x.rep := by
+        rintro ⟨a, ha⟩; apply hxy; symm
+        rw [← Projectivization.mk_rep y, ← Projectivization.mk_rep x,
+          Projectivization.mk_eq_mk_iff']
+        exact ⟨a, ha.symm⟩
+      obtain ⟨s, hs1, hs2⟩ := exists_form_perp_nonperp y.rep_nonzero hnp
+      have hs0 : s ≠ 0 := by rintro rfl; rw [mulVec_zero, dotProduct_zero] at hs2; exact hs2 rfl
+      set S := Projectivization.mk F s hs0 with hS
+      -- S ≠ x (else ω(y,s)=0)
+      have hSx : S ≠ x := by
+        rw [hS]
+        intro hcon
+        rw [← Projectivization.mk_rep x, Projectivization.mk_eq_mk_iff'] at hcon
+        obtain ⟨b, hb⟩ := hcon
+        -- hb : b • x.rep = s ; then ω(y,s) = b • ω(y,x.rep) = -b • ω(x,y) = 0
+        rw [← hb, form_smul_right, spForm_skew, hxy0, neg_zero, mul_zero] at hs2
+        exact hs2 rfl
+      -- ω(x, S.rep) = 0
+      obtain ⟨a, ha0, haeq⟩ := form_rep_mk_right_smul x hs0
+      have hxS : x.rep ⬝ᵥ (Matrix.J l F *ᵥ S.rep) = 0 := by rw [hS, haeq, hs1, mul_zero]
+      -- map y → S within Stab(x): S ∈ B
+      obtain ⟨g, hgx, hgy⟩ := psp_stab_maps_perp hxy0 hxS hxy.symm hSx
+      have hgB : g • B = B := hB.smul_eq_of_mem hx (by rw [hgx]; exact hx)
+      have hSB : S ∈ B := by rw [← hgy, ← hgB]; exact Set.smul_mem_smul_set hy
+      -- ω(y, S.rep) ≠ 0 : non-perp pair (y, S)
+      obtain ⟨a', ha'0, ha'eq⟩ := form_rep_mk_right_smul y hs0
+      have hyS : y.rep ⬝ᵥ (Matrix.J l F *ᵥ S.rep) ≠ 0 := by
+        rw [hS, ha'eq]; exact mul_ne_zero ha'0 hs2
+      exact block_univ_of_nonperp_pair hB hy hSB hyS
 
 /-- **`PSp(2n,F)` acts preprimitively on `ℙ²ⁿ⁻¹`** — pretransitivity machine-checked
 (`psp_isPretransitive`), block-triviality the disclosed core (`psp_isTrivialBlock_of_isBlock`). -/

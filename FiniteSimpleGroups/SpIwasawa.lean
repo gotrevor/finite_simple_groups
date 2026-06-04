@@ -197,12 +197,70 @@ theorem exists_sp_transvecGen_maps_pair {e f e' f' : (l ⊕ l) → F}
   · rw [Submonoid.coe_mul, ← mulVec_mulVec, ht1e, ht2e]
   · rw [Submonoid.coe_mul, ← mulVec_mulVec]; exact ht2f
 
-/-- **DISCLOSED AXIOM (generation).** The symplectic transvections generate `Sp(2n,F)`:
-`⨆_v {τ_{v,c} : c} = ⊤`. The symplectic analogue of `SLn.transvecSL_closure_eq_top` (which
-Aristotle discharged for `SL`); mathlib has no symplectic Witt/Eichler infrastructure, so this
-is a multi-lap brick. It is the Iwasawa `is_generator` input. -/
-axiom sp_transvec_closure_eq_top :
-    (⨆ v : (l ⊕ l) → F, spTransvecGroup v) = (⊤ : Subgroup (symplecticGroup l F))
+/-- A **hyperbolic pair exists** when `l` is nonempty: an `inl`-basis vector `e = ê_{i₀}`
+(non-zero) has a `ω`-mate by non-degeneracy (`exists_form_both_ne`); rescale it to `ω(e,f)=1`. -/
+theorem exists_hyperbolic_pair [Nonempty l] :
+    ∃ e f : (l ⊕ l) → F, e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1 := by
+  obtain ⟨i₀⟩ := ‹Nonempty l›
+  have he0 : (Pi.single (Sum.inl i₀) 1 : (l ⊕ l) → F) ≠ 0 := by
+    intro hcon
+    have h1 := congrFun hcon (Sum.inl i₀)
+    rw [Pi.single_eq_same] at h1
+    exact one_ne_zero h1
+  obtain ⟨z, hz1, _⟩ := exists_form_both_ne he0 he0
+  refine ⟨Pi.single (Sum.inl i₀) 1,
+    (Pi.single (Sum.inl i₀) 1 ⬝ᵥ (Matrix.J l F *ᵥ z))⁻¹ • z, ?_⟩
+  rw [mulVec_smul, dotProduct_smul, smul_eq_mul, inv_mul_cancel₀ hz1]
+
+/-- **DISCLOSED AXIOM (generation core — stabilizer of a hyperbolic pair).** A symplectic `g`
+fixing a hyperbolic pair `(e,f)` (`ω(e,f)=1`) **pointwise** lies in the transvection subgroup
+`⨆_v spTransvecGroup v`. This is the genuine remaining core of symplectic generation, the
+**dimension induction**: such a `g` fixes the hyperbolic plane `⟨e,f⟩` pointwise and restricts
+to `Sp` on `⟨e,f⟩⊥` (dimension `2n-2`), where transvections generate by induction and extend
+back. The transitivity reduction *to* this statement is machine-checked
+(`sp_transvec_closure_eq_top` below); only the complement/restriction development is missing. -/
+axiom sp_stab_hyperbolic_le {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1)
+    (g : symplecticGroup l F) (hge : (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e)
+    (hgf : (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f) :
+    g ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v)
+
+/-- **The symplectic transvections generate `Sp(2n,F)`** (`⨆_v spTransvecGroup v = ⊤`),
+**reduced to the stabilizer core** `sp_stab_hyperbolic_le` via transitivity on hyperbolic pairs.
+For any `g`: when `l` is nonempty, pick a hyperbolic pair `(e,f)` (`exists_hyperbolic_pair`);
+`(g·e, g·f)` is again hyperbolic (`sp_preserves_form`), so a transvection product `t` matches `g`
+on it (`exists_sp_transvecGen_maps_pair`); then `t⁻¹g` fixes `(e,f)` pointwise, hence lies in the
+transvection subgroup (the core axiom), and `g = t·(t⁻¹g)` does too. When `l` is empty `Sp` is
+trivial. This replaces the former blanket generation axiom with the narrower stabilizer core. -/
+theorem sp_transvec_closure_eq_top :
+    (⨆ v : (l ⊕ l) → F, spTransvecGroup v) = (⊤ : Subgroup (symplecticGroup l F)) := by
+  rw [eq_top_iff]
+  intro g _
+  cases isEmpty_or_nonempty l with
+  | inl hempty =>
+    haveI := hempty
+    have hsub : Subsingleton (symplecticGroup l F) :=
+      ⟨fun a b => Subtype.ext (funext fun i => isEmptyElim i)⟩
+    rw [Subsingleton.elim g 1]
+    exact one_mem _
+  | inr hne =>
+    obtain ⟨e, f, hef⟩ := exists_hyperbolic_pair (l := l) (F := F)
+    have hgef : ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e) ⬝ᵥ
+        (Matrix.J l F *ᵥ ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f)) = 1 := by
+      rw [sp_preserves_form g.2 e f]; exact hef
+    obtain ⟨t, ht, hte, htf⟩ := exists_sp_transvecGen_maps_pair hef hgef
+    have hge : t • e = g • e := by rw [smul_vec_def, smul_vec_def]; exact hte
+    have hgf : t • f = g • f := by rw [smul_vec_def, smul_vec_def]; exact htf
+    have hfix_e : ((t⁻¹ * g : symplecticGroup l F) : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e := by
+      show (t⁻¹ * g : symplecticGroup l F) • e = e
+      rw [SemigroupAction.mul_smul, ← hge, inv_smul_smul]
+    have hfix_f : ((t⁻¹ * g : symplecticGroup l F) : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f := by
+      show (t⁻¹ * g : symplecticGroup l F) • f = f
+      rw [SemigroupAction.mul_smul, ← hgf, inv_smul_smul]
+    have hmem : (t⁻¹ * g) ∈ (⨆ v : (l ⊕ l) → F, spTransvecGroup v) :=
+      sp_stab_hyperbolic_le hef (t⁻¹ * g) hfix_e hfix_f
+    have hsplit : g = t * (t⁻¹ * g) := by group
+    rw [hsplit]
+    exact mul_mem ht hmem
 
 /-- **The `PSp(2n,F)`-level transvection subgroup along the line `x`** — the image in `Sp/Z` of
 `spTransvecGroup x.rep`. The Iwasawa family `T`. By `spTransvecGroup_rep`/`_smul` it depends

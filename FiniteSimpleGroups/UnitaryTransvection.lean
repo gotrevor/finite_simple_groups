@@ -431,6 +431,40 @@ theorem uEichler_mem_su (x h : n → α) (μ : α)
   Matrix.mem_specialUnitaryGroup_iff.mpr
     ⟨uEichler_mem_unitary x h μ hxx hxh hμ, uEichler_det x h μ hxx hxh⟩
 
+/-! ### Pair-stabiliser bricks for the generation dimension-induction (`hgen`)
+
+The Dieudonné/Eichler proof that transvections generate `SU` reduces a general `g ∈ SU` (via the
+isotropic-vector transitivity and the line-stabiliser mate transitivity `hT1`, both transvection
+products) to one **fixing a hyperbolic pair `(e,f)` pointwise**. Such a `g` then restricts to `SU`
+on the orthogonal complement `⟨e,f⟩^⊥` (a nondegenerate Hermitian space of dimension `n-2`), where
+transvections generate by induction and lift back to `V` (centres in `⟨e,f⟩^⊥`, so they fix `e,f`).
+These are the two structural bricks of that reduction — unitary analogues of
+`SpN.sp_fixing_preserves_perp` / `spTransvection_fixes_pair`. The remaining gap (mirroring the still
+-open symplectic `sp_stab_hyperbolic_le`) is the dimension induction itself: the subspace→coordinates
+restriction `SU(V) ⊇ Stab(e,f) ≅ SU(⟨e,f⟩^⊥)`. -/
+
+/-- **A pair-fixing unitary preserves the orthogonal complement of `⟨e,f⟩`.** If `g ∈ unitaryGroup`
+fixes `e` and `f`, it maps `⟨e,f⟩^⊥` into itself: `⟨e,x⟩ = ⟨f,x⟩ = 0 ⟹ ⟨e,g·x⟩ = ⟨f,g·x⟩ = 0`.
+Via `g·e = e`, `g·f = f` and the isometry `u_preserves_form`. The "`g` restricts to `⟨e,f⟩^⊥`" half
+of the generation induction. -/
+theorem u_fixing_preserves_perp {g : Matrix n n α} (hg : g ∈ Matrix.unitaryGroup n α)
+    {e f : n → α} (hge : g *ᵥ e = e) (hgf : g *ᵥ f = f) {x : n → α}
+    (hex : star e ⬝ᵥ x = 0) (hfx : star f ⬝ᵥ x = 0) :
+    star e ⬝ᵥ (g *ᵥ x) = 0 ∧ star f ⬝ᵥ (g *ᵥ x) = 0 := by
+  refine ⟨?_, ?_⟩
+  · rw [← hge, u_preserves_form hg]; exact hex
+  · rw [← hgf, u_preserves_form hg]; exact hfx
+
+/-- **A transvection centred in `⟨e,f⟩^⊥` fixes the pair `(e,f)`.** If `⟨v,e⟩ = ⟨v,f⟩ = 0` then
+`τ_{v,a}` fixes both `e` and `f` (each correction coefficient `a⟨v,·⟩` vanishes). The "extend back"
+half: a transvection of the complement lands in the pair-stabiliser. -/
+theorem uTransvection_fixes_pair {e f v : n → α} (a : α)
+    (hve : star v ⬝ᵥ e = 0) (hvf : star v ⬝ᵥ f = 0) :
+    uTransvection v a *ᵥ e = e ∧ uTransvection v a *ᵥ f = f := by
+  refine ⟨?_, ?_⟩
+  · rw [uTransvection_mulVec, hve, mul_zero, zero_smul, add_zero]
+  · rw [uTransvection_mulVec, hvf, mul_zero, zero_smul, add_zero]
+
 /-! ### Nontriviality of the root subgroup (over a field)
 
 The Iwasawa structure requires the root subgroups to be *nontrivial*. Over a field, a transvection

@@ -144,9 +144,15 @@ tractable family case.  All six Iwasawa obligations are machine-checked in
 `PSL`/`SL` defs + transvection machinery but NO SL(2)/PSL simplicity, so this is
 genuine new content (consistent with the "one rule").
 
-**Next on this front (§D-followup):** the proven `PSL2_isSimpleGroup` is NOT yet
-wired into the `axiom PSL_isSimpleGroup` in `LieType.lean` — connect it (replace
-the `n = 2` uses, or specialize the axiom).  See "NEXT THREAD" at the bottom of §D.
+**§D-followup — DONE 2026-06-04 (axiom wired + soundness fix).** The former
+monolithic `axiom PSL_isSimpleGroup (n q) (2≤n) (¬(n=2∧q≤3))` was **unsound** for
+composite `q` (`ZMod 6` not a field ⇒ `PSL(2,ZMod 6)` not simple). Replaced by:
+- `axiom PSL_isSimpleGroup_rank_ge_three (n q) [Fact prime q] (3 ≤ n)` in
+  `LieType.lean` — the genuinely-deep, now prime-scoped (hence true) higher-rank case;
+- `theorem PSL_isSimpleGroup (n q) [Fact prime q] (2≤n) (¬(n=2∧q≤3))` in `SL2.lean`
+  — dispatches `n=2` → `PSL2_isSimpleGroup` (machine-checked), `n≥3` → the axiom.
+`#print axioms PSL_isSimpleGroup` = `[propext, Classical.choice,
+PSL_isSimpleGroup_rank_ge_three, Quot.sound]` — n=2 contributes no debt.
 
 Progress (all in `FiniteSimpleGroups/SL2.lean`, `#print
 axioms`-clean — `[propext, Classical.choice, Quot.sound]`):
@@ -195,13 +201,18 @@ axioms`-clean — `[propext, Classical.choice, Quot.sound]`):
   (`transSL_e1/e2`), which generate SL (`transvections_generate`) hence PSL.
 - ✅ **ASSEMBLY** `PSL2_isSimpleGroup` — feed all six into `PSL2_isSimpleGroup_of_iwasawa`.
 
-**NEXT THREAD — wire `PSL2_isSimpleGroup` into `axiom PSL_isSimpleGroup`.**
-`LieType.lean` declares `axiom PSL_isSimpleGroup (n q) … : IsSimpleGroup (PSL n q)`
-over an *opaque* `PSL`.  Our `SL2.PSL 2 q` is the *concrete* `SL(2,F_q)/center`.
-Investigate whether the opaque `LieType.PSL 2 q` can be defined as / shown equiv to
-the concrete one so the `n = 2` instance of the axiom becomes a theorem.  If the
-opaque carrier can't be touched without breaking `Classification.lean`, at minimum
-add a `theorem PSL2_isSimpleGroup` cross-reference and note the gap.
+**NEXT THREAD (open).** With `PSL(2,q)` done, candidate next discharges, in rough
+tractability order:
+- **`PSL_isSimpleGroup_rank_ge_three`** — the natural continuation of this thread.
+  HARD (BN-pair / root-system machinery mathlib lacks); but `PSL(3,q)` simplicity
+  could in principle go through an Iwasawa structure on `ℙ²` analogous to the n=2
+  build. Likely multi-lap; decompose first.
+- **`alternatingGroup_isSimple`** — BLOCKED: bucket C (mathlib `Alternating/Simple.lean`
+  / `alternatingGroup.isSimpleGroup` post-dates v4.29.1 pin; only `isSimpleGroup_five`
+  present). Discharge = bump the pin, NOT re-derive (the one rule). Confirmed absent
+  from `.lake/packages/mathlib` 2026-06-04.
+- **Sporadic / exceptional / CFSG-milestone axioms** — deep, intended-permanent (§B).
+  Order-pin faithfulness anchors are the tractable surface there (RFI resolved).
 
 **Aristotle:** `card_SL2` (`|SL(2,q)| = q(q²-1)`, job `28df03ca`) — DONE & ported
 (`aceed22`); useful for `|PSL(2,q)|` and the order tables.

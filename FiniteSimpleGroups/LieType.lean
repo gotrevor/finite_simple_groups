@@ -142,11 +142,27 @@ would split each family by characteristic / dimension parity / form sign.
 **Inc 29:** `PSL_isSimpleGroup` no longer carries an `[Group (PSL n q)]`
 instance arg — the Group structure is auto-derived from the concrete mathlib
 type. The axiom is now a genuine open claim about
-`Matrix.ProjectiveSpecialLinearGroup (Fin n) (ZMod q)`. -/
+`Matrix.ProjectiveSpecialLinearGroup (Fin n) (ZMod q)`.
 
-axiom PSL_isSimpleGroup
-    (n q : ℕ)
-    (h_n : 2 ≤ n) (h_skip : ¬ (n = 2 ∧ q ≤ 3)) :
+**2026-06-04 — soundness fix + `n = 2` discharge.** The former monolithic
+`axiom PSL_isSimpleGroup (n q) (2 ≤ n) (¬(n=2 ∧ q≤3)) : IsSimpleGroup (PSL n q)`
+was **mathematically false for composite `q`**: `ZMod q` is a field only when `q`
+is prime, and e.g. `PSL(2, ZMod 6) ≅ SL(2,𝔽₂) × SL(2,𝔽₃) / center` is not simple
+(CRT splits it). It is now split into two honest pieces:
+
+* the `n = 2` case is a **machine-checked theorem** — `SL2.PSL2_isSimpleGroup`,
+  assembled from the six Iwasawa obligations in `SL2.lean` (`#print axioms`-clean);
+* the genuinely-deep higher-rank case `3 ≤ n` (Dickson/Dieudonné) stays the axiom
+  below, now correctly guarded by `[Fact (Nat.Prime q)]`. `PSL(n, 𝔽_p)` is simple
+  for every `n ≥ 3` and every prime `p` (no small-case exceptions in rank ≥ 3).
+
+The unified statement covering both cases is the downstream **theorem**
+`PSL_isSimpleGroup` (in `SL2.lean`), so `#print axioms` of any consumer itemizes
+only `PSL_isSimpleGroup_rank_ge_three` (the real debt), not the whole family. -/
+
+axiom PSL_isSimpleGroup_rank_ge_three
+    (n q : ℕ) [Fact (Nat.Prime q)]
+    (h_n : 3 ≤ n) :
     IsSimpleGroup (PSL n q)
 
 axiom PSU_isSimpleGroup

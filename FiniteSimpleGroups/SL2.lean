@@ -914,4 +914,32 @@ theorem PSL2_isSimpleGroup (q : ℕ) [Fact (Nat.Prime q)] (hq : 4 ≤ q) :
 
 
 end SL2
+
+/-- **`PSL(n, 𝔽_p)` is simple** for every prime `q = p`, dimension `n ≥ 2`, outside
+the two genuinely non-simple small cases `PSL(2,2) ≅ S₃` and `PSL(2,3) ≅ A₄`
+(captured by `h_skip : ¬ (n = 2 ∧ q ≤ 3)`).
+
+This is the unified discharge of the former monolithic `axiom PSL_isSimpleGroup`
+(which was unsound for composite `q`; see `LieType.lean`). The two cases:
+
+* `n = 2`: fully machine-checked — `SL2.PSL2_isSimpleGroup` (Iwasawa criterion on
+  the `PSL(2,q) ↷ ℙ¹(𝔽_q)` action, all six obligations proved in `SL2.lean`).
+  Here `h_skip` forces `4 ≤ q`.
+* `n ≥ 3`: the genuinely-deep classical result `PSL_isSimpleGroup_rank_ge_three`
+  (Dickson/Dieudonné), the sole remaining axiom.
+
+So `#print axioms PSL_isSimpleGroup` = `[PSL_isSimpleGroup_rank_ge_three, propext,
+Classical.choice, Quot.sound]` — the `n = 2` case contributes no extra debt. -/
+theorem PSL_isSimpleGroup (n q : ℕ) [Fact (Nat.Prime q)]
+    (h_n : 2 ≤ n) (h_skip : ¬ (n = 2 ∧ q ≤ 3)) :
+    IsSimpleGroup (PSL n q) := by
+  rcases lt_or_ge n 3 with h2 | h3
+  · -- `2 ≤ n < 3`, so `n = 2`; then `h_skip` forces `4 ≤ q`.
+    have hn2 : n = 2 := by omega
+    subst hn2
+    have hq3 : ¬ q ≤ 3 := fun h => h_skip ⟨rfl, h⟩
+    exact SL2.PSL2_isSimpleGroup q (by omega)
+  · -- `n ≥ 3`: the deep higher-rank axiom.
+    exact PSL_isSimpleGroup_rank_ge_three n q h3
+
 end FiniteSimpleGroups

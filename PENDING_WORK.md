@@ -331,11 +331,17 @@ sp_stab_hyperbolic_le]` — **down from 3 deep axioms to 2.** This lap:
 1. **`sp_stab_hyperbolic_le`** (generation core) — a symplectic `g` fixing a hyperbolic pair
    `(e,f)` (`ω(e,f)=1`) pointwise lies in `⨆_v spTransvecGroup v`. This is the genuine
    **dimension induction**: `g` fixes `⟨e,f⟩` pointwise and restricts to `Sp` on `⟨e,f⟩⊥`
-   (dim `2n-2`), where transvections generate by induction and extend back. *Needs an
-   orthogonal-complement / restriction-of-form development not yet in mathlib for this concrete
-   `(l⊕l)→F` model (the recursion changes the index type — awkward; consider `Fin n`→`Fin(n-1)`
-   or an abstract symplectic-space layer).* Submitted to Aristotle 2026-06-04 PM as
-   `8522edf3-fdae-4924-9549-2eb53e1a8f50` (faithful stub `/tmp/aristotle-spstab/SpStab.lean`);
+   (dim `2n-2`), where transvections generate by induction and extend back. **Building blocks
+   DONE** (machine-checked, in `SpIwasawa.lean`): `sp_fixing_preserves_perp` (`g` maps `⟨e,f⟩⊥`
+   into itself) and `spTransvection_fixes_pair` (complement transvections fix the pair — the
+   "extend back" direction). **THE GAP**: identify `⟨e,f⟩⊥` as a symplectic space of dim `2n-2`
+   and recurse — the concrete `(l⊕l)→F` model does NOT recurse naturally (the complement isn't
+   of the form `(l'⊕l')→F`). *Paths:* (i) an **abstract symplectic-space layer** (vector space +
+   nondegenerate alternating form) with the generation theorem proved once, then specialise;
+   (ii) a **coordinate Gaussian-elimination** directly: use complement transvections to zero out
+   `g`'s action one basis vector at a time (no explicit recursion). Submitted to Aristotle
+   2026-06-04 PM as `8522edf3-fdae-4924-9549-2eb53e1a8f50` (stub `/tmp/aristotle-spstab/SpStab.lean`,
+   still IN_PROGRESS at lap end — POLL `aristotle tasks <uuid>` next lap, harvest if COMPLETED);
    likely walls (no mathlib infra) but free grind.
 2. **`pspQuasiPreprimitive`** — `PSp` quasi-preprimitive on ℙ²ⁿ⁻¹. `Sp` is transitive on points
    (`exists_sp_transvecGen_maps` gives it) but **NOT 2-transitive** (preserves `ω`), so the SLn

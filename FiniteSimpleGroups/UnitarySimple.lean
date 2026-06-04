@@ -894,6 +894,42 @@ theorem exists_su_weyl_swap (e f : Fin n → UnitaryField p)
       rw [uTransvection_mulVec, hfz, mul_zero, zero_smul, add_zero]
     rw [hcoe, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, e1, e2, e1]
 
+/-- **Diagonal torus of a hyperbolic plane** (`λ ∈ F_q*`, i.e. `star λ = λ ≠ 0`). The product
+`w(a')·w(a)` of two Weyl swaps (`a' = -a·λ`) is an `SU` element scaling `e ↦ λ·e`, `f ↦ λ⁻¹·f`
+while fixing `⟨e,f⟩^⊥` pointwise. A 6-transvection product realising `diag(λ,λ⁻¹)` inside the
+transvection group; `det = λ·λ⁻¹ = 1` and unitarity force `λ` into the fixed field `F_q`, matching
+the `SU(2)` torus. This is the scalar-correction element of the exact pair-transitivity used in the
+generation dimension induction (`hgen`): after the line-level move `e ↦ c·e'`, composing with the
+appropriate `D_λ` rescales to land on `e'` exactly (when `c ∈ F_q*`). -/
+theorem exists_su_hyperbolic_scale (e f : Fin n → UnitaryField p)
+    (hee : star e ⬝ᵥ e = 0) (hff : star f ⬝ᵥ f = 0) (hef : star e ⬝ᵥ f = 1)
+    {lam : UnitaryField p} (hlam0 : lam ≠ 0) (hlam : star lam = lam) :
+    ∃ g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p),
+      (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ e = lam • e ∧
+        (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f = lam⁻¹ • f ∧
+        ∀ z : Fin n → UnitaryField p, star e ⬝ᵥ z = 0 → star f ⬝ᵥ z = 0 →
+          (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ z = z := by
+  obtain ⟨a, ha0, hatr⟩ := UnitaryField.exists_traceZero_ne_zero p
+  have hsa : star a = -a := by linear_combination hatr
+  set a' : UnitaryField p := -a * lam with ha'def
+  have ha'0 : a' ≠ 0 := by rw [ha'def]; exact mul_ne_zero (neg_ne_zero.mpr ha0) hlam0
+  have ha'tr : a' + star a' = 0 := by
+    rw [ha'def, star_mul', star_neg, hsa, hlam]; ring
+  obtain ⟨g1, hg1e, hg1f, hg1z⟩ := exists_su_weyl_swap p e f hee hff hef ha0 hatr
+  obtain ⟨g2, hg2e, hg2f, hg2z⟩ := exists_su_weyl_swap p e f hee hff hef ha'0 ha'tr
+  -- the two scalar identities
+  have hscaleE : (-a⁻¹) * a' = lam := by
+    rw [ha'def]; field_simp
+  have hscaleF : a * (-a'⁻¹) = lam⁻¹ := by
+    rw [ha'def]; field_simp [ha0, hlam0]
+  refine ⟨g2 * g1, ?_, ?_, ?_⟩
+  · rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, hg1e, Matrix.mulVec_smul, hg2f, smul_smul,
+      hscaleE]
+  · rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, hg1f, Matrix.mulVec_smul, hg2e, smul_smul,
+      hscaleF]
+  · intro z hez hfz
+    rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, hg1z z hez hfz, hg2z z hez hfz]
+
 /-- **Non-orthogonal move fixing the ENTIRE common perp `⟨v,w⟩^⊥`.** For isotropic `v, w` with
 `⟨v,w⟩ ≠ 0`, the SAME element `g = τ_{v,b}·τ_{w,t} ∈ SU` mapping `v ↦ c·w` (`c ≠ 0`) fixes *every*
 `x` orthogonal to both centres (`⟨v,x⟩ = ⟨w,x⟩ = 0`) — because each transvection `τ_{u,·}` fixes

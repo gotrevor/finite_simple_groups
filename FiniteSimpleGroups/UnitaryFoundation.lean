@@ -94,6 +94,30 @@ theorem exists_norm_neg_one : ∃ c : UnitaryField p, c * star c = -1 := by
   obtain ⟨c, hc⟩ := FiniteField.norm_surjective (ZMod p) (UnitaryField p) (-1)
   exact ⟨c, by rw [← algebraMap_norm_eq_mul_star, hc, map_neg, map_one]⟩
 
+open Matrix in
+/-- **Isotropic vectors exist** for the standard Hermitian form on `(F_{p²})ⁿ`, `n ≥ 2`: the
+vector `v = c·e₀ + e₁` (with `c·star c = −1` from `exists_norm_neg_one`) is nonzero and isotropic,
+since `⟨v,v⟩ = star v ⬝ᵥ v = star c · c + 1 = c · star c + 1 = 0`. This is the nonemptiness input
+to the `PSU`-action on isotropic projective points (step 2). -/
+theorem exists_isotropic (n : ℕ) (hn : 2 ≤ n) :
+    ∃ v : Fin n → UnitaryField p, v ≠ 0 ∧ star v ⬝ᵥ v = 0 := by
+  obtain ⟨c, hc⟩ := exists_norm_neg_one p
+  let i₀ : Fin n := ⟨0, by omega⟩
+  let i₁ : Fin n := ⟨1, by omega⟩
+  have hne : i₀ ≠ i₁ := by simp only [i₀, i₁, ne_eq, Fin.mk.injEq]; omega
+  refine ⟨Pi.single i₀ c + Pi.single i₁ 1, ?_, ?_⟩
+  · intro h
+    have h1 := congrFun h i₁
+    rw [Pi.add_apply, Pi.single_eq_of_ne hne.symm, Pi.single_eq_same, Pi.zero_apply,
+      zero_add] at h1
+    exact one_ne_zero h1
+  · rw [star_add, ← Pi.single_star, ← Pi.single_star, star_one]
+    simp only [add_dotProduct, dotProduct_add, single_dotProduct,
+      Pi.single_eq_same, Pi.single_eq_of_ne hne, Pi.single_eq_of_ne hne.symm,
+      mul_one, mul_zero, add_zero, zero_add]
+    rw [mul_comm (star c) c, hc]
+    ring
+
 end UnitaryField
 
 /-- **The concrete special unitary group `SU_n(F_p)`** — now well-formed because `UnitaryField p`

@@ -241,6 +241,35 @@ theorem spTransvection_fixes_pair {e f v : (l ⊕ l) → F} (c : F)
     spTransvection v c *ᵥ e = e ∧ spTransvection v c *ᵥ f = f :=
   ⟨spTransvection_apply_of_orth c hev, spTransvection_apply_of_orth c hfv⟩
 
+/-- **Explicit projection onto the orthogonal complement `⟨e,f⟩⊥`** of a hyperbolic pair
+`(e,f)`: `perpComp e f x = x + ω(f,x)·e − ω(e,x)·f`. No abstract submodule machinery — a closed
+formula on the coordinate space, the foundation of the generation-core induction's complement
+decomposition `V = ⟨e,f⟩ ⊕ ⟨e,f⟩⊥`. -/
+noncomputable def perpComp (e f x : (l ⊕ l) → F) : (l ⊕ l) → F :=
+  x + (f ⬝ᵥ (Matrix.J l F *ᵥ x)) • e - (e ⬝ᵥ (Matrix.J l F *ᵥ x)) • f
+
+/-- `perpComp e f x` lands in `⟨e,f⟩⊥`: `ω(e, perpComp e f x) = ω(f, perpComp e f x) = 0`
+(when `ω(e,f)=1`). The defining property of the complement projection. -/
+theorem perpComp_mem_perp {e f : (l ⊕ l) → F} (hef : e ⬝ᵥ (Matrix.J l F *ᵥ f) = 1)
+    (x : (l ⊕ l) → F) :
+    e ⬝ᵥ (Matrix.J l F *ᵥ perpComp e f x) = 0 ∧
+      f ⬝ᵥ (Matrix.J l F *ᵥ perpComp e f x) = 0 := by
+  have hfe : f ⬝ᵥ (Matrix.J l F *ᵥ e) = -1 := by rw [spForm_skew, hef]
+  refine ⟨?_, ?_⟩
+  · simp only [perpComp, mulVec_add, mulVec_sub, mulVec_smul, dotProduct_add, dotProduct_sub,
+      dotProduct_smul, spForm_self, hef, smul_eq_mul, mul_zero, mul_one]
+    ring
+  · simp only [perpComp, mulVec_add, mulVec_sub, mulVec_smul, dotProduct_add, dotProduct_sub,
+      dotProduct_smul, spForm_self, hef, hfe, smul_eq_mul, mul_zero]
+    ring
+
+/-- The complement projection recovers `x` modulo `⟨e,f⟩`: `x = perpComp e f x − ω(f,x)·e
++ ω(e,x)·f`, i.e. `x` is the complement component plus an explicit `⟨e,f⟩`-combination. The
+`V = ⟨e,f⟩ ⊕ ⟨e,f⟩⊥` decomposition, witnessed concretely. -/
+theorem perpComp_add_span (e f x : (l ⊕ l) → F) :
+    x = perpComp e f x - (f ⬝ᵥ (Matrix.J l F *ᵥ x)) • e + (e ⬝ᵥ (Matrix.J l F *ᵥ x)) • f := by
+  simp only [perpComp]; abel
+
 /-- **DISCLOSED AXIOM (generation core — stabilizer of a hyperbolic pair).** A symplectic `g`
 fixing a hyperbolic pair `(e,f)` (`ω(e,f)=1`) **pointwise** lies in the transvection subgroup
 `⨆_v spTransvecGroup v`. This is the genuine remaining core of symplectic generation, the

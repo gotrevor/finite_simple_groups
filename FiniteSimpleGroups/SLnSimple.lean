@@ -197,4 +197,87 @@ theorem pslnPermHom_injective [Nonempty n] :
     rw [pslnPermHom_mk] at hx
     exact (QuotientGroup.eq_one_iff g).mpr (ker_le_center (MonoidHom.mem_ker.mpr hx))
 
+/-! ### Quasi-preprimitivity via 2-transitivity — the Iwasawa `IsQuasiPreprimitive` obligation
+
+`SL(n,F)` is **2-transitive** on `ℙ^{n-1}(F)` for `2 ≤ |n|`: any ordered pair of distinct
+points maps to any other. This is the geometric core; from it, a 2-transitive action is
+primitive (`MulAction.isPreprimitive_of_is_two_pretransitive`), and primitive ⇒ quasi-
+preprimitive (`IsPreprimitive.isQuasiPreprimitive`, a mathlib instance). The chain runs at
+the faithful `PSL = SL/Z` level (the `SL` action itself is *not* quasi-preprimitive — its
+center is a nontrivial normal subgroup acting trivially), transported through `QuotientGroup.mk`
+exactly as in `SL2.psl_two_trans`/`psl_two_pretrans`/`pslQuasiPreprimitive`.
+
+The single disclosed input is `exists_sl_maps_two_points` (below). -/
+
+/-- **`SL(n,F)` is 2-transitive on `ℙ^{n-1}` for `2 ≤ |n|`** — DISCLOSED AXIOM (out at
+Aristotle / TODO). Any ordered pair of distinct points `(x₀,x₁)` maps to any other ordered
+pair of distinct points `(y₀,y₁)` by some `g : SL(n,F)`.
+
+Mathematical content: distinct projective points have linearly independent representatives.
+Given distinct `x₀,x₁` with reps `u,v` (l.i.) and distinct `y₀,y₁` with reps `u',v'` (l.i.),
+extend `{u,v}` and `{u',v'}` to bases; the matrices `A,B` with these as their first two
+columns are invertible, and rescaling the *second* column by `1/det` makes `det = 1` without
+moving the line it spans (projective invariance), giving `A,B ∈ SL(n,F)` mapping the
+reference frame `([e₀],[e₁])` to `(x₀,x₁)` and `(y₀,y₁)`; then `B A⁻¹` is the required element.
+The `2 ≤ |n|` hypothesis guarantees two distinct standard basis lines exist. For `n = 2` this
+is `SL2.sl2_two_trans` (proved); the general case needs mathlib's `Basis.extend` plus the
+column-to-matrix/determinant bookkeeping (a self-contained linear-algebra brick).
+
+TODO(discharge): port the Aristotle proof (or prove locally via `Basis.extend`). Once landed,
+`pslnQuasiPreprimitive` becomes axiom-clean. -/
+axiom exists_sl_maps_two_points (h2 : 2 ≤ Fintype.card n)
+    (x0 x1 y0 y1 : Projectivization F (n → F)) (hx : x0 ≠ x1) (hy : y0 ≠ y1) :
+    ∃ g : SpecialLinearGroup n F, g • x0 = y0 ∧ g • x1 = y1
+
+/-- **`PSL(n,F)` is 2-transitive on `ℙ^{n-1}`** (on points), inherited from the `SL` action
+through the surjection `SL ↠ PSL` (modulo the disclosed `exists_sl_maps_two_points`). -/
+theorem psln_two_trans [Nonempty n] (h2 : 2 ≤ Fintype.card n)
+    (x0 x1 y0 y1 : Projectivization F (n → F)) (hx : x0 ≠ x1) (hy : y0 ≠ y1) :
+    letI := pslnAction (n := n) (F := F)
+    ∃ g : (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F)),
+      g • x0 = y0 ∧ g • x1 = y1 := by
+  letI := pslnAction (n := n) (F := F)
+  obtain ⟨g, h0, h1⟩ := exists_sl_maps_two_points h2 x0 x1 y0 y1 hx hy
+  refine ⟨QuotientGroup.mk g, ?_, ?_⟩
+  · show pslnPermHom (QuotientGroup.mk g) x0 = y0
+    rw [pslnPermHom_mk]; exact h0
+  · show pslnPermHom (QuotientGroup.mk g) x1 = y1
+    rw [pslnPermHom_mk]; exact h1
+
+/-- **`PSL(n,F)` is 2-pretransitive on `ℙ^{n-1}`** (the mathlib `IsMultiplyPretransitive`
+form, on ordered pairs `Fin 2 ↪ ℙ^{n-1}`). -/
+theorem psln_two_pretransitive [Nonempty n] (h2 : 2 ≤ Fintype.card n) :
+    letI := pslnAction (n := n) (F := F)
+    MulAction.IsMultiplyPretransitive
+      (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F))
+      (Projectivization F (n → F)) 2 := by
+  letI := pslnAction (n := n) (F := F)
+  rw [MulAction.isMultiplyPretransitive_iff]
+  intro x y
+  have hx : x 0 ≠ x 1 := fun h => absurd (x.injective h) (by decide)
+  have hy : y 0 ≠ y 1 := fun h => absurd (y.injective h) (by decide)
+  obtain ⟨g, hg0, hg1⟩ := psln_two_trans h2 (x 0) (x 1) (y 0) (y 1) hx hy
+  refine ⟨g, ?_⟩
+  ext i
+  fin_cases i
+  · simpa [Function.Embedding.smul_apply] using hg0
+  · simpa [Function.Embedding.smul_apply] using hg1
+
+/-- **`PSL(n,F)`'s action on `ℙ^{n-1}` is quasi-preprimitive** for `2 ≤ |n|` — the Iwasawa
+`IsQuasiPreprimitive` obligation. From 2-transitivity: 2-transitive ⇒ primitive
+(`isPreprimitive_of_is_two_pretransitive`) ⇒ quasi-preprimitive (mathlib instance). Modulo
+the disclosed `exists_sl_maps_two_points`. Generalizes `SL2.pslQuasiPreprimitive`. -/
+@[reducible]
+noncomputable def pslnQuasiPreprimitive [Nonempty n] (h2 : 2 ≤ Fintype.card n) :
+    letI := pslnAction (n := n) (F := F)
+    MulAction.IsQuasiPreprimitive
+      (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F))
+      (Projectivization F (n → F)) := by
+  letI := pslnAction (n := n) (F := F)
+  haveI : MulAction.IsPreprimitive
+      (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F))
+      (Projectivization F (n → F)) :=
+    MulAction.isPreprimitive_of_is_two_pretransitive (psln_two_pretransitive h2)
+  infer_instance
+
 end FiniteSimpleGroups.SLn

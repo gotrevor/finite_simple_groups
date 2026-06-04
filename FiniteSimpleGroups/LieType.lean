@@ -152,18 +152,16 @@ is prime, and e.g. `PSL(2, ZMod 6) ≅ SL(2,𝔽₂) × SL(2,𝔽₃) / center` 
 
 * the `n = 2` case is a **machine-checked theorem** — `SL2.PSL2_isSimpleGroup`,
   assembled from the six Iwasawa obligations in `SL2.lean` (`#print axioms`-clean);
-* the genuinely-deep higher-rank case `3 ≤ n` (Dickson/Dieudonné) stays the axiom
-  below, now correctly guarded by `[Fact (Nat.Prime q)]`. `PSL(n, 𝔽_p)` is simple
-  for every `n ≥ 3` and every prime `p` (no small-case exceptions in rank ≥ 3).
+* the higher-rank case `3 ≤ n` is **also now machine-checked** —
+  `SLn.PSLn_isSimpleGroup_of_rank` (in `SLnIwasawa.lean`), the full Iwasawa criterion
+  assembled on the projective action `SL(n,q) ↷ ℙ^{n-1}`. It is no longer an axiom here;
+  `PSL(n, 𝔽_p)` is simple for every `n ≥ 3` and every prime `p`.
 
 The unified statement covering both cases is the downstream **theorem**
-`PSL_isSimpleGroup` (in `SL2.lean`), so `#print axioms` of any consumer itemizes
-only `PSL_isSimpleGroup_rank_ge_three` (the real debt), not the whole family. -/
-
-axiom PSL_isSimpleGroup_rank_ge_three
-    (n q : ℕ) [Fact (Nat.Prime q)]
-    (h_n : 3 ≤ n) :
-    IsSimpleGroup (PSL n q)
+`PSL_isSimpleGroup` (in `SL2.lean`). After the `n ≥ 3` discharge (2026-06-04), it depends
+only on the two concrete geometric facts `SLn.transvecSL_closure_eq_top` (transvections
+generate `SLₙ`) and `SLn.exists_sl_maps_two_points` (`SLₙ` is 2-transitive on `ℙ^{n-1}`),
+not on any monolithic `PSL`-simplicity axiom. -/
 
 axiom PSU_isSimpleGroup
     (n q : ℕ) [Group (PSU n q)]

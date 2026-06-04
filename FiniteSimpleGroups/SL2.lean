@@ -959,11 +959,13 @@ This is the unified discharge of the former monolithic `axiom PSL_isSimpleGroup`
 * `n = 2`: fully machine-checked — `SL2.PSL2_isSimpleGroup` (Iwasawa criterion on
   the `PSL(2,q) ↷ ℙ¹(𝔽_q)` action, all six obligations proved in `SL2.lean`).
   Here `h_skip` forces `4 ≤ q`.
-* `n ≥ 3`: the genuinely-deep classical result `PSL_isSimpleGroup_rank_ge_three`
-  (Dickson/Dieudonné), the sole remaining axiom.
+* `n ≥ 3`: also machine-checked — `SLn.PSLn_isSimpleGroup_of_rank` (the Iwasawa criterion
+  on `SL(n,q) ↷ ℙ^{n-1}`, `SLnIwasawa.lean`), modulo the two concrete geometric facts
+  below. No monolithic rank-≥3 simplicity axiom remains.
 
-So `#print axioms PSL_isSimpleGroup` = `[PSL_isSimpleGroup_rank_ge_three, propext,
-Classical.choice, Quot.sound]` — the `n = 2` case contributes no extra debt. -/
+So `#print axioms PSL_isSimpleGroup` = `[propext, Classical.choice, Quot.sound,
+SLn.exists_sl_maps_two_points, SLn.transvecSL_closure_eq_top]` — the deep family axiom is
+replaced by "transvections generate `SLₙ`" and "`SLₙ` is 2-transitive on `ℙ^{n-1}`". -/
 theorem PSL_isSimpleGroup (n q : ℕ) [Fact (Nat.Prime q)]
     (h_n : 2 ≤ n) (h_skip : ¬ (n = 2 ∧ q ≤ 3)) :
     IsSimpleGroup (PSL n q) := by

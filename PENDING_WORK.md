@@ -416,15 +416,25 @@ This lap discharged BOTH former core axioms and wired into LieType:
   element. ✅ **(i) `uTransvecSU_mem_commutator` DONE** (2026-06-04 eve, axiom-clean): each unitary
   transvection `τ_{v,a} = ⁅uScale v w λ, τ_{v, a/(N(λ)-1)}⁆ ∈ commutator(SU)`, given a hyperbolic
   pair and a fixed-field `λ` with `N(λ) = λ·star λ ≠ 1` (mirrors `spTransvecSp_mem_commutator`).
-  **REMAINING for perfectness:** (ii) lift to `commutator (SU) = ⊤` via Step-3a generation (the
-  ONLY missing input now — submitted to Aristotle); (iii) descend to `PSUConcrete`. CAUTION: small
-  exceptions (e.g. SU(3,2) not perfect) — the
-  fixed-field `λ²≠1` needs `|F₀| ≥ 4`; defer the exact exclusion. For general (non-fixed-field) `λ`,
-  multiply `uScale` by a norm-1 scalar `μ=(star λ)λ⁻¹` on the complement to fix `det` (n≥3, TODO).
-- **Step 3c — assemble** `MulAction.IwasawaStructure` (same mathlib criterion as PSL/PSp/PSU) ⟹
-  `IsSimpleGroup (PSUConcrete n p)`, then **connect `LieType.PSU`** (replace `opaque` carrier;
-  CAUTION: `PSU` used in `classicalLieTypeCarrier` + `PSU_isSimpleGroup`; general `q=p^m` needs
-  `GaloisField p (2m)` + `iterateFrobenius`).
+  ✅ **(ii) PERFECTNESS ENGINE DONE** (axiom-clean): `commutator_specialUnitaryGroup_eq_top`
+  (field-generic, takes generation + fixed-field `λ` + hyperbolic partners as hyps) AND the concrete
+  `commutator_SU_eq_top_of_generate` (n≥3, p≥5, in `UnitarySimple.lean`) which feeds in the proven
+  `UnitaryField.exists_fixedField_norm_ne_one` (p≥5) + `exists_hyperbolic_partner`. **The ONLY
+  remaining input for `commutator(SU)=⊤` is generation** (Step 3a — Aristotle project
+  `a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`, IN_PROGRESS). (iii) descend `commutator=⊤` to
+  `PSUConcrete` (quotient is perfect if `SU` is — `commutator` surjects). CAUTION: small exceptions
+  (e.g. SU(3,2) not perfect) handled by the `p≥5` hyp; the exact exclusion is deferred. For general
+  (non-fixed-field) `λ`, multiply `uScale` by a norm-1 `μ=(star λ)λ⁻¹` on the complement (n≥3, TODO).
+- **Step 3c — assemble** `MulAction.IwasawaStructure` (same mathlib criterion) ⟹
+  `IsSimpleGroup (PSUConcrete n p)`. **HAVE (this lap):** `psuFaithful` (FaithfulSMul on
+  `IsoPoint p n`), `PSU_nontrivial` (Nontrivial), `nonempty_isoPoint` (action set nonempty),
+  perfectness engine (above). **NEED:** the `IwasawaStructure` T-family `Tline : IsoPoint → Subgroup
+  PSUConcrete` (= `uRootSubgroup` descended through center) with `is_comm` (abelian — `uRootSubgroup`
+  is `IsMulCommutative`), `is_conj` (conjugation-equivariant — mirror `pspIwasawaStructure.is_conj`
+  using `uTransvecSU_conj`), `is_generator` (= generation, Step 3a); and **`IsQuasiPreprimitive`**
+  of the `IsoPoint` action (DEEP — unitary Witt transitivity + trivial blocks, mirror SpIwasawa
+  `pspQuasiPreprimitive`). Then **connect `LieType.PSU`** (replace `opaque` carrier; general `q=p^m`
+  needs `GaloisField p (2m)` + `iterateFrobenius`).
 The whole PSp scaffold (`SpIwasawa`/`SpTransvection`/`SpSmallField`) remains the template to copy.
 
 **Aristotle in flight (2026-06-04 eve):** unitary Witt generation (project

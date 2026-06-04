@@ -293,6 +293,95 @@ theorem isotropic_single_pair {i j : n} (hij : i ≠ j) {c : F} (hc : c * star c
     Pi.single_eq_of_ne hij, Pi.single_eq_of_ne hij.symm, mul_one, mul_zero, add_zero, zero_add]
   rw [mul_comm (star c) c, hc]; ring
 
+/-! ### Perp-projection infrastructure for the generation induction (`hgen`)
+
+The Dieudonné/Eichler proof that the isotropic unitary transvections generate `SU` reduces a
+general `g ∈ SU`, via transvection/Eichler transitivity, to one **fixing an isotropic hyperbolic
+pair `(e,f)` pointwise** (`⟨e,f⟩ = 1`, `e,f` isotropic); such a `g` restricts to `SU` on the
+orthogonal complement `⟨e,f⟩^⊥`, where transvections generate by the dimension induction and extend
+back (centres in `⟨e,f⟩^⊥`, fixing `e,f` — `uTransvection_fixes_pair`). These are the structural
+bricks of the complement decomposition `V = ⟨e,f⟩ ⊕ ⟨e,f⟩^⊥`, unitary analogues of the symplectic
+`perpComp` / `perp_form_ne_of_mem_perp` development. The Hermitian form `⟨x,y⟩ = star x ⬝ᵥ y` is
+conjugate-linear in the first slot, handled via `dotProduct_star_swap`. -/
+
+/-- **The Hermitian form is nondegenerate**: if `⟨u,v⟩ = star u ⬝ᵥ v = 0` for every `v`, then
+`u = 0`. Testing against `eᵢ` gives `star (uᵢ) = 0`, hence `uᵢ = 0`. -/
+theorem uForm_nondegenerate {u : n → F} (h : ∀ v, star u ⬝ᵥ v = 0) : u = 0 := by
+  funext i
+  have hi := h (Pi.single i 1)
+  rw [dotProduct_single, mul_one, Pi.star_apply, star_eq_zero] at hi
+  rw [Pi.zero_apply]; exact hi
+
+/-- **Explicit projection onto `⟨e,f⟩^⊥`** for an isotropic hyperbolic pair `(e,f)`:
+`uPerpComp e f x = x − ⟨f,x⟩·e − ⟨e,x⟩·f`. A closed formula on the coordinate space — no abstract
+submodule machinery — the foundation of the generation-induction complement decomposition. -/
+noncomputable def uPerpComp (e f x : n → F) : n → F :=
+  x - (star f ⬝ᵥ x) • e - (star e ⬝ᵥ x) • f
+
+omit [DecidableEq n] in
+/-- `uPerpComp e f x` lands in `⟨e,f⟩^⊥`: `⟨e, uPerpComp e f x⟩ = ⟨f, uPerpComp e f x⟩ = 0`
+(for `e,f` isotropic with `⟨e,f⟩ = 1`). The defining property of the complement projection. -/
+theorem uPerpComp_mem_perp {e f : n → F} (hef : star e ⬝ᵥ f = 1)
+    (hee : star e ⬝ᵥ e = 0) (hff : star f ⬝ᵥ f = 0) (x : n → F) :
+    star e ⬝ᵥ uPerpComp e f x = 0 ∧ star f ⬝ᵥ uPerpComp e f x = 0 := by
+  have hfe : star f ⬝ᵥ e = 1 := by rw [dotProduct_star_swap, hef, star_one]
+  refine ⟨?_, ?_⟩
+  · simp only [uPerpComp, dotProduct_sub, dotProduct_smul, smul_eq_mul, hee, hef, mul_zero, mul_one]
+    ring
+  · simp only [uPerpComp, dotProduct_sub, dotProduct_smul, smul_eq_mul, hff, hfe, mul_zero, mul_one]
+    ring
+
+omit [DecidableEq n] in
+/-- The complement projection recovers `x` modulo `⟨e,f⟩`: `x = uPerpComp e f x + ⟨f,x⟩·e
++ ⟨e,x⟩·f`. The `V = ⟨e,f⟩ ⊕ ⟨e,f⟩^⊥` decomposition, witnessed concretely. -/
+theorem uPerpComp_add_span (e f x : n → F) :
+    x = uPerpComp e f x + (star f ⬝ᵥ x) • e + (star e ⬝ᵥ x) • f := by
+  simp only [uPerpComp]; abel
+
+/-- **`⟨·,·⟩` restricts non-degenerately to `⟨e,f⟩^⊥`**: for `u ∈ ⟨e,f⟩^⊥` non-zero there is a
+`z ∈ ⟨e,f⟩^⊥` with `⟨u,z⟩ ≠ 0`. Were `⟨u,·⟩` zero on all of `⟨e,f⟩^⊥`, then — since `u ∈ ⟨e,f⟩^⊥`
+makes `⟨u,e⟩ = ⟨u,f⟩ = 0` too (`dotProduct_star_swap`) and `V = ⟨e,f⟩ ⊕ ⟨e,f⟩^⊥`
+(`uPerpComp_add_span`) — `⟨u,·⟩` would vanish on all of `V`, forcing `u = 0`
+(`uForm_nondegenerate`). The relative non-degeneracy powering transitivity within the complement. -/
+theorem uPerp_form_ne_of_mem_perp {e f : n → F} (hef : star e ⬝ᵥ f = 1)
+    (hee : star e ⬝ᵥ e = 0) (hff : star f ⬝ᵥ f = 0)
+    {u : n → F} (hue : star e ⬝ᵥ u = 0) (huf : star f ⬝ᵥ u = 0) (hu : u ≠ 0) :
+    ∃ z, star e ⬝ᵥ z = 0 ∧ star f ⬝ᵥ z = 0 ∧ star u ⬝ᵥ z ≠ 0 := by
+  by_contra hcon
+  apply hu
+  apply uForm_nondegenerate
+  intro x
+  have hue' : star u ⬝ᵥ e = 0 := by rw [dotProduct_star_swap, hue, star_zero]
+  have huf' : star u ⬝ᵥ f = 0 := by rw [dotProduct_star_swap, huf, star_zero]
+  have hperp := uPerpComp_mem_perp hef hee hff x
+  have hz : star u ⬝ᵥ uPerpComp e f x = 0 := by
+    by_contra hne
+    exact hcon ⟨uPerpComp e f x, hperp.1, hperp.2, hne⟩
+  rw [uPerpComp_add_span e f x, dotProduct_add, dotProduct_add, dotProduct_smul, dotProduct_smul,
+    smul_eq_mul, smul_eq_mul, hz, hue', huf']
+  ring
+
+/-- **Relative `exists_form_both_ne` within `⟨e,f⟩^⊥`**: for `u, w ∈ ⟨e,f⟩^⊥` non-zero there is a
+`z ∈ ⟨e,f⟩^⊥` simultaneously non-orthogonal to both. Standard-witness combination `z₁, z₂, z₁+z₂`
+from the relative non-degeneracy `uPerp_form_ne_of_mem_perp`. The transitivity-within-complement
+input for the generation induction. -/
+theorem exists_uPerp_form_both_ne {e f : n → F} (hef : star e ⬝ᵥ f = 1)
+    (hee : star e ⬝ᵥ e = 0) (hff : star f ⬝ᵥ f = 0)
+    {u w : n → F} (hue : star e ⬝ᵥ u = 0) (huf : star f ⬝ᵥ u = 0) (hu : u ≠ 0)
+    (hwe : star e ⬝ᵥ w = 0) (hwf : star f ⬝ᵥ w = 0) (hw : w ≠ 0) :
+    ∃ z, (star e ⬝ᵥ z = 0 ∧ star f ⬝ᵥ z = 0) ∧ star u ⬝ᵥ z ≠ 0 ∧ star w ⬝ᵥ z ≠ 0 := by
+  obtain ⟨z₁, hz1e, hz1f, hz1⟩ := uPerp_form_ne_of_mem_perp hef hee hff hue huf hu
+  obtain ⟨z₂, hz2e, hz2f, hz2⟩ := uPerp_form_ne_of_mem_perp hef hee hff hwe hwf hw
+  by_cases hwz1 : star w ⬝ᵥ z₁ = 0
+  · by_cases huz2 : star u ⬝ᵥ z₂ = 0
+    · refine ⟨z₁ + z₂,
+        ⟨by rw [dotProduct_add, hz1e, hz2e, add_zero],
+          by rw [dotProduct_add, hz1f, hz2f, add_zero]⟩, ?_, ?_⟩
+      · rw [dotProduct_add, huz2, add_zero]; exact hz1
+      · rw [dotProduct_add, hwz1, zero_add]; exact hz2
+    · exact ⟨z₂, ⟨hz2e, hz2f⟩, huz2, hz2⟩
+  · exact ⟨z₁, ⟨hz1e, hz1f⟩, hz1, hwz1⟩
+
 /-! ### The center of `SU_n(F_{p²})` is the scalar matrices (`n ≥ 3`)
 
 Instantiating the geometric crux over the concrete Hermitian field `F_{p²} = UnitaryField p`.

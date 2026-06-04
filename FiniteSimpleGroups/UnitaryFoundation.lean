@@ -118,12 +118,9 @@ theorem exists_isotropic (n : ℕ) (hn : 2 ≤ n) :
     rw [mul_comm (star c) c, hc]
     ring
 
-/-- **The trace-zero (skew-Hermitian) scalars are nontrivial**: there is a nonzero `a` with
-`a + star a = 0`. The Frobenius `star` is nontrivial (`orderOf = finrank = 2 ≠ 1`), so some `b`
-has `star b ≠ b`; then `a = b − star b ≠ 0` is trace-zero (`star a = star b − b = −a`). This makes
-the unitary root subgroup `uRootSubgroup` nontrivial — the nondegeneracy input to the `PSU`
-Iwasawa structure (step 3). -/
-theorem exists_traceZero_ne_zero : ∃ a : UnitaryField p, a ≠ 0 ∧ a + star a = 0 := by
+/-- **The Frobenius conjugation is nontrivial**: there is `b ∈ F_{p²}` with `star b ≠ b` (i.e.
+`b ∉ F_p`). The order of the Frobenius `AlgHom` is `finrank = 2 ≠ 1`, so it is not the identity. -/
+theorem exists_star_ne_self : ∃ b : UnitaryField p, star b ≠ b := by
   have hfin : Module.finrank (ZMod p) (UnitaryField p) = 2 :=
     GaloisField.finrank p (by norm_num)
   have horder : orderOf (FiniteField.frobeniusAlgHom (ZMod p) (UnitaryField p)) = 2 := by
@@ -137,15 +134,51 @@ theorem exists_traceZero_ne_zero : ∃ a : UnitaryField p, a ≠ 0 ∧ a + star 
     intro h
     rw [h, orderOf_one] at horder
     exact absurd horder (by norm_num)
-  obtain ⟨b, hb⟩ : ∃ b : UnitaryField p, star b ≠ b := by
-    by_contra hcon
-    simp only [not_exists, ne_eq, not_not] at hcon
-    exact hne1 (AlgHom.ext fun x => by rw [AlgHom.one_apply, hfrob, hcon])
+  by_contra hcon
+  simp only [not_exists, ne_eq, not_not] at hcon
+  exact hne1 (AlgHom.ext fun x => by rw [AlgHom.one_apply, hfrob, hcon])
+
+/-- **The trace-zero (skew-Hermitian) scalars are nontrivial**: there is a nonzero `a` with
+`a + star a = 0`. From some `b` with `star b ≠ b` (`exists_star_ne_self`), `a = b − star b ≠ 0`
+is trace-zero (`star a = star b − b = −a`). This makes the unitary root subgroup `uRootSubgroup`
+nontrivial — the nondegeneracy input to the `PSU` Iwasawa structure (step 3). -/
+theorem exists_traceZero_ne_zero : ∃ a : UnitaryField p, a ≠ 0 ∧ a + star a = 0 := by
+  obtain ⟨b, hb⟩ := exists_star_ne_self p
   refine ⟨b - star b, ?_, ?_⟩
   · intro h
     rw [sub_eq_zero] at h
     exact hb h.symm
   · rw [star_sub, star_star]; ring
+
+/-- **Two distinct Hermitian-norm `−1` elements.** The norm-`(−1)` fibre is a coset of the norm-one
+group (order `p+1 ≥ 2`), so it has more than one element. Concretely: `c` with `N(c) = −1`
+(`exists_norm_neg_one`) and `c·ζ` where `ζ = b·(star b)⁻¹` has norm one and `ζ ≠ 1` (from
+`star b ≠ b`). This is the seed for spanning the space by isotropic vectors (`UnitarySimple`). -/
+theorem exists_two_norm_neg_one :
+    ∃ c c' : UnitaryField p, c ≠ c' ∧ c * star c = -1 ∧ c' * star c' = -1 := by
+  obtain ⟨c, hc⟩ := exists_norm_neg_one p
+  obtain ⟨b, hb⟩ := exists_star_ne_self p
+  have hb0 : b ≠ 0 := fun h => hb (by rw [h, star_zero])
+  have hsb0 : star b ≠ 0 := fun h => hb0 (by simpa using congrArg star h)
+  have hc0 : c ≠ 0 := fun h0 => by
+    rw [h0, zero_mul] at hc; exact one_ne_zero (neg_eq_zero.mp hc.symm)
+  set ζ : UnitaryField p := b * (star b)⁻¹ with hζ
+  have hζ1 : ζ ≠ 1 := by
+    intro h
+    rw [hζ] at h
+    field_simp [hsb0] at h
+    exact hb h.symm
+  have hNζ : ζ * star ζ = 1 := by
+    rw [hζ, star_mul', star_inv₀, star_star]
+    field_simp [hb0, hsb0]
+  refine ⟨c, c * ζ, ?_, hc, ?_⟩
+  · intro h
+    apply hζ1
+    have : c * 1 = c * ζ := by rw [mul_one]; exact h
+    exact (mul_left_cancel₀ hc0 this).symm
+  · rw [star_mul']
+    calc (c * ζ) * (star c * star ζ) = (c * star c) * (ζ * star ζ) := by ring
+      _ = -1 := by rw [hc, hNζ, mul_one]
 
 end UnitaryField
 

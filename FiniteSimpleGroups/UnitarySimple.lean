@@ -283,6 +283,16 @@ theorem su_scalar_mem_center {g : Matrix.specialUnitaryGroup n F} {μ : F}
   apply Subtype.ext
   rw [Submonoid.coe_mul, Submonoid.coe_mul, hg, smul_mul_assoc, one_mul, mul_smul_comm, mul_one]
 
+/-- The vector `eᵢ + c·eⱼ` (`i ≠ j`, `N(c) = c·star c = -1`) is isotropic:
+`⟨eᵢ + c eⱼ, eᵢ + c eⱼ⟩ = 1 + star c·c = 1 + N(c) = 0`. -/
+theorem isotropic_single_pair {i j : n} (hij : i ≠ j) {c : F} (hc : c * star c = -1) :
+    star ((Pi.single i 1 : n → F) + Pi.single j c) ⬝ᵥ
+      ((Pi.single i 1 : n → F) + Pi.single j c) = 0 := by
+  rw [star_add, ← Pi.single_star, ← Pi.single_star, star_one]
+  simp only [add_dotProduct, dotProduct_add, single_dotProduct, Pi.single_eq_same,
+    Pi.single_eq_of_ne hij, Pi.single_eq_of_ne hij.symm, mul_one, mul_zero, add_zero, zero_add]
+  rw [mul_comm (star c) c, hc]; ring
+
 /-! ### The center of `SU_n(F_{p²})` is the scalar matrices (`n ≥ 3`)
 
 Instantiating the geometric crux over the concrete Hermitian field `F_{p²} = UnitaryField p`.
@@ -318,11 +328,51 @@ axiom exists_common_nonorth_isotropic (hn : 3 ≤ n) :
       ∃ u : Fin n → UnitaryField p, u ≠ 0 ∧ star u ⬝ᵥ u = 0 ∧
         star z₁ ⬝ᵥ u ≠ 0 ∧ star z₂ ⬝ᵥ u ≠ 0
 
-/-- **GEOMETRY AXIOM — isotropic vectors span.** The isotropic vectors of the standard Hermitian
-form on `(F_{p²})ⁿ`, `n ≥ 3`, span the whole space. TODO(discharge): each `eᵢ + c·eⱼ`
-(`N(c) = -1`, available via `exists_norm_neg_one`) is isotropic, and these span. -/
-axiom isotropic_span (hn : 3 ≤ n) :
-    Submodule.span (UnitaryField p) {z : Fin n → UnitaryField p | star z ⬝ᵥ z = 0} = ⊤
+/-- **Isotropic vectors span** (`n ≥ 3`, machine-checked). For each `i` pick `j ≠ i`; with two
+distinct `c, c'` of norm `-1` (`exists_two_norm_neg_one`), `eᵢ + c·eⱼ` and `eᵢ + c'·eⱼ` are
+isotropic (`isotropic_single_pair`), their difference gives `eⱼ ∈ span`, hence `eᵢ ∈ span`. As
+every standard basis vector lies in the span, the isotropic vectors span `(F_{p²})ⁿ`. -/
+theorem isotropic_span (hn : 3 ≤ n) :
+    Submodule.span (UnitaryField p) {z : Fin n → UnitaryField p | star z ⬝ᵥ z = 0} = ⊤ := by
+  set S := Submodule.span (UnitaryField p) {z : Fin n → UnitaryField p | star z ⬝ᵥ z = 0} with hS
+  haveI : Nontrivial (Fin n) := by rw [Fin.nontrivial_iff_two_le]; omega
+  obtain ⟨c, c', hcc', hc, hc'⟩ := UnitaryField.exists_two_norm_neg_one p
+  -- `a • eₖ = eₖ·a` (scaling a basis vector rescales its value)
+  have smul_single : ∀ (a : UnitaryField p) (k : Fin n),
+      a • (Pi.single k 1 : Fin n → UnitaryField p) = Pi.single k a := by
+    intro a k
+    funext m
+    simp only [Pi.smul_apply, Pi.single_apply, smul_eq_mul, mul_ite, mul_one, mul_zero]
+  -- every basis vector lies in `S`
+  have hsingle : ∀ i : Fin n, (Pi.single i 1 : Fin n → UnitaryField p) ∈ S := by
+    intro i
+    obtain ⟨j, hji⟩ := exists_ne i
+    have hv1 : (Pi.single i 1 + Pi.single j c : Fin n → UnitaryField p) ∈ S :=
+      Submodule.subset_span (isotropic_single_pair hji.symm hc)
+    have hv2 : (Pi.single i 1 + Pi.single j c' : Fin n → UnitaryField p) ∈ S :=
+      Submodule.subset_span (isotropic_single_pair hji.symm hc')
+    have hdiff : (Pi.single j (c - c') : Fin n → UnitaryField p) ∈ S := by
+      have he : (Pi.single j (c - c') : Fin n → UnitaryField p)
+          = (Pi.single i 1 + Pi.single j c) - (Pi.single i 1 + Pi.single j c') := by
+        rw [Pi.single_sub]; abel
+      rw [he]; exact S.sub_mem hv1 hv2
+    have hcc0 : c - c' ≠ 0 := sub_ne_zero.mpr hcc'
+    have hsj : (Pi.single j 1 : Fin n → UnitaryField p) ∈ S := by
+      have he : (Pi.single j 1 : Fin n → UnitaryField p)
+          = (c - c')⁻¹ • (Pi.single j (c - c') : Fin n → UnitaryField p) := by
+        rw [← smul_single (c - c') j, smul_smul, inv_mul_cancel₀ hcc0, one_smul]
+      rw [he]; exact S.smul_mem _ hdiff
+    have he : (Pi.single i 1 : Fin n → UnitaryField p)
+        = (Pi.single i 1 + Pi.single j c) - c • (Pi.single j 1 : Fin n → UnitaryField p) := by
+      rw [smul_single c j]; abel
+    rw [he]; exact S.sub_mem hv1 (S.smul_mem _ hsj)
+  -- hence everything lies in `S`
+  rw [eq_top_iff]
+  intro x _
+  rw [← Finset.univ_sum_single x]
+  refine Submodule.sum_mem _ fun i _ => ?_
+  rw [← smul_single (x i) i]
+  exact S.smul_mem _ (hsingle i)
 
 /-- **The center of `SU_n(F_{p²})` consists of scalar matrices** (`n ≥ 3`). A central element fixes
 every isotropic line (`su_central_fixes_isotropic_line`, using a nonzero trace-zero scalar), so by

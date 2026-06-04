@@ -503,6 +503,45 @@ theorem pspQuasiPreprimitive [Nonempty l] :
   haveI := pspPreprimitive (l := l) (F := F)
   inferInstance
 
+/-- **`ℙ²ⁿ⁻¹(F)` is nontrivial** for `Nonempty l` (dimension `2n ≥ 2`): the projective points
+`[ê_{inl i₀}]` and `[ê_{inr i₀}]` are distinct (different support ⇒ not scalar multiples). -/
+theorem projectivization_nontrivial [Nonempty l] :
+    Nontrivial (Projectivization F ((l ⊕ l) → F)) := by
+  obtain ⟨i₀⟩ := ‹Nonempty l›
+  have h1 : (Pi.single (Sum.inl i₀) 1 : (l ⊕ l) → F) ≠ 0 := by
+    intro hc; have h := congrFun hc (Sum.inl i₀)
+    rw [Pi.single_eq_same] at h; exact one_ne_zero h
+  have h2 : (Pi.single (Sum.inr i₀) 1 : (l ⊕ l) → F) ≠ 0 := by
+    intro hc; have h := congrFun hc (Sum.inr i₀)
+    rw [Pi.single_eq_same] at h; exact one_ne_zero h
+  refine ⟨Projectivization.mk F _ h1, Projectivization.mk F _ h2, ?_⟩
+  intro heq
+  rw [Projectivization.mk_eq_mk_iff] at heq
+  obtain ⟨a, ha⟩ := heq
+  have hc := congrFun ha (Sum.inl i₀)
+  rw [Pi.smul_apply, Pi.single_eq_of_ne Sum.inl_ne_inr 1, smul_zero, Pi.single_eq_same] at hc
+  exact one_ne_zero hc.symm
+
+/-- **Primitivity core in maximal-stabilizer form.** `PSp ↷ ℙ²ⁿ⁻¹` is preprimitive **iff** the
+stabilizer of a point is a maximal subgroup (the maximal-parabolic criterion). Equivalent to
+`psp_isTrivialBlock_of_isBlock`; this is the recognized textbook target for the remaining
+primitivity work (point-stabilizer of a projective line = a maximal parabolic). Machine-checked
+from pretransitivity (`psp_isPretransitive`) + nontriviality via Wielandt th. 7.5
+(`MulAction.isCoatom_stabilizer_iff_preprimitive`). -/
+theorem pspPreprimitive_iff_isCoatom_stabilizer [Nonempty l]
+    (a : Projectivization F ((l ⊕ l) → F)) :
+    letI := pspAction (l := l) (F := F)
+    IsCoatom (MulAction.stabilizer
+        (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) a) ↔
+      MulAction.IsPreprimitive
+        (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F))
+        (Projectivization F ((l ⊕ l) → F)) := by
+  letI := pspAction (l := l) (F := F)
+  haveI := psp_isPretransitive (l := l) (F := F)
+  haveI := projectivization_nontrivial (l := l) (F := F)
+  exact MulAction.isCoatom_stabilizer_iff_preprimitive
+    (G := symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) (a := a)
+
 /-- **The Iwasawa structure on `PSp(2n,F) ↷ ℙ²ⁿ⁻¹`** — the family `Tline` of abelian
 transvection subgroups (`is_comm`), conjugation-equivariant (`is_conj`, via
 `spTransvecGroup_conj` through the quotient) and generating (`is_generator`, `Tline_iSup`).

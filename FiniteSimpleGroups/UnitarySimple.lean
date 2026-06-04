@@ -933,6 +933,123 @@ theorem block_univ_of_nonperp_pair (hn : 3 ≤ n)
       rw [hZ, hbeq]; exact mul_ne_zero hb0 hzt'
     exact block_mem_of_nonperp p n hT1 hB hZB hq hZq hZt
 
+/-! ### Block-triviality for `PSU(3,q)`: the perpendicular case is vacuous (Witt index ≤ 1)
+
+For `n = 3` the only remaining gap in primitivity — distinct *perpendicular* isotropic block points —
+cannot occur: two perpendicular isotropic lines in a nondegenerate dim-3 Hermitian space are equal
+(a 2-dim totally isotropic subspace would exceed the Witt index `⌊3/2⌋ = 1`). So block-triviality for
+`n = 3` follows from the non-perpendicular half alone (`block_univ_of_nonperp_pair`), needing only the
+T1 transitivity input — no perpendicular-case Eichler transitivity. -/
+
+/-- **Perpendicular isotropic vectors in dim 3 are parallel.** For `n = 3`, two nonzero isotropic
+vectors `x, y` with `⟨x,y⟩ = 0` are linearly dependent. Proof: if independent, take a common
+non-orthogonal isotropic `u` (diameter-2 connectivity, `exists_common_nonorth_isotropic`); then
+`u ∉ span{x,y}` (else `⟨x,u⟩ = 0`), so `{u,y,x}` is a basis of `F³`; the covector
+`w = star x - c·star y` (`c = ⟨x,u⟩/⟨y,u⟩`) is dot-orthogonal to the whole basis, hence zero, giving
+`star x = c·star y`, i.e. `x ∥ y` — contradicting independence. -/
+theorem perp_isotropic_parallel (hn3 : n = 3)
+    {x y : Fin n → UnitaryField p} (hx : x ≠ 0) (hy : y ≠ 0)
+    (hxiso : star x ⬝ᵥ x = 0) (hyiso : star y ⬝ᵥ y = 0)
+    (hperp : star x ⬝ᵥ y = 0) :
+    ∃ c : UnitaryField p, c • y = x := by
+  classical
+  by_cases hLI : LinearIndependent (UnitaryField p) ![y, x]
+  · exfalso
+    have hn : 3 ≤ n := hn3.ge
+    obtain ⟨u, hu0, huiso, hxu, hyu⟩ :=
+      exists_common_nonorth_isotropic p hn x y hx hy hxiso hyiso
+    have hperp' : star y ⬝ᵥ x = 0 := by
+      rw [dotProduct_star_swap, hperp, star_zero]
+    -- `u ∉ span {y, x}`
+    have hu_notmem : u ∉ Submodule.span (UnitaryField p) (Set.range ![y, x]) := by
+      rw [Matrix.range_cons_cons_empty]
+      intro hmem
+      rw [Submodule.mem_span_pair] at hmem
+      obtain ⟨a, b, hab⟩ := hmem
+      exact hxu (by
+        rw [← hab, dotProduct_add, dotProduct_smul, dotProduct_smul, hperp, hxiso,
+          smul_zero, smul_zero, add_zero])
+    have hind : LinearIndependent (UnitaryField p) (Fin.cons u ![y, x]) :=
+      hLI.fin_cons hu_notmem
+    have hcard : Fintype.card (Fin 3)
+        = Module.finrank (UnitaryField p) (Fin n → UnitaryField p) := by
+      rw [Module.finrank_fintype_fun_eq_card, Fintype.card_fin, Fintype.card_fin, hn3]
+    have hspan : Submodule.span (UnitaryField p) (Set.range (Fin.cons u ![y, x])) = ⊤ :=
+      hind.span_eq_top_of_card_eq_finrank hcard
+    set c : UnitaryField p := (star x ⬝ᵥ u) * (star y ⬝ᵥ u)⁻¹ with hc
+    set w : Fin n → UnitaryField p := star x - c • star y with hw
+    -- the covector `w` annihilates `x, y, u`
+    have hwx : w ⬝ᵥ x = 0 := by
+      rw [hw, sub_dotProduct, smul_dotProduct, hxiso, hperp', smul_zero, sub_zero]
+    have hwy : w ⬝ᵥ y = 0 := by
+      rw [hw, sub_dotProduct, smul_dotProduct, hperp, hyiso, smul_zero, sub_zero]
+    have hwu : w ⬝ᵥ u = 0 := by
+      rw [hw, sub_dotProduct, smul_dotProduct, smul_eq_mul, hc,
+        mul_assoc, inv_mul_cancel₀ hyu, mul_one, sub_self]
+    -- `z ↦ w ⬝ᵥ z` as a linear map, zero on the basis hence zero
+    let L : (Fin n → UnitaryField p) →ₗ[UnitaryField p] UnitaryField p :=
+      { toFun := fun z => w ⬝ᵥ z
+        map_add' := fun a b => dotProduct_add w a b
+        map_smul' := fun s z => dotProduct_smul s w z }
+    have hL0 : L = 0 := by
+      refine LinearMap.ext_on_range hspan (fun i => ?_)
+      fin_cases i
+      · exact hwu
+      · exact hwy
+      · exact hwx
+    have hwzero : w = 0 := by
+      funext j
+      rw [Pi.zero_apply]
+      have : w ⬝ᵥ Pi.single j 1 = 0 := congrFun (congrArg DFunLike.coe hL0) (Pi.single j 1)
+      rwa [dotProduct_single, mul_one] at this
+    have hstarx : star x = c • star y := by
+      rw [hw] at hwzero; exact sub_eq_zero.mp hwzero
+    -- `star x = c•star y ⟹ x = star c • y`, contradicting independence of `![y, x]`
+    have hxy : (star c) • y = x := by
+      have h := congrArg star hstarx
+      rw [star_star] at h
+      have hss : star (c • star y) = star c • y := by
+        funext i; simp [smul_eq_mul, star_mul']
+      rw [hss] at h; exact h.symm
+    exact (LinearIndependent.pair_iff' hy).mp hLI (star c) hxy
+  · rw [LinearIndependent.pair_iff' hy, not_forall_not] at hLI
+    obtain ⟨c, hc⟩ := hLI
+    exact ⟨c, hc⟩
+
+/-- **Distinct isotropic points in dim 3 are non-perpendicular.** The point-level contrapositive of
+`perp_isotropic_parallel`: if `q ≠ r` as isotropic lines (`n = 3`) then `⟨q,r⟩ ≠ 0`. -/
+theorem isoPoint_nonperp_of_ne (hn3 : n = 3) {q r : IsoPoint p n} (hqr : q ≠ r) :
+    star q.1.rep ⬝ᵥ r.1.rep ≠ 0 := by
+  intro hperp
+  obtain ⟨c, hc⟩ := perp_isotropic_parallel p n hn3
+    (Projectivization.rep_nonzero q.1) (Projectivization.rep_nonzero r.1) q.2 r.2 hperp
+  apply hqr
+  apply Subtype.ext
+  rw [← Projectivization.mk_rep q.1, ← Projectivization.mk_rep r.1,
+    Projectivization.mk_eq_mk_iff']
+  exact ⟨c, hc⟩
+
+/-- **Block-triviality for `PSU(3,q)`** (`n = 3`), modulo the T1 transitivity input. The
+perpendicular case of primitivity is vacuous in dimension 3 (`isoPoint_nonperp_of_ne`), so every
+block with ≥ 2 points contains a non-perpendicular pair, hence is everything
+(`block_univ_of_nonperp_pair`). Unitary analogue of `SpN.psp_isTrivialBlock_of_isBlock`, but the
+perp case collapses by the Witt-index-≤-1 vacuity rather than a second Eichler transitivity. -/
+theorem psu3_isTrivialBlock_of_isBlock (hn3 : n = 3)
+    (hT1 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep ≠ 0 → star x.1.rep ⬝ᵥ y'.1.rep ≠ 0 →
+        ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+    {B : Set (IsoPoint p n)}
+    (hB : letI := psuAction p n; MulAction.IsBlock (PSUConcrete n p) B) :
+    letI := psuAction p n; MulAction.IsTrivialBlock B := by
+  letI := psuAction p n
+  by_cases hs : B.Subsingleton
+  · exact Or.inl hs
+  · right
+    rw [Set.not_subsingleton_iff] at hs
+    obtain ⟨q, hq, r, hr, hqr⟩ := hs
+    exact block_univ_of_nonperp_pair p n hn3.ge hT1 hB hq hr
+      (isoPoint_nonperp_of_ne p n hn3 hqr)
+
 /-- **The `PSU`-level root subgroup along the isotropic line `x`** — the image in `SU/Z` of
 `uRootSubgroup x.rep`. The Iwasawa family `T`. By `uRootSubgroup_rep`/`_smul` it depends only on
 the line `x`. -/
@@ -1111,6 +1228,23 @@ theorem PSU_isSimpleGroup_of_generate (hn : 3 ≤ n) (hp : 5 ≤ p)
   haveI : MulAction.IsPreprimitive (PSUConcrete n p) (IsoPoint p n) :=
     { isTrivialBlock_of_isBlock := hblk }
   exact PSU_isSimpleGroup_of_generate_of_qpp p n hn hp hgen inferInstance
+
+/-- **`PSU(3, p²)` is simple** (`p ≥ 5`), modulo the Witt generation `hgen` and the T1 Eichler
+transitivity input only. Combines `psu3_isTrivialBlock_of_isBlock` — where the perpendicular case of
+primitivity is **vacuous** in dimension 3 (Witt index ≤ 1, `perp_isotropic_parallel`) — with the
+headline reduction `PSU_isSimpleGroup_of_generate`. The block-triviality core is thereby discharged
+for `n = 3` from T1 alone: no perpendicular-case Eichler transitivity is needed. The two remaining
+inputs are the unitary Witt generation (Step 3a, at Aristotle) and T1 (Step 2c-b, at Aristotle). -/
+theorem psu3_isSimpleGroup_of_generate_of_T1 (hn3 : n = 3) (hp : 5 ≤ p)
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
+        (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤)
+    (hT1 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep ≠ 0 → star x.1.rep ⬝ᵥ y'.1.rep ≠ 0 →
+        ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y') :
+    IsSimpleGroup (PSUConcrete n p) :=
+  PSU_isSimpleGroup_of_generate p n hn3.ge hp hgen
+    (fun {_B} hB => psu3_isTrivialBlock_of_isBlock p n hn3 hT1 hB)
 
 end Iwasawa
 

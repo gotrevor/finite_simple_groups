@@ -160,4 +160,72 @@ theorem sp_center_fixes_line [Nonempty l] (g : symplecticGroup l F)
   rw [← hx, Projectivization.smul_mk, Projectivization.mk_eq_mk_iff']
   exact ⟨a, hwv.trans hgvw.symm⟩
 
+/-! ### Assembling faithfulness: `PSp = Sp/Z` acts faithfully on `ℙ²ⁿ⁻¹` -/
+
+/-- The center of `Sp` lies in the kernel of the permutation action on `ℙ²ⁿ⁻¹`
+(`sp_center_fixes_line`). -/
+theorem sp_center_le_ker [Nonempty l] :
+    Subgroup.center (symplecticGroup l F) ≤
+      (MulAction.toPermHom (symplecticGroup l F)
+        (Projectivization F ((l ⊕ l) → F))).ker := by
+  intro z hz
+  rw [MonoidHom.mem_ker]
+  ext x
+  simpa using sp_center_fixes_line z hz x
+
+/-- The kernel of the permutation action lies in the center (`sp_mem_center_of_smul_eq`);
+with `sp_center_le_ker` this pins `ker (toPermHom) = center`. -/
+theorem sp_ker_le_center [Nonempty l] :
+    (MulAction.toPermHom (symplecticGroup l F)
+      (Projectivization F ((l ⊕ l) → F))).ker ≤ Subgroup.center (symplecticGroup l F) := by
+  intro g hg
+  rw [MonoidHom.mem_ker] at hg
+  apply sp_mem_center_of_smul_eq g
+  intro x
+  exact (Equiv.ext_iff.mp hg) x |>.trans (by simp)
+
+/-- **The descended permutation representation `PSp(2n,F) = Sp/Z → Sym(ℙ²ⁿ⁻¹)`.** -/
+noncomputable def pspPermHom [Nonempty l] :
+    (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) →*
+      Equiv.Perm (Projectivization F ((l ⊕ l) → F)) :=
+  QuotientGroup.lift (Subgroup.center _)
+    (MulAction.toPermHom (symplecticGroup l F) (Projectivization F ((l ⊕ l) → F)))
+    sp_center_le_ker
+
+/-- **`PSp(2n,F)` acts on `ℙ²ⁿ⁻¹(F)`** — the Iwasawa `MulAction` obligation, descended from
+`Sp(2n,F)` through the center. Kept a `def` (mirrors `SLn.pslnAction`). -/
+@[reducible]
+noncomputable def pspAction [Nonempty l] :
+    MulAction (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F))
+      (Projectivization F ((l ⊕ l) → F)) :=
+  MulAction.compHom _ pspPermHom
+
+theorem pspPermHom_mk [Nonempty l] (g : symplecticGroup l F) :
+    pspPermHom (QuotientGroup.mk g) =
+      MulAction.toPermHom (symplecticGroup l F) (Projectivization F ((l ⊕ l) → F)) g := rfl
+
+/-- **`pspPermHom : PSp(2n,F) → Sym(ℙ²ⁿ⁻¹)` is injective** — its kernel is trivial because
+`ker (toPermHom) = center` (`sp_ker_le_center`). The Iwasawa `FaithfulSMul` obligation in
+representation form. -/
+theorem pspPermHom_injective [Nonempty l] :
+    Function.Injective (pspPermHom (l := l) (F := F)) := by
+  rw [injective_iff_map_eq_one]
+  intro x hx
+  induction x using QuotientGroup.induction_on with
+  | H g =>
+    rw [pspPermHom_mk] at hx
+    exact (QuotientGroup.eq_one_iff g).mpr (sp_ker_le_center (MonoidHom.mem_ker.mpr hx))
+
+/-- **`PSp(2n,F)` acts faithfully on `ℙ²ⁿ⁻¹`** — the Iwasawa `FaithfulSMul` obligation. -/
+@[reducible]
+noncomputable def pspFaithful [Nonempty l] :
+    letI := pspAction (l := l) (F := F)
+    FaithfulSMul (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F))
+      (Projectivization F ((l ⊕ l) → F)) :=
+  letI := pspAction (l := l) (F := F)
+  { eq_of_smul_eq_smul := fun {g₁ g₂} hsmul => by
+      apply pspPermHom_injective
+      ext x
+      exact hsmul x }
+
 end FiniteSimpleGroups.SpN

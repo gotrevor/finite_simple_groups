@@ -16,18 +16,23 @@ The "easy" Iwasawa inputs are all machine-checked elsewhere:
 * `is_comm`: `spTransvecGroup` is abelian (`SpTransvection`);
 * `is_conj`: `spTransvecGroup_conj` (conjugation-equivariance, `SpTransvection`).
 
-What remains are **three genuinely deep classical theorems**, disclosed here as `axiom`s (each
-the symplectic analogue of an `SLn` brick or a standard structural fact), to be discharged in
-later laps:
-1. `sp_transvec_closure_eq_top` — symplectic transvections **generate** `Sp(2n,F)` (Eichler /
-   symplectic Witt; the analogue of `transvecSL_closure_eq_top`, no mathlib infrastructure).
-2. `commutator_PSp_eq_top` — `PSp(2n,F)` is **perfect** (each transvection is a commutator for
-   `2 ≤ n`; needs the field-size hypothesis excluding `PSp(4,2) ≅ S₆`).
-3. `pspQuasiPreprimitive` — `PSp(2n,F)` acts **quasi-preprimitively** on `ℙ²ⁿ⁻¹`. NB `Sp` is
-   transitive but **not** 2-transitive (it preserves `ω`), so this needs the maximal-parabolic
-   primitivity argument, not the `SLn` 2-transitivity route.
+What remains, after this lap's reductions, are **exactly TWO genuinely deep geometric cores**,
+disclosed as `axiom`s (everything else — perfectness, the scaling element, generation's
+transitivity reduction, and quasi-preprimitivity's pretransitivity — is now machine-checked):
+1. `sp_stab_hyperbolic_le` — the **generation core**: a symplectic `g` fixing a hyperbolic pair
+   `(e,f)` pointwise lies in `⨆_v spTransvecGroup v`. The Witt/Eichler **dimension induction**
+   over the orthogonal complement `⟨e,f⟩⊥`. (`sp_transvec_closure_eq_top` reduces to this via
+   machine-checked transitivity on hyperbolic pairs.)
+2. `psp_isTrivialBlock_of_isBlock` — the **primitivity core**: every block of `PSp ↷ ℙ²ⁿ⁻¹` is
+   trivial. `Sp` is transitive (machine-checked, `psp_isPretransitive`) but **not** 2-transitive
+   (it preserves `ω`), so this needs the maximal-parabolic block argument, not the `SLn` route.
+   (`pspQuasiPreprimitive` reduces to this via `IsPreprimitive → IsQuasiPreprimitive`.)
 
-Given these three, `PSpn_isSimpleGroup_of_iwasawa` concludes `IsSimpleGroup (PSp)`.
+Discharged this lap (were axioms, now theorems): `commutator_PSp_eq_top` (perfectness, via the
+commutator collapse `[g,τ_{v,a}]=τ_{v,(λ²-1)a}` + the now-proven `sp_scaling_exists`) and
+`sp_transvec_closure_eq_top` (generation, reduced to core 1). Given the two cores,
+`PSpn_isSimpleGroup_of_iwasawa [Nonempty l] (hlam : ∃ λ, λ≠0 ∧ λ²≠1)` concludes
+`IsSimpleGroup (PSp)` (the `hlam`/`|F|≥4` hypothesis correctly excludes `PSp(4,2) ≅ S₆`).
 -/
 
 open Matrix
@@ -418,14 +423,61 @@ theorem commutator_PSp_eq_top {lam : F} (hlam0 : lam ≠ 0) (hlam1 : lam * lam �
     rw [Subgroup.map_commutator, Subgroup.map_top_of_surjective f hf]
   rw [hmap, commutator_Sp_eq_top hlam0 hlam1, Subgroup.map_top_of_surjective f hf]
 
-/-- **DISCLOSED AXIOM (quasi-preprimitivity).** `PSp(2n,F)` acts quasi-preprimitively on
-`ℙ²ⁿ⁻¹`. Unlike `SLn`, `Sp` is **not** 2-transitive (it preserves the form `ω`), so this needs
-the maximal-parabolic / isotropic-line-stabilizer primitivity argument. -/
-axiom pspQuasiPreprimitive [Nonempty l] :
+/-- **`PSp(2n,F)` is pretransitive on `ℙ²ⁿ⁻¹`** (machine-checked) — descends from `Sp`'s
+transitivity on non-zero vectors (`exists_sp_transvecGen_maps`). For projective points `x, y`,
+a transvection product maps `x.rep → y.rep`, so its image in `PSp` maps `x → y`. -/
+theorem psp_isPretransitive [Nonempty l] :
+    letI := pspAction (l := l) (F := F)
+    MulAction.IsPretransitive
+      (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F))
+      (Projectivization F ((l ⊕ l) → F)) := by
+  letI := pspAction (l := l) (F := F)
+  refine ⟨fun x y => ?_⟩
+  obtain ⟨g, _, hg⟩ := exists_sp_transvecGen_maps
+    (Projectivization.rep_nonzero x) (Projectivization.rep_nonzero y)
+  refine ⟨QuotientGroup.mk g, ?_⟩
+  show pspPermHom (QuotientGroup.mk g) x = y
+  rw [pspPermHom_mk]
+  show g • x = y
+  conv_lhs => rw [← Projectivization.mk_rep x]
+  conv_rhs => rw [← Projectivization.mk_rep y]
+  rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff]
+  exact ⟨1, by rw [one_smul]; exact ((smul_vec_def g x.rep).trans hg).symm⟩
+
+/-- **DISCLOSED AXIOM (primitivity core — blocks are trivial).** Every block of the `PSp(2n,F)`
+action on `ℙ²ⁿ⁻¹` is trivial (a singleton or everything). This is the genuine remaining core of
+quasi-preprimitivity: unlike `SLn`, `Sp` is **not** 2-transitive (it preserves `ω`), so this
+needs the maximal-parabolic / isotropic-line-stabilizer primitivity argument — a block argument,
+not the `SLn` 2-transitivity route. With it + machine-checked pretransitivity
+(`psp_isPretransitive`), `IsPreprimitive` and hence quasi-preprimitivity follow. -/
+axiom psp_isTrivialBlock_of_isBlock [Nonempty l] :
+    letI := pspAction (l := l) (F := F)
+    ∀ {B : Set (Projectivization F ((l ⊕ l) → F))},
+      MulAction.IsBlock (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F)) B →
+        MulAction.IsTrivialBlock B
+
+/-- **`PSp(2n,F)` acts preprimitively on `ℙ²ⁿ⁻¹`** — pretransitivity machine-checked
+(`psp_isPretransitive`), block-triviality the disclosed core (`psp_isTrivialBlock_of_isBlock`). -/
+theorem pspPreprimitive [Nonempty l] :
+    letI := pspAction (l := l) (F := F)
+    MulAction.IsPreprimitive
+      (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F))
+      (Projectivization F ((l ⊕ l) → F)) :=
+  letI := pspAction (l := l) (F := F)
+  { toIsPretransitive := psp_isPretransitive
+    isTrivialBlock_of_isBlock := psp_isTrivialBlock_of_isBlock }
+
+/-- **`PSp(2n,F)` acts quasi-preprimitively on `ℙ²ⁿ⁻¹`** — the Iwasawa obligation, now resting
+only on the primitivity-core axiom `psp_isTrivialBlock_of_isBlock` (pretransitivity is proven).
+From `IsPreprimitive` via the mathlib instance `IsPreprimitive.isQuasiPreprimitive`. -/
+theorem pspQuasiPreprimitive [Nonempty l] :
     letI := pspAction (l := l) (F := F)
     MulAction.IsQuasiPreprimitive
       (symplecticGroup l F ⧸ Subgroup.center (symplecticGroup l F))
-      (Projectivization F ((l ⊕ l) → F))
+      (Projectivization F ((l ⊕ l) → F)) :=
+  letI := pspAction (l := l) (F := F)
+  haveI := pspPreprimitive (l := l) (F := F)
+  inferInstance
 
 /-- **The Iwasawa structure on `PSp(2n,F) ↷ ℙ²ⁿ⁻¹`** — the family `Tline` of abelian
 transvection subgroups (`is_comm`), conjugation-equivariant (`is_conj`, via

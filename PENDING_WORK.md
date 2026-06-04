@@ -474,17 +474,51 @@ This lap discharged BOTH former core axioms and wired into LieType:
     `def PSp` + `SpLieType.lean`; general `q=p^m` needs `GaloisField p (2m)` + `iterateFrobenius`).
 The whole PSp scaffold (`SpIwasawa`/`SpTransvection`/`SpSmallField`) remains the template to copy.
 
-**Aristotle in flight (2 jobs, 2026-06-04 night):**
-1. unitary Witt **generation** — project `a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4` (IN_PROGRESS >1h).
-2. unitary **T1** (Eichler transitivity, block-triviality atom) — project
-   `19b0b4a0-94ac-43c7-849b-e0fd7b9c255f`, stub `/tmp/aristotle-t1/T1.lean`. Goal: `Stab[x]`
-   transitive on non-orth isotropic lines (`g·x = c·x ∧ g·y = d·y'`), supplied
-   `uTransvection_mem_su`/`exists_hyperbolic_partner`/`exists_traceZero_ne_zero`.
-Poll: `aristotle tasks <uuid>`. When T1 lands, the block-combinatorics scaffold (mirror SpIwasawa
-`block_mem_of_nonperp`/`block_univ_of_nonperp_pair`, reusing `exists_common_nonorth_isotropic`) gives
-`psu_isTrivialBlock_of_isBlock`; with generation that closes `PSU_isSimpleGroup_of_generate` →
-unconditional. NOTE: block-triviality also needs a PERP-case transitivity (two distinct perpendicular
-isotropic block points) — a second small Eichler lemma, or handle via connectivity in the assembly.
+**◆ THE REDUCTION IS COMPLETE (2026-06-04 late). PSU simplicity now bottoms out at FOUR clean
+Eichler/Witt atoms, all machine-checked surrounding them:**
+- **`PSU_isSimpleGroup_of_generate_of_eichler'` (n≥3, p≥5):** `IsSimpleGroup (PSUConcrete n p)` ⟸
+  `{hgen, hT1, hT2, hPP}` — each a SINGLE clean statement. Axiom-clean.
+- **`psu3_isSimpleGroup_of_generate_of_T1` (n=3, p≥5):** ⟸ `{hgen, hT1}` ONLY (perp atoms vacuous in
+  dim 3 — `perp_isotropic_parallel`/`isoPoint_nonperp_of_ne`/`psu3_isTrivialBlock_of_isBlock`).
+The four atoms:
+  1. **`hgen`** — unitary transvections generate `SU`.
+  2. **`hT1`** — `Stab[x]` transitive on isotropic points NON-perp to `[x]`.
+  3. **`hT2`** — `Stab[x]` transitive on isotropic points PERP to `[x]` (n≥4 only).
+  4. **`hPP`** — ∃ isotropic `v` with `⟨x,v⟩=1, ⟨y,v⟩=0` (hyperbolic partner of `x` in `y^⊥`; n≥4).
+     The full isotropic separation `hSep` reduces to `hPP` via the machine-checked
+     `exists_isotropic_perp_nonperp_of_perp_partner` (witness `s = w - α·v + γ·y`, `γ=α·⟨w,v⟩`) and
+     `hSep_of_perp_partner`. ALL the separation algebra is now in-kernel.
+
+**◆ ALL FOUR ATOMS ARE THE SAME WALL: Witt's extension theorem for Hermitian forms.** Confirmed by
+the Aristotle `ugen` job (`a1c167e7`, returned `COMPLETE_WITH_ERRORS` 2026-06-04): it reproduced our
+existing transvection algebra (no new ports) and reported the generation core "requires Witt's
+extension theorem for Hermitian forms, which is not available in Mathlib and would require several
+hundred lines of new mathematical infrastructure." `hT1/hT2/hPP` are the same: each reduces to a
+hyperbolic-partner-in-a-(non-coordinate)-subspace existence, i.e. the abstract statement *"in a
+nondegenerate Hermitian space of dim ≥ 2, every nonzero isotropic vector has a hyperbolic partner"* —
+which is exactly the Witt building block. `exists_hyperbolic_partner` proves this ONLY for the
+standard form on a COORDINATE space; the subspace version is the missing infrastructure.
+
+**◆ NEXT-LAP ATTACK PATHS for the wall (pick one — see `ON-LINE-REQUEST.md` for the lit ask):**
+  (a) **Abstract Hermitian hyperbolic-partner / Witt infrastructure** — the structural route. Build a
+      `LinearMap`-level nondeg Hermitian form API (or reuse mathlib `SesquilinearForm`) + the
+      orthogonal-complement decomposition `V = H ⊕ H^⊥` for a hyperbolic plane `H`, then induct. The
+      reusable core is `exists_hyperbolic_partner` for an ABSTRACT nondeg Hermitian space.
+  (b) **Finite-field counting** — `hPP` over `F_{p²}` asks for an isotropic point in the affine
+      `{v : ⟨x,v⟩=1, ⟨y,v⟩=0}` (dim n-2). The form `v↦⟨v,v⟩` lands in `F_p`; a Hermitian
+      point-count / character-sum shows the 0-fiber is nonempty for dim ≥ 2 (~`q^{2n-5}` solutions).
+      Avoids Witt's structure theorem but needs Hermitian-quadric point-count machinery (also not in
+      mathlib; maybe via `ZMod.char_dvd_card_solutions` / Chevalley–Warning for the affine quadric).
+  (c) **Aristotle** — submit `hPP` (narrowest atom) as a self-contained `F_{p²}` brick when a slot
+      frees (rate limit: one at a time; `t1` still IN_PROGRESS as of this writing). Frame it for the
+      counting route (b) to avoid the Witt diagnosis that sank `ugen`.
+
+**Aristotle status (2026-06-04 late):**
+- `ugen` (`a1c167e7`) — DONE `COMPLETE_WITH_ERRORS` (Witt wall; nothing to port; diagnosis above).
+- `t1` (`19b0b4a0`) — still `IN_PROGRESS`. When it lands: download, verify in-kernel + `#print
+  axioms`, port to the `hT1` shape (`∀ {x y y'}, ⟨x,y⟩≠0 → ⟨x,y'⟩≠0 → ∃ g, g•x=x ∧ g•y=y'`), feed
+  `psu3_isSimpleGroup_of_generate_of_T1`. NOTE: t1 may ALSO return Witt-blocked (same wall) — if so,
+  it's the abstract hyperbolic-partner infrastructure that unblocks everything at once.
 
 **Other open classical axiom:** `POmega_isSimpleGroup` (n≥7) — also opaque, orthogonal geometry,
 hardest of the four (ε-type quadratic forms). After PSU.

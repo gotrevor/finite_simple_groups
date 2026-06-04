@@ -1574,6 +1574,70 @@ theorem hgen_of_hpair (h2 : (2 : UnitaryField p) ≠ 0) (hpair : UExactPairTrans
         (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤ :=
   uTransvecGen_eq_top_of_hpair p h2 hpair
 
+/-- **Exact transitivity on isotropic VECTORS within `offSU C`, in `⟨transvections⟩`** (the deep
+single-vector step). The line move `offSU_maps_nonorth_gen` gives `e ↦ c·e'`; killing the scalar `c`
+needs the third-dimension `F_{q²}*` line-stabiliser scaling `exists_scale` (`n ≥ 3`). This is the
+genuine remaining wall. -/
+def UExactLineTrans : Prop :=
+  ∀ (C : Finset (Fin n)) (e e' : Fin n → UnitaryField p),
+    offSU p C e → offSU p C e' → star e ⬝ᵥ e = 0 → star e' ⬝ᵥ e' = 0 → e ≠ 0 → e' ≠ 0 →
+    ∃ g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p), g ∈ uTransvecGen p (n := n) ∧
+      FixSU p C g ∧ (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ e = e'
+
+/-- **Exact transitivity on hyperbolic MATES within `offSU C`, in `⟨transvections⟩`** (fixing `e`).
+The scalar is automatically pinned to `1` (both `f, f'` satisfy `⟨e,·⟩ = 1`, preserved by the
+`e`-fixing move), so — unlike the line step — this needs NO third-dimension torus, only the Eichler
+mate engine `exists_su_fixes_maps_isotropic_mate_fixing_perp` upgraded to `⟨transvections⟩` membership
+(via Eichler = product of transvections). The unitary `offS_transvecFixing_maps_mate` analogue. -/
+def UExactMateTrans : Prop :=
+  ∀ (C : Finset (Fin n)) (e f f' : Fin n → UnitaryField p),
+    offSU p C e → offSU p C f → offSU p C f' →
+    star e ⬝ᵥ e = 0 → star f ⬝ᵥ f = 0 → star f' ⬝ᵥ f' = 0 →
+    star e ⬝ᵥ f = 1 → star e ⬝ᵥ f' = 1 →
+    ∃ g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p), g ∈ uTransvecGen p (n := n) ∧
+      FixSU p C g ∧ (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ e = e ∧
+        (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f = f'
+
+/-- **`UExactPairTrans ⟸ UExactLineTrans + UExactMateTrans`** — the unitary
+`offS_transvecGen_maps_pair` assembly: map `e ↦ e'` exactly (line step `t₁`), then fix `e'` and map
+the preserved mate `t₁·f ↦ f'` (mate step `t₂`); `g = t₂·t₁`. Purely group-theoretic given the two
+sub-moves, so it isolates the deep content into `UExactLineTrans` alone (the mate step carries no
+torus). -/
+theorem UExactPairTrans_of_line_mate (hline : UExactLineTrans p (n := n))
+    (hmate : UExactMateTrans p (n := n)) : UExactPairTrans p (n := n) := by
+  intro C e f e' f' he hf he' hf' heiso hfiso hef he'iso hf'iso he'f'
+  have he0 : e ≠ 0 := by
+    rintro rfl; rw [star_zero, zero_dotProduct] at hef; exact one_ne_zero hef.symm
+  have he'0 : e' ≠ 0 := by
+    rintro rfl; rw [star_zero, zero_dotProduct] at he'f'; exact one_ne_zero he'f'.symm
+  obtain ⟨t1, ht1mem, ht1fix, ht1e⟩ := hline C e e' he he' heiso he'iso he0 he'0
+  -- `t₁·f` is an isotropic mate of `e'`
+  have hgu : (t1 : Matrix (Fin n) (Fin n) (UnitaryField p)) ∈ Matrix.unitaryGroup (Fin n) _ :=
+    Matrix.specialUnitaryGroup_le_unitaryGroup t1.2
+  have ht1f_off : offSU p C ((t1 : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f) :=
+    offSU_preserved p ht1fix hf
+  have ht1f_iso : star ((t1 : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f) ⬝ᵥ
+      ((t1 : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f) = 0 := by
+    rw [u_preserves_form hgu]; exact hfiso
+  have hmatecond : star e' ⬝ᵥ ((t1 : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f) = 1 := by
+    rw [← ht1e, u_preserves_form hgu]; exact hef
+  obtain ⟨t2, ht2mem, ht2fix, ht2e', ht2f⟩ := hmate C e'
+    ((t1 : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f) f'
+    he' ht1f_off hf' he'iso ht1f_iso hf'iso hmatecond he'f'
+  refine ⟨t2 * t1, mul_mem ht2mem ht1mem, FixSU_mul p ht2fix ht1fix, ?_, ?_⟩
+  · rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, ht1e, ht2e']
+  · rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, ht2f]
+
+/-- **`hgen` reduced to the line + mate steps**: `hgen ⟸ UExactLineTrans + UExactMateTrans + (2≠0)`.
+The mate step is dischargeable (Eichler-membership, no torus); the line step is the remaining deep
+wall (`exists_scale`). -/
+theorem hgen_of_line_mate (h2 : (2 : UnitaryField p) ≠ 0)
+    (hline : UExactLineTrans p (n := n)) (hmate : UExactMateTrans p (n := n)) :
+    Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p)
+        (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤ :=
+  hgen_of_hpair p h2 (UExactPairTrans_of_line_mate p hline hmate)
+
 /-- **`SU_n(F_{p²})` is perfect, modulo the unitary Witt generation theorem** (`n ≥ 3`, `p ≥ 5`).
 Assembles `commutator_specialUnitaryGroup_eq_top` with the concrete fixed-field scalar
 (`exists_fixedField_norm_ne_one`, `p ≥ 5`) and hyperbolic partners (`exists_hyperbolic_partner`).

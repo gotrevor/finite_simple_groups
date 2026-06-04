@@ -94,6 +94,32 @@ theorem exists_norm_neg_one : ∃ c : UnitaryField p, c * star c = -1 := by
   obtain ⟨c, hc⟩ := FiniteField.norm_surjective (ZMod p) (UnitaryField p) (-1)
   exact ⟨c, by rw [← algebraMap_norm_eq_mul_star, hc, map_neg, map_one]⟩
 
+/-- **A fixed-field scalar of Hermitian norm `≠ 1`** for `p ≥ 5`. The prime-field element
+`λ = algebraMap (2 : F_p)` is `star`-fixed (Frobenius fixes the prime field, `2^p = 2`) with
+`N(λ) = λ·star λ = λ² = algebraMap 4 ≠ 1` (since `4 ≠ 1` in `F_p` for `p ≠ 3`); also `λ ≠ 0`
+(`p ≠ 2`). This is the scalar that drives `PSU` perfectness (`uTransvecSU_mem_commutator`); the
+`p ≥ 5` hypothesis is the honest field-size condition excluding the small non-perfect cases. -/
+theorem exists_fixedField_norm_ne_one (hp : 5 ≤ p) :
+    ∃ lam : UnitaryField p, lam ≠ 0 ∧ star lam = lam ∧ lam * star lam ≠ 1 := by
+  have hp2 : (2 : ZMod p) ≠ 0 := by
+    rw [show (2 : ZMod p) = ((2 : ℕ) : ZMod p) by push_cast; ring, Ne, ZMod.natCast_eq_zero_iff]
+    intro h; have := Nat.le_of_dvd (by norm_num) h; omega
+  have h41 : (4 : ZMod p) ≠ 1 := by
+    intro h
+    have h3 : (3 : ZMod p) = 0 := by linear_combination h
+    rw [show (3 : ZMod p) = ((3 : ℕ) : ZMod p) by push_cast; ring, ZMod.natCast_eq_zero_iff] at h3
+    have := Nat.le_of_dvd (by norm_num) h3; omega
+  refine ⟨algebraMap (ZMod p) (UnitaryField p) 2, ?_, ?_, ?_⟩
+  · rw [Ne, ← map_zero (algebraMap (ZMod p) (UnitaryField p))]
+    exact fun h => hp2 ((FaithfulSMul.algebraMap_injective (ZMod p) (UnitaryField p)) h)
+  · rw [UnitaryField.star_pow, ← map_pow, ZMod.pow_card]
+  · rw [UnitaryField.star_pow, ← map_pow, ZMod.pow_card, ← map_mul,
+      Ne, ← map_one (algebraMap (ZMod p) (UnitaryField p))]
+    intro h
+    apply h41
+    have := (FaithfulSMul.algebraMap_injective (ZMod p) (UnitaryField p)) h
+    linear_combination this
+
 open Matrix in
 /-- **Isotropic vectors exist** for the standard Hermitian form on `(F_{p²})ⁿ`, `n ≥ 2`: the
 vector `v = c·e₀ + e₁` (with `c·star c = −1` from `exists_norm_neg_one`) is nonzero and isotropic,

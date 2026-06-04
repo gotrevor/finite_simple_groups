@@ -1341,6 +1341,84 @@ theorem offSU_maps_nonorth_gen {C : Finset (Fin n)} {v w : Fin n → UnitaryFiel
     show t * star β * β = t * Nβ by rw [hNdef]; ring, hcoef, neg_one_smul]
   abel
 
+/-- **Weyl swap in `⟨transvections⟩` and fixing `C`.** The 3-transvection product
+`τ_{e,a}·τ_{f,-a⁻¹}·τ_{e,a}` (`e, f ∈ offSU C` a hyperbolic pair) sends `e ↦ -a⁻¹·f`, `f ↦ a·e`, lies
+in `uTransvecGen`, and fixes `C` (centres `e, f ∈ offSU C`). Membership-aware `exists_su_weyl_swap`. -/
+theorem exists_su_weyl_swap_gen {C : Finset (Fin n)} {e f : Fin n → UnitaryField p}
+    (he : offSU p C e) (hf : offSU p C f)
+    (hee : star e ⬝ᵥ e = 0) (hff : star f ⬝ᵥ f = 0) (hef : star e ⬝ᵥ f = 1)
+    {a : UnitaryField p} (ha0 : a ≠ 0) (ha : a + star a = 0) :
+    ∃ g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p), g ∈ uTransvecGen p (n := n) ∧
+      FixSU p C g ∧ (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ e = (-a⁻¹) • f ∧
+        (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f = a • e := by
+  have hfe : star f ⬝ᵥ e = 1 := by rw [dotProduct_star_swap, hef, star_one]
+  have hsa : star a = -a := by linear_combination ha
+  have ha' : (-a⁻¹) + star (-a⁻¹) = 0 := by
+    rw [star_neg, star_inv₀, hsa, inv_neg, neg_neg]; ring
+  have hab : a * (-a⁻¹) = -1 := by rw [mul_neg, mul_inv_cancel₀ ha0]
+  set b : UnitaryField p := -a⁻¹ with hb
+  set g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) :=
+    uTransvecSU e a hee ha * uTransvecSU f b hff ha' * uTransvecSU e a hee ha with hgdef
+  have hcoe : (g : Matrix (Fin n) (Fin n) (UnitaryField p))
+      = uTransvection e a * uTransvection f b * uTransvection e a := by
+    rw [hgdef]; simp only [Submonoid.coe_mul, uTransvecSU_coe]
+  have hge : (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ e = b • f := by
+    have e1 : uTransvection e a *ᵥ e = e := by
+      rw [uTransvection_mulVec, hee, mul_zero, zero_smul, add_zero]
+    have e2 : uTransvection f b *ᵥ e = e + b • f := by rw [uTransvection_mulVec, hfe, mul_one]
+    have e3 : uTransvection e a *ᵥ (e + b • f) = b • f := by
+      rw [uTransvection_mulVec, dotProduct_add, hee, dotProduct_smul, hef, smul_eq_mul, mul_one,
+        zero_add, hab, neg_one_smul]
+      abel
+    rw [hcoe, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, e1, e2, e3]
+  have hgf : (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f = a • e := by
+    have e1 : uTransvection e a *ᵥ f = f + a • e := by rw [uTransvection_mulVec, hef, mul_one]
+    have e2 : uTransvection f b *ᵥ (f + a • e) = a • e := by
+      rw [uTransvection_mulVec, dotProduct_add, hff, dotProduct_smul, hfe, smul_eq_mul, mul_one,
+        zero_add, mul_comm b a, hab, neg_one_smul]
+      abel
+    have e3 : uTransvection e a *ᵥ (a • e) = a • e := by
+      simp [uTransvection_mulVec, dotProduct_smul, hee]
+    rw [hcoe, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, e1, e2, e3]
+  have hperp : ∀ z : Fin n → UnitaryField p, star e ⬝ᵥ z = 0 → star f ⬝ᵥ z = 0 →
+      (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ z = z := by
+    intro z hez hfz
+    have e1 : uTransvection e a *ᵥ z = z := by
+      rw [uTransvection_mulVec, hez, mul_zero, zero_smul, add_zero]
+    have e2 : uTransvection f b *ᵥ z = z := by
+      rw [uTransvection_mulVec, hfz, mul_zero, zero_smul, add_zero]
+    rw [hcoe, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, e1, e2, e1]
+  exact ⟨g, hgdef ▸ mul_mem (mul_mem (uTransvecSU_mem_gen p e a hee ha)
+      (uTransvecSU_mem_gen p f b hff ha')) (uTransvecSU_mem_gen p e a hee ha),
+    FixSU_of_fixes_perp p he hf hperp, hge, hgf⟩
+
+/-- **Diagonal `F_q*`-torus of a hyperbolic plane, in `⟨transvections⟩` and fixing `C`.** For
+`λ ∈ F_q*` (`star λ = λ ≠ 0`) and a hyperbolic pair `e, f ∈ offSU C`, the 6-transvection product
+`w(a')·w(a)` scales `e ↦ λ·e`, `f ↦ λ⁻¹·f`, lies in `uTransvecGen`, and fixes `C`. This is the
+within-plane scalar correction of the generation induction (the `F_q*` case of `UExactLineTrans`,
+e.g. the last pair `|Cᶜ| = 2`, where the scalar is forced into the fixed field). -/
+theorem exists_su_hyperbolic_scale_gen {C : Finset (Fin n)} {e f : Fin n → UnitaryField p}
+    (he : offSU p C e) (hf : offSU p C f)
+    (hee : star e ⬝ᵥ e = 0) (hff : star f ⬝ᵥ f = 0) (hef : star e ⬝ᵥ f = 1)
+    {lam : UnitaryField p} (hlam0 : lam ≠ 0) (hlam : star lam = lam) :
+    ∃ g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p), g ∈ uTransvecGen p (n := n) ∧
+      FixSU p C g ∧ (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ e = lam • e ∧
+        (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ f = lam⁻¹ • f := by
+  obtain ⟨a, ha0, hatr⟩ := UnitaryField.exists_traceZero_ne_zero p
+  have hsa : star a = -a := by linear_combination hatr
+  set a' : UnitaryField p := -a * lam with ha'def
+  have ha'0 : a' ≠ 0 := by rw [ha'def]; exact mul_ne_zero (neg_ne_zero.mpr ha0) hlam0
+  have ha'tr : a' + star a' = 0 := by rw [ha'def, star_mul', star_neg, hsa, hlam]; ring
+  obtain ⟨g1, hg1mem, hg1fix, hg1e, hg1f⟩ := exists_su_weyl_swap_gen p he hf hee hff hef ha0 hatr
+  obtain ⟨g2, hg2mem, hg2fix, hg2e, hg2f⟩ := exists_su_weyl_swap_gen p he hf hee hff hef ha'0 ha'tr
+  have hscaleE : (-a⁻¹) * a' = lam := by rw [ha'def]; field_simp
+  have hscaleF : a * (-a'⁻¹) = lam⁻¹ := by rw [ha'def]; field_simp [ha0, hlam0]
+  refine ⟨g2 * g1, mul_mem hg2mem hg1mem, FixSU_mul p hg2fix hg1fix, ?_, ?_⟩
+  · rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, hg1e, Matrix.mulVec_smul, hg2f, smul_smul,
+      hscaleE]
+  · rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, hg1f, Matrix.mulVec_smul, hg2e, smul_smul,
+      hscaleF]
+
 /-! ### Explicit coordinate hyperbolic pair (with span recovery) for the generation induction
 
 The genAux dimension induction peels a pair of unfixed coordinates `{i,j}` at a time. The isotropic

@@ -148,6 +148,39 @@ theorem mem_dirTransvecGroup {v : n → F} {y : SpecialLinearGroup n F} :
     have hmem : φ ∈ dirKer v := mem_dirKer.mpr h
     exact ⟨(⟨φ, hmem⟩ : dirKer v), rfl⟩
 
+/-- Scaling the direction `v` by `a` reparametrizes `1 + (a•v)⊗φ = 1 + v⊗(a•φ)`. -/
+theorem dirTransMat_smul (a : F) (v φ : n → F) :
+    dirTransMat (a • v) φ = dirTransMat v (a • φ) := by
+  rw [dirTransMat, dirTransMat, smul_vecMulVec, vecMulVec_smul]
+
+/-- **The transvection subgroup depends only on the line `[v]`**: scaling `v` by a nonzero
+`a` leaves `dirTransvecGroup` unchanged (reparametrize `φ ↦ a•φ`). Needed to define the
+PSL-level family on projective points and for generation. -/
+theorem dirTransvecGroup_smul {a : F} (ha : a ≠ 0) (v : n → F) :
+    dirTransvecGroup (a • v) = dirTransvecGroup v := by
+  apply le_antisymm <;> rw [SetLike.le_def] <;> intro y hy <;>
+    rw [mem_dirTransvecGroup] at hy ⊢ <;> obtain ⟨φ, h, rfl⟩ := hy
+  · have hv : φ ⬝ᵥ v = 0 := by
+      rw [dotProduct_smul] at h
+      exact (smul_eq_zero.mp h).resolve_left ha
+    refine ⟨a • φ, by rw [smul_dotProduct, hv, smul_zero], ?_⟩
+    apply Subtype.ext
+    rw [dirTransSL_val, dirTransSL_val, dirTransMat_smul]
+  · refine ⟨a⁻¹ • φ, by rw [smul_dotProduct, dotProduct_smul, h, smul_zero, smul_zero], ?_⟩
+    apply Subtype.ext
+    rw [dirTransSL_val, dirTransSL_val, dirTransMat_smul, smul_smul, mul_inv_cancel₀ ha, one_smul]
+
+/-- `dirTransvecGroup` of a representative of `[v]` equals that of `v` (line-invariance). -/
+theorem dirTransvecGroup_rep (v : n → F) (hv : v ≠ 0) :
+    dirTransvecGroup ((Projectivization.mk F v hv).rep) = dirTransvecGroup v := by
+  have h2 : Projectivization.mk F ((Projectivization.mk F v hv).rep)
+        (Projectivization.rep_nonzero _) = Projectivization.mk F v hv := by
+    rw [Projectivization.mk_rep]
+  rw [Projectivization.mk_eq_mk_iff] at h2
+  obtain ⟨a, ha⟩ := h2
+  rw [← ha, Units.smul_def]
+  exact dirTransvecGroup_smul (Units.ne_zero a) _
+
 theorem dirTransvecGroup_conj (g : SpecialLinearGroup n F) (v : n → F) :
     (dirTransvecGroup v).map (MulAut.conj g) = dirTransvecGroup (g.val *ᵥ v) := by
   ext y
@@ -164,5 +197,28 @@ theorem dirTransvecGroup_conj (g : SpecialLinearGroup n F) (v : n → F) :
     apply Subtype.ext
     show dirTransMat (g.val *ᵥ v) ((φ ᵥ* g.val) ᵥ* g⁻¹.val) = dirTransMat (g.val *ᵥ v) φ
     rw [vecMul_vecMul, sl_mul_inv, vecMul_one]
+
+/-! ### PSL-level transvection family `Tline` (the Iwasawa `T`)
+
+`Tline x` is the image in `PSL(n,F) = SL/Z` of the direction-`x.rep` transvection subgroup;
+by `dirTransvecGroup_rep`/`_smul` it depends only on the line `x`. It is abelian (image of
+an abelian subgroup). What remains for the full `IwasawaStructure` record is `is_conj`
+(`Tline (g•x) = conj g • Tline x`, from `dirTransvecGroup_conj` pushed through the quotient —
+template in `SL2.Tline_conj`) and `is_generator` (`iSup Tline = ⊤`, reducing to
+`transvecSL_closure_eq_top` since `transvecSL i j c = dirTransSL eᵢ (c·eⱼ) ∈ dirTransvecGroup eᵢ`). -/
+
+/-- **`PSL(n,F)`-level transvection subgroup along the line `x`** — the image in `SL/Z` of
+`dirTransvecGroup x.rep`. The Iwasawa family `T`. -/
+noncomputable def Tline (x : Projectivization F (n → F)) :
+    Subgroup (SpecialLinearGroup n F ⧸ Subgroup.center (SpecialLinearGroup n F)) :=
+  (dirTransvecGroup x.rep).map (QuotientGroup.mk' (Subgroup.center _))
+
+instance (x : Projectivization F (n → F)) : IsMulCommutative (Tline x) := by
+  unfold Tline; infer_instance
+
+theorem Tline_mk (v : n → F) (hv : v ≠ 0) :
+    Tline (Projectivization.mk F v hv)
+      = (dirTransvecGroup v).map (QuotientGroup.mk' (Subgroup.center _)) :=
+  congrArg (Subgroup.map (QuotientGroup.mk' (Subgroup.center _))) (dirTransvecGroup_rep v hv)
 
 end FiniteSimpleGroups.SLn

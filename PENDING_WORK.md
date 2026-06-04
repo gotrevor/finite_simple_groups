@@ -200,6 +200,10 @@ axioms`-clean — `[propext, Classical.choice, Quot.sound]`):
   (`Tline_iSup`): `transvecGroup e₁ = upper`s, `transvecGroup e₂ = lower`s
   (`transSL_e1/e2`), which generate SL (`transvections_generate`) hence PSL.
 - ✅ **ASSEMBLY** `PSL2_isSimpleGroup` — feed all six into `PSL2_isSimpleGroup_of_iwasawa`.
+- ✅ **ORDER PIN** (DONE 2026-06-04, axiom-clean): `card_center_SL2` (`|Z(SL(2,q))| = 2`
+  for odd prime `q`, from `center_SL2 = {±1}` + `1 ≠ -1`) and `card_PSL2`
+  (`|PSL(2,q)|·2 = q(q²−1)`, i.e. `q(q²−1)/2`, via Lagrange + `card_SL2`). `SL2Card.lean`
+  is now wired into the build (imported by `SL2.lean`; was orphaned).
 
 **NEXT THREAD (open).** With `PSL(2,q)` done, candidate next discharges, in rough
 tractability order:

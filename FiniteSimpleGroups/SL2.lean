@@ -1,6 +1,7 @@
 import Mathlib
 import FiniteSimpleGroups.LieType
 import FiniteSimpleGroups.PSLIwasawa
+import FiniteSimpleGroups.SL2Card
 
 /-!
 # `PSL(2,q)` is simple for prime `q ≥ 4` — all Iwasawa obligations, machine-checked
@@ -911,6 +912,55 @@ theorem PSL2_isSimpleGroup (q : ℕ) [Fact (Nat.Prime q)] (hq : 4 ≤ q) :
     IsSimpleGroup (PSL 2 q) :=
   haveI : Nontrivial (PSL 2 q) := PSL2_nontrivial q
   PSL2_isSimpleGroup_of_iwasawa q (PSL2_perfect q hq) (pslIwasawa q) (pslFaithful q)
+
+/-! ### The order of `PSL(2,q)`
+
+With `card_SL2` (`|SL(2,q)| = q(q²−1)`) and `center_SL2` (the center is `{±1}`),
+Lagrange pins `|PSL(2,q)| = q(q²−1)/2` for odd prime `q`. This is the order-pin
+companion to the simplicity thread — the `Nat.card`-as-function-of-`(fam,n,q)`
+faithfulness anchor flagged as the natural next step in `Classification.lean`. -/
+
+/-- **`|Z(SL(2,𝔽_q))| = 2`** for odd prime `q`. The center is `{1, -1}`
+(`center_SL2`); the two are distinct because `1 = -1` would force `2 = 0` in
+`ZMod q`, impossible for odd `q`. -/
+theorem card_center_SL2 (q : ℕ) [Fact (Nat.Prime q)] (hodd : Odd q) :
+    Nat.card (Subgroup.center (SpecialLinearGroup (Fin 2) (ZMod q))) = 2 := by
+  have hq : Nat.Prime q := Fact.out
+  have hne : (1 : SpecialLinearGroup (Fin 2) (ZMod q)) ≠ -1 := by
+    intro h
+    have hval : (1 : Matrix (Fin 2) (Fin 2) (ZMod q)) = -1 := by
+      have := congrArg Subtype.val h
+      simpa [SpecialLinearGroup.coe_one, SpecialLinearGroup.coe_neg] using this
+    have h2 : (1 : ZMod q) = -1 := by
+      have := congrFun (congrFun hval 0) 0
+      simpa [Matrix.one_apply] using this
+    have hz : ((2 : ℕ) : ZMod q) = 0 := by
+      have h11 : (1 : ZMod q) + 1 = 0 := by linear_combination h2
+      push_cast; linear_combination h11
+    have hdvd : q ∣ 2 := (ZMod.natCast_eq_zero_iff 2 q).mp hz
+    have : q = 2 := (Nat.prime_dvd_prime_iff_eq hq Nat.prime_two).mp hdvd
+    rw [this] at hodd
+    exact (Nat.not_odd_iff_even.mpr (by decide)) hodd
+  have hset : (↑(Subgroup.center (SpecialLinearGroup (Fin 2) (ZMod q))) :
+      Set (SpecialLinearGroup (Fin 2) (ZMod q))) = {1, -1} := by
+    ext g
+    simp only [SetLike.mem_coe, Set.mem_insert_iff, Set.mem_singleton_iff]
+    exact center_SL2 (ZMod q) g
+  have e : ↥(Subgroup.center (SpecialLinearGroup (Fin 2) (ZMod q))) ≃
+      ↥({1, -1} : Set (SpecialLinearGroup (Fin 2) (ZMod q))) := Equiv.setCongr hset
+  rw [Nat.card_congr e, Nat.card_coe_set_eq, Set.ncard_pair hne]
+
+/-- **`|PSL(2,q)| · 2 = q(q²−1)`** for odd prime `q` — equivalently
+`|PSL(2,q)| = q(q²−1)/2`. Lagrange applied to `SL(2,q) ↠ PSL(2,q)` with kernel
+the order-2 center (`card_center_SL2`), and `card_SL2`. -/
+theorem card_PSL2 (q : ℕ) [Fact (Nat.Prime q)] (hodd : Odd q) :
+    Nat.card (PSL 2 q) * 2 = q * (q ^ 2 - 1) := by
+  have hSL : Nat.card (SpecialLinearGroup (Fin 2) (ZMod q)) = q * (q ^ 2 - 1) :=
+    Nat.card_eq_fintype_card.trans (card_SL2 q)
+  have hlag := Subgroup.card_eq_card_quotient_mul_card_subgroup
+    (Subgroup.center (SpecialLinearGroup (Fin 2) (ZMod q)))
+  rw [card_center_SL2 q hodd, hSL] at hlag
+  exact hlag.symm
 
 
 end SL2

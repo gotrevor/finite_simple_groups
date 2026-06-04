@@ -642,6 +642,59 @@ theorem exists_su_fixes_maps_nonorth (v w x : Fin n → UnitaryField p)
       uTransvection_mulVec w t x, hwx, mul_zero, zero_smul, add_zero,
       uTransvection_mulVec v b x, hvx, mul_zero, zero_smul, add_zero]
 
+/-- **`Stab[x]`-transitivity on the isotropic mates of `x` — the Eichler/Siegel discharge of `hT1`**
+(vector level, NO Witt theorem). For `x` isotropic and `y, y'` **isotropic** with
+`⟨x,y⟩ = ⟨x,y'⟩ = 1` (hyperbolic mates of `x`), there is `g ∈ SU` with `g·x = x` and `g·y = y'`.
+
+Take `g = τ_{x,c} · E_{x,h,μ}` where `h = y'-y` (so `⟨x,h⟩ = 0`), `μ` solves the trace condition
+`μ + star μ = ⟨h,h⟩` (`exists_add_star_eq_neg_dotProduct_self`, via `μ = -t`), and
+`c = ⟨h,y⟩ + μ`. The Eichler element `E` (a genuine isometry that a *single* unitary transvection
+cannot supply) fixes `x` and sends `y ↦ y' - c·x`; the correction scalar `c` is **automatically
+trace-zero**, because `y, y'` are isotropic:
+`c + star c = ⟨h,y⟩ + ⟨y,h⟩ + ⟨h,h⟩ = 0` after expanding `h = y'-y` with `⟨y,y⟩ = ⟨y',y'⟩ = 0`. Hence
+`τ_{x,c} ∈ SU` clears the leftover `c·x`. This is the unitary analogue of the symplectic
+`exists_sp_transvecFixing_maps_mate`, the relative-transitivity engine of the line stabiliser. -/
+theorem exists_su_fixes_maps_isotropic_mate (x y y' : Fin n → UnitaryField p)
+    (hxiso : star x ⬝ᵥ x = 0) (hyiso : star y ⬝ᵥ y = 0) (hy'iso : star y' ⬝ᵥ y' = 0)
+    (hxy : star x ⬝ᵥ y = 1) (hxy' : star x ⬝ᵥ y' = 1) :
+    ∃ g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p),
+      (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x = x ∧
+        (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ y = y' := by
+  set h := y' - y with hh_def
+  have hxh : star x ⬝ᵥ h = 0 := by rw [hh_def, dotProduct_sub, hxy, hxy', sub_self]
+  obtain ⟨t, ht⟩ := exists_add_star_eq_neg_dotProduct_self p h
+  set μ := -t with hμ_def
+  have hμ : μ + star μ = star h ⬝ᵥ h := by rw [hμ_def, star_neg, ← neg_add, ht, neg_neg]
+  set c := star h ⬝ᵥ y + μ with hc_def
+  -- the Eichler element fixes `x` and sends `y ↦ y' - c·x`
+  have hE_x : uEichler x h μ *ᵥ x = x := uEichler_apply_self x h μ hxiso hxh
+  have hyh : y' = y + h := by rw [hh_def]; abel
+  have hE_y : uEichler x h μ *ᵥ y = y' - c • x := by
+    rw [uEichler_mulVec, hxy, one_smul, mul_one, hc_def, add_smul, hyh]
+    abel
+  -- the correction scalar `c` is trace-zero (uses isotropy of `y, y'`)
+  have hc_tr : c + star c = 0 := by
+    have hsc : star c = star y ⬝ᵥ h + star μ := by
+      rw [hc_def, star_add]
+      exact congrArg (· + star μ) (dotProduct_star_swap h y).symm
+    have key : star h ⬝ᵥ y + star y ⬝ᵥ h + star h ⬝ᵥ h = 0 := by
+      rw [hh_def]
+      simp only [star_sub, sub_dotProduct, dotProduct_sub, hyiso, hy'iso]
+      ring
+    rw [hc_def, hsc]; linear_combination key + hμ
+  -- assemble `g = τ_{x,c} · E`
+  have hEcoe : ((⟨uEichler x h μ, uEichler_mem_su x h μ hxiso hxh hμ⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) :
+      Matrix (Fin n) (Fin n) (UnitaryField p)) = uEichler x h μ := rfl
+  refine ⟨uTransvecSU x c hxiso hc_tr *
+    ⟨uEichler x h μ, uEichler_mem_su x h μ hxiso hxh hμ⟩, ?_, ?_⟩
+  · rw [Submonoid.coe_mul, uTransvecSU_coe, hEcoe, ← Matrix.mulVec_mulVec, hE_x,
+      uTransvection_apply_self x c hxiso]
+  · rw [Submonoid.coe_mul, uTransvecSU_coe, hEcoe, ← Matrix.mulVec_mulVec, hE_y,
+      uTransvection_mulVec, dotProduct_sub, hxy', dotProduct_smul, hxiso, smul_zero, sub_zero,
+      mul_one]
+    abel
+
 /-- **`SU` is transitive on isotropic lines** (`n ≥ 3`, machine-checked, no Witt classification):
 for nonzero isotropic `v, w`, there is `g ∈ SU` with `g·v = c·w` (`c ≠ 0`), i.e. `g·[v] = [w]`.
 Route through a common non-orthogonal isotropic `u` (`exists_common_nonorth_isotropic`, diameter-2
@@ -1009,6 +1062,53 @@ theorem psu_isPretransitive (hn : 3 ≤ n) :
   conv_rhs => rw [← Projectivization.mk_rep y.1]
   rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff']
   exact ⟨c, by rw [su_smul_vec_def]; exact hg.symm⟩
+
+/-- **`hT1` DISCHARGED — `Stab[x]` is transitive on isotropic points non-perpendicular to `[x]`**
+(`n ≥ 3`, machine-checked via the Eichler/Siegel transformation, NO Witt theorem). For isotropic
+points `x, y, y'` with `⟨x,y⟩ ≠ 0` and `⟨x,y'⟩ ≠ 0`, there is `g ∈ PSU` fixing `[x]` and mapping
+`[y] → [y']`. Rescale `y, y'` to hyperbolic mates of `x` (`⟨x,·⟩ = 1`; isotropy is scale-invariant)
+and apply `exists_su_fixes_maps_isotropic_mate`: the resulting `g ∈ SU` fixes `x.rep` and maps the
+rescaled `y` to the rescaled `y'`, so its image in `PSU = SU/Z` fixes `[x]` and sends `[y] → [y']`.
+This is the last geometric atom of `PSU` simplicity — only the Witt generation `hgen` remains. -/
+theorem psu_hT1 :
+    letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep ≠ 0 → star x.1.rep ⬝ᵥ y'.1.rep ≠ 0 →
+        ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y' := by
+  letI := psuAction p n
+  intro x y y' hxy hxy'
+  set xr := x.1.rep with hxr
+  set yr := y.1.rep with hyr
+  set y'r := y'.1.rep with hy'r
+  set y0 := (star xr ⬝ᵥ yr)⁻¹ • yr with hy0
+  set y'0 := (star xr ⬝ᵥ y'r)⁻¹ • y'r with hy'0
+  have hxx : star xr ⬝ᵥ xr = 0 := x.2
+  have hy0iso : star y0 ⬝ᵥ y0 = 0 := by rw [hy0, star_smul_dotProduct_self, y.2, mul_zero]
+  have hy'0iso : star y'0 ⬝ᵥ y'0 = 0 := by rw [hy'0, star_smul_dotProduct_self, y'.2, mul_zero]
+  have hxy0 : star xr ⬝ᵥ y0 = 1 := by
+    rw [hy0, dotProduct_smul, smul_eq_mul, inv_mul_cancel₀ hxy]
+  have hxy'0 : star xr ⬝ᵥ y'0 = 1 := by
+    rw [hy'0, dotProduct_smul, smul_eq_mul, inv_mul_cancel₀ hxy']
+  obtain ⟨g, hgx, hgy⟩ :=
+    exists_su_fixes_maps_isotropic_mate p xr y0 y'0 hxx hy0iso hy'0iso hxy0 hxy'0
+  refine ⟨QuotientGroup.mk g, ?_, ?_⟩
+  · rw [psu_mk_smul p n g x]
+    apply Subtype.ext
+    rw [isoPoint_smul_coe]
+    conv_lhs => rw [← Projectivization.mk_rep x.1]
+    conv_rhs => rw [← Projectivization.mk_rep x.1]
+    rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff']
+    exact ⟨1, by rw [su_smul_vec_def, one_smul]; exact hgx.symm⟩
+  · rw [psu_mk_smul p n g y]
+    apply Subtype.ext
+    rw [isoPoint_smul_coe]
+    conv_lhs => rw [← Projectivization.mk_rep y.1]
+    conv_rhs => rw [← Projectivization.mk_rep y'.1]
+    rw [Projectivization.smul_mk, Projectivization.mk_eq_mk_iff']
+    refine ⟨(star xr ⬝ᵥ yr) * (star xr ⬝ᵥ y'r)⁻¹, ?_⟩
+    rw [su_smul_vec_def]
+    have h1 := hgy
+    rw [hy0, hy'0, Matrix.mulVec_smul] at h1
+    rw [SemigroupAction.mul_smul, ← h1, smul_smul, mul_inv_cancel₀ hxy, one_smul]
 
 /-! ### Block-combinatorics scaffold (the non-perpendicular connectivity half of primitivity)
 
@@ -1581,6 +1681,19 @@ theorem PSU_isSimpleGroup_of_generate_of_T1 (hn : 3 ≤ n) (hp : 5 ≤ p)
   PSU_isSimpleGroup_of_generate_of_eichler' p n hn hp hgen hT1
     (fun hxy hxy' hyy' => psu_hT2_nonperp p n hxy hxy' hyy')
     (fun hxy hperp => psu_hPP p n hxy hperp)
+
+/-- **★★ `PSU_n(F_{p²})` is simple** (`n ≥ 3`, `p ≥ 5`), reduced to the **single** remaining atom: the
+unitary Witt generation `hgen` (that the isotropic transvections generate `SU`). Every geometric
+input — pretransitivity, block-triviality, the perpendicular-partner existence `hPP`, the
+perpendicular transitivity `hT2`, AND the non-perpendicular stabilizer transitivity `hT1` (via the
+Eichler/Siegel transformation, `psu_hT1`) — is now machine-checked, with NO Witt's-extension-theorem
+appeal. Once `hgen` is discharged this becomes an unconditional proof of `IsSimpleGroup (PSU_n)`. -/
+theorem PSU_isSimpleGroup_modulo_generation (hn : 3 ≤ n) (hp : 5 ≤ p)
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
+        (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤) :
+    IsSimpleGroup (PSUConcrete n p) :=
+  PSU_isSimpleGroup_of_generate_of_T1 p n hn hp hgen (psu_hT1 p n)
 
 end Iwasawa
 

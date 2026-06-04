@@ -282,6 +282,155 @@ theorem uRootSubgroup_conj (g : Matrix.specialUnitaryGroup n α) {v : n → α}
   · rintro ⟨a, ha, rfl⟩
     exact ⟨uTransvecSU v a hv ha, ⟨a, ha, rfl⟩, uTransvecSU_conj g v a hv ha⟩
 
+/-! ### The Eichler / Siegel transformation (the `hT1` line-stabiliser engine)
+
+For `x` **isotropic** (`⟨x,x⟩ = 0`) and `h ⊥ x` (`⟨x,h⟩ = 0`), and a scalar `μ` with
+`μ + star μ = ⟨h,h⟩` (a *trace condition*, solvable as `μ = ⟨h,h⟩/2` since `⟨h,h⟩` is Hermitian),
+the **Eichler (Siegel) transformation**
+`E_{x,h,μ}(z) = z + ⟨x,z⟩·h − ⟨h,z⟩·x − μ·⟨x,z⟩·x`
+is a special-unitary element **fixing `x`**. Realised as the rank-≤2 matrix update
+`1 + (h ⊗ star x) − (x ⊗ star h) − μ·(x ⊗ star x)`. Two facts drive `hT1`:
+
+* **`star E · E = 1`** (unitary): the only surviving product among the rank-one pieces is
+  `(x⊗star h)·(h⊗star x) = ⟨h,h⟩·(x⊗star x)`, cancelling `(μ + star μ)·(x⊗star x)` exactly by the
+  trace condition.
+* **`det E = 1`**: `E = 1 + U·V` with `U,V` of inner dimension `2`, so by Weinstein–Aronszajn
+  `det E = det(1 + V·U)` and `1 + V·U = !![1,0; −⟨h,h⟩,1]` is lower-triangular unipotent.
+
+This is the unitary analogue of the symplectic `sp_transvecFixing_step`, but the unitary
+transvection coefficient must be trace-zero, which the *single* transvection `τ_{h,·}` fails — the
+Eichler element supplies the missing isometry. Together with a `τ_{x,c}` correction (whose `c` is
+*automatically* trace-zero when `y,y'` are isotropic mates of `x`) it gives `Stab[x]`-transitivity
+on isotropic points non-perpendicular to `[x]`. -/
+
+/-- The **Eichler (Siegel) transformation** matrix `E_{x,h,μ} = 1 + (h ⊗ star x) − (x ⊗ star h)
+− μ·(x ⊗ star x)`. Its geometric action is `z ↦ z + ⟨x,z⟩·h − ⟨h,z⟩·x − μ⟨x,z⟩·x`. -/
+noncomputable def uEichler (x h : n → α) (μ : α) : Matrix n n α :=
+  1 + Matrix.vecMulVec h (star x) - Matrix.vecMulVec x (star h) - μ • Matrix.vecMulVec x (star x)
+
+/-- **The action of the Eichler transformation**: `E_{x,h,μ}(z) = z + ⟨x,z⟩·h − ⟨h,z⟩·x − μ⟨x,z⟩·x`,
+where `⟨v,z⟩ = star v ⬝ᵥ z`. -/
+theorem uEichler_mulVec (x h : n → α) (μ : α) (z : n → α) :
+    uEichler x h μ *ᵥ z
+      = z + (star x ⬝ᵥ z) • h - (star h ⬝ᵥ z) • x - (μ * (star x ⬝ᵥ z)) • x := by
+  simp only [uEichler, Matrix.sub_mulVec, Matrix.add_mulVec, Matrix.one_mulVec,
+    Matrix.smul_mulVec, Matrix.vecMulVec_mulVec, op_smul_eq_smul, smul_smul]
+
+/-- **The Eichler transformation fixes its isotropic centre `x`** (`⟨x,x⟩ = 0`, `⟨x,h⟩ = 0`): all
+three correction coefficients `⟨x,x⟩`, `⟨h,x⟩`, `μ⟨x,x⟩` vanish. -/
+theorem uEichler_apply_self (x h : n → α) (μ : α)
+    (hxx : star x ⬝ᵥ x = 0) (hxh : star x ⬝ᵥ h = 0) :
+    uEichler x h μ *ᵥ x = x := by
+  have hhx : star h ⬝ᵥ x = 0 := by
+    have hsw : star h ⬝ᵥ x = star (star x ⬝ᵥ h) := by
+      simp only [dotProduct, star_sum, Pi.star_apply, star_mul', star_star, mul_comm]
+    rw [hsw, hxh, star_zero]
+  rw [uEichler_mulVec, hxx, hhx]
+  simp
+
+/-- **The Eichler transformation is unitary** (`star E · E = 1`): under `⟨x,x⟩ = 0`, `⟨x,h⟩ = 0`
+and the trace condition `μ + star μ = ⟨h,h⟩`, the cross term `(x⊗star h)(h⊗star x) = ⟨h,h⟩(x⊗star x)`
+exactly cancels `(μ + star μ)(x⊗star x)`. -/
+theorem uEichler_mem_unitary (x h : n → α) (μ : α)
+    (hxx : star x ⬝ᵥ x = 0) (hxh : star x ⬝ᵥ h = 0)
+    (hμ : μ + star μ = star h ⬝ᵥ h) :
+    uEichler x h μ ∈ Matrix.unitaryGroup n α := by
+  have hhx : star h ⬝ᵥ x = 0 := by
+    have hsw : star h ⬝ᵥ x = star (star x ⬝ᵥ h) := by
+      simp only [dotProduct, star_sum, Pi.star_apply, star_mul', star_star, mul_comm]
+    rw [hsw, hxh, star_zero]
+  rw [Matrix.mem_unitaryGroup_iff']
+  have hstarE : star (uEichler x h μ) = 1 + Matrix.vecMulVec x (star h)
+      - Matrix.vecMulVec h (star x) - star μ • Matrix.vecMulVec x (star x) := by
+    simp only [uEichler, star_eq_conjTranspose, conjTranspose_sub, conjTranspose_add,
+      conjTranspose_one, conjTranspose_smul, conjTranspose_vecMulVec, star_star]
+  rw [hstarE]
+  show (1 + Matrix.vecMulVec x (star h) - Matrix.vecMulVec h (star x)
+      - star μ • Matrix.vecMulVec x (star x)) * uEichler x h μ = 1
+  rw [uEichler]
+  set A := Matrix.vecMulVec h (star x) with hAdef
+  set B := Matrix.vecMulVec x (star h) with hBdef
+  set C := Matrix.vecMulVec x (star x) with hCdef
+  -- the nine rank-one products; only `B * A` survives
+  have hAA : A * A = 0 := by
+    rw [hAdef, vecMulVec_mul_vecMulVec, hxh, zero_smul, vecMulVec_zero]
+  have hAB : A * B = 0 := by
+    rw [hAdef, hBdef, vecMulVec_mul_vecMulVec, hxx, zero_smul, vecMulVec_zero]
+  have hAC : A * C = 0 := by
+    rw [hAdef, hCdef, vecMulVec_mul_vecMulVec, hxx, zero_smul, vecMulVec_zero]
+  have hBB : B * B = 0 := by
+    rw [hBdef, vecMulVec_mul_vecMulVec, hhx, zero_smul, vecMulVec_zero]
+  have hBC : B * C = 0 := by
+    rw [hBdef, hCdef, vecMulVec_mul_vecMulVec, hhx, zero_smul, vecMulVec_zero]
+  have hCA : C * A = 0 := by
+    rw [hCdef, hAdef, vecMulVec_mul_vecMulVec, hxh, zero_smul, vecMulVec_zero]
+  have hCB : C * B = 0 := by
+    rw [hCdef, hBdef, vecMulVec_mul_vecMulVec, hxx, zero_smul, vecMulVec_zero]
+  have hCC : C * C = 0 := by
+    rw [hCdef, vecMulVec_mul_vecMulVec, hxx, zero_smul, vecMulVec_zero]
+  have hBA : B * A = (star h ⬝ᵥ h) • C := by
+    rw [hBdef, hAdef, hCdef, vecMulVec_mul_vecMulVec, vecMulVec_smul]
+  -- expand the product, kill the zero terms, collect the `C` coefficient
+  have key : (1 + B - A - star μ • C) * (1 + A - B - μ • C)
+      = 1 + ((star h ⬝ᵥ h) - μ - star μ) • C := by
+    simp only [add_mul, sub_mul, mul_add, mul_sub, one_mul, mul_one, smul_mul_assoc,
+      mul_smul_comm, hAA, hAB, hAC, hBB, hBC, hCA, hCB, hCC, hBA, smul_zero, add_zero, sub_zero]
+    rw [sub_smul, sub_smul]
+    abel
+  rw [key, show (star h ⬝ᵥ h) - μ - star μ = (0 : α) by linear_combination -hμ, zero_smul,
+    add_zero]
+
+/-- **The Eichler transformation has determinant 1** (`⟨x,x⟩ = 0`, `⟨x,h⟩ = 0`): writing
+`E = 1 + U·V` with `U,V` of inner dimension `2`, Weinstein–Aronszajn gives `det E = det(1 + V·U)`
+with `1 + V·U = !![1,0; −⟨h,h⟩,1]`. -/
+theorem uEichler_det (x h : n → α) (μ : α)
+    (hxx : star x ⬝ᵥ x = 0) (hxh : star x ⬝ᵥ h = 0) :
+    (uEichler x h μ).det = 1 := by
+  have hhx : star h ⬝ᵥ x = 0 := by
+    have hsw : star h ⬝ᵥ x = star (star x ⬝ᵥ h) := by
+      simp only [dotProduct, star_sum, Pi.star_apply, star_mul', star_star, mul_comm]
+    rw [hsw, hxh, star_zero]
+  set w : n → α := -star h - μ • star x with hw
+  set U : Matrix n (Fin 2) α := Matrix.of (fun i => ![h i, x i]) with hU
+  set V : Matrix (Fin 2) n α := Matrix.of ![star x, w] with hV
+  have hUV : uEichler x h μ = 1 + U * V := by
+    rw [uEichler]
+    ext i k
+    simp only [Matrix.add_apply, Matrix.sub_apply, Matrix.smul_apply, vecMulVec_apply,
+      Matrix.mul_apply, Fin.sum_univ_two, hU, hV, hw, Matrix.of_apply, Matrix.cons_val_zero,
+      Matrix.cons_val_one, smul_eq_mul, Pi.star_apply, Pi.sub_apply,
+      Pi.neg_apply, Pi.smul_apply]
+    ring
+  have hVU00 : (V * U) 0 0 = star x ⬝ᵥ h := by
+    simp only [Matrix.mul_apply, hV, hU, Matrix.of_apply, Matrix.cons_val_zero, dotProduct]
+  have hVU01 : (V * U) 0 1 = star x ⬝ᵥ x := by
+    simp only [Matrix.mul_apply, hV, hU, Matrix.of_apply, Matrix.cons_val_zero,
+      Matrix.cons_val_one, dotProduct]
+  have hVU10 : (V * U) 1 0 = w ⬝ᵥ h := by
+    simp only [Matrix.mul_apply, hV, hU, Matrix.of_apply, Matrix.cons_val_one,
+      Matrix.cons_val_zero, dotProduct]
+  have hVU11 : (V * U) 1 1 = w ⬝ᵥ x := by
+    simp only [Matrix.mul_apply, hV, hU, Matrix.of_apply, Matrix.cons_val_one,
+      Matrix.cons_val_zero, dotProduct]
+  have hwh : w ⬝ᵥ h = -(star h ⬝ᵥ h) := by
+    rw [hw, sub_dotProduct, neg_dotProduct, smul_dotProduct, smul_eq_mul, hxh, mul_zero, sub_zero]
+  have hwx : w ⬝ᵥ x = 0 := by
+    rw [hw, sub_dotProduct, neg_dotProduct, smul_dotProduct, smul_eq_mul, hxx, mul_zero, sub_zero,
+      hhx, neg_zero]
+  rw [hUV, Matrix.det_one_add_mul_comm, Matrix.det_fin_two, Matrix.add_apply, Matrix.add_apply,
+    Matrix.add_apply, Matrix.add_apply, hVU00, hVU01, hVU10, hVU11, hxx, hxh, hwh, hwx]
+  rw [Matrix.one_apply_eq, Matrix.one_apply_ne (by decide : (0 : Fin 2) ≠ 1),
+    Matrix.one_apply_ne (by decide : (1 : Fin 2) ≠ 0), Matrix.one_apply_eq]
+  ring
+
+/-- **The Eichler transformation lies in `SU`** (`⟨x,x⟩ = 0`, `⟨x,h⟩ = 0`, `μ + star μ = ⟨h,h⟩`). -/
+theorem uEichler_mem_su (x h : n → α) (μ : α)
+    (hxx : star x ⬝ᵥ x = 0) (hxh : star x ⬝ᵥ h = 0)
+    (hμ : μ + star μ = star h ⬝ᵥ h) :
+    uEichler x h μ ∈ Matrix.specialUnitaryGroup n α :=
+  Matrix.mem_specialUnitaryGroup_iff.mpr
+    ⟨uEichler_mem_unitary x h μ hxx hxh hμ, uEichler_det x h μ hxx hxh⟩
+
 /-! ### Nontriviality of the root subgroup (over a field)
 
 The Iwasawa structure requires the root subgroups to be *nontrivial*. Over a field, a transvection

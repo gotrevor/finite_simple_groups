@@ -109,8 +109,36 @@ theorem spTransvection_mul (v : (l ⊕ l) → R) (c₁ c₂ : R) :
       show ((Matrix.J l R *ᵥ v) ⬝ᵥ v) = 0 from by rw [dotProduct_comm]; exact spForm_self v,
       zero_smul, vecMulVec_zero]
   simp only [spTransvection]
-  simp only [add_mul, mul_add, one_mul, mul_one, smul_mul_assoc, mul_smul_comm, smul_smul]
+  simp only [add_mul, mul_add, one_mul, mul_one, smul_mul_assoc, mul_smul_comm]
   rw [hNsq, smul_zero, add_zero, add_smul]
   abel
+
+/-- **Conjugation equivariance of symplectic transvections.** For every `g` in the symplectic
+group and all `v, c`, `g · τ_{v,c} · g⁻¹ = τ_{g·v, c}`. This is the conjugation input to the
+Iwasawa structure on `PSp` (the symplectic analogue of `transSL_conj` for `SL`).
+
+The clean matrix core is `(g⁻¹)ᵀ · J = J · g`, equivalent to the membership relation
+`gᵀ · J · g = J` (`mem_iff'`): the transvection's rank-one term `v ⊗ (J·v)` conjugates to
+`(g·v) ⊗ ((J·v) ᵥ* g⁻¹)`, and `(J·v) ᵥ* g⁻¹ = J ·ᵥ (g·v)` is exactly that core applied to `v`. -/
+theorem spTransvection_conj {g : Matrix (l ⊕ l) (l ⊕ l) R} (hg : g ∈ symplecticGroup l R)
+    (v : (l ⊕ l) → R) (c : R) :
+    g * spTransvection v c * g⁻¹ = spTransvection (g *ᵥ v) c := by
+  have hgg : g * g⁻¹ = 1 := Matrix.mul_nonsing_inv g (SymplecticGroup.symplectic_det hg)
+  -- right-cancel `g` in `gᵀ J g = J` to get `gᵀ J = J g⁻¹`
+  have hJg : gᵀ * Matrix.J l R = Matrix.J l R * g⁻¹ := by
+    have h : (gᵀ * Matrix.J l R * g) * g⁻¹ = Matrix.J l R * g⁻¹ := by
+      rw [SymplecticGroup.mem_iff'.mp hg]
+    rwa [Matrix.mul_assoc (gᵀ * Matrix.J l R) g g⁻¹, hgg, Matrix.mul_one] at h
+  -- transpose it into the form needed for the rank-one factor
+  have hM : (g⁻¹)ᵀ * Matrix.J l R = Matrix.J l R * g := by
+    have ht := congrArg Matrix.transpose hJg
+    rw [Matrix.transpose_mul, Matrix.transpose_mul, Matrix.transpose_transpose,
+      J_transpose, Matrix.neg_mul, Matrix.mul_neg] at ht
+    exact (neg_injective ht).symm
+  have hkey : (Matrix.J l R *ᵥ v) ᵥ* g⁻¹ = Matrix.J l R *ᵥ (g *ᵥ v) := by
+    rw [← mulVec_transpose, mulVec_mulVec, mulVec_mulVec, hM]
+  rw [spTransvection, spTransvection]
+  simp only [add_mul, mul_add, mul_one, smul_mul_assoc, mul_smul_comm]
+  rw [hgg, mul_vecMulVec, vecMulVec_mul, hkey]
 
 end FiniteSimpleGroups.SpN

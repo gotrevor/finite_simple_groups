@@ -456,6 +456,35 @@ theorem uTransvecSU_mem_commutator (v w : N → F) (lam : F) (hlam : lam ≠ 0) 
   rw [← hcomm]
   exact Subgroup.commutator_mem_commutator (Subgroup.mem_top g) (Subgroup.mem_top _)
 
+open scoped commutatorElement in
+/-- **`SU_n(F)` is perfect, modulo generation.** If the unitary transvections generate `SU_n(F)`
+(the unitary Witt theorem — Step 3a), `F` has a fixed-field scalar `λ` with `N(λ) ≠ 1`, and every
+nonzero isotropic vector has a hyperbolic partner (`exists_hyperbolic_partner`), then
+`commutator (SU_n(F)) = ⊤`. Each generating transvection lies in the commutator subgroup
+(`uTransvecSU_mem_commutator`; the degenerate `v = 0` transvection is the identity). The unitary
+analogue of `SpN.commutator_Sp_eq_top`; the only outstanding input is the generation hypothesis. -/
+theorem commutator_specialUnitaryGroup_eq_top
+    (lam : F) (hlam : lam ≠ 0) (hfix : star lam = lam) (hN : lam * star lam ≠ 1)
+    (hpartner : ∀ v : N → F, v ≠ 0 → star v ⬝ᵥ v = 0 →
+      ∃ w : N → F, star w ⬝ᵥ w = 0 ∧ star v ⬝ᵥ w = 1)
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup N F |
+      ∃ (v : N → F) (a : F) (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0),
+        h = uTransvecSU v a hv ha} = ⊤) :
+    commutator (Matrix.specialUnitaryGroup N F) = ⊤ := by
+  rw [eq_top_iff, ← hgen, Subgroup.closure_le]
+  rintro x ⟨v, a, hv, ha, rfl⟩
+  rcases eq_or_ne v 0 with rfl | hv0
+  · have h1 : uTransvecSU (0 : N → F) a hv ha = 1 := by
+      apply Subtype.ext
+      simp [uTransvecSU_coe, uTransvection]
+    rw [h1]; exact Subgroup.one_mem _
+  · obtain ⟨w, hwiso, hvw⟩ := hpartner v hv0 hv
+    have hwv : star w ⬝ᵥ v = 1 := by
+      have hsw : star w ⬝ᵥ v = star (star v ⬝ᵥ w) := by
+        simp only [dotProduct, star_sum, Pi.star_apply, star_mul', star_star, mul_comm]
+      rw [hsw, hvw, star_one]
+    exact uTransvecSU_mem_commutator v w lam hlam hfix hN hvw hwv hv hwiso a ha
+
 end Scaling
 
 end FiniteSimpleGroups.PSU

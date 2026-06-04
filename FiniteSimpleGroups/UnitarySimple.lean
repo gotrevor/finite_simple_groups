@@ -1300,6 +1300,69 @@ theorem uTransvecSU_mem_gen (v : Fin n → UnitaryField p) (a : UnitaryField p)
     uTransvecSU v a hv ha ∈ uTransvecGen p (n := n) :=
   Subgroup.subset_closure ⟨v, a, hv, ha, rfl⟩
 
+/-- **The pure (`μ = 0`) Eichler transformation lies in `⟨transvections⟩`** (`x, h` isotropic,
+`⟨x,h⟩ = 0`). It is the explicit 3-transvection product
+`τ_{h,c⁻¹}·τ_{x,−c}·τ_{x+c⁻¹h,c}` of `uEichler_isotropic_eq_transvection_prod`, with `c` a trace-zero
+unit of `F_{q²}` (`exists_traceZero_ne_zero`): each factor is a genuine isotropic unitary transvection
+(`x`, `h`, `x+c⁻¹h` isotropic; `c⁻¹`, `−c`, `c` trace-zero). This converts the matrix factorization
+into `uTransvecGen` membership — the building block of the Eichler mate step (`UExactMateTrans`), for
+the isotropic-`h` case (the anisotropic case needs the Eichler composition law to split `h`). -/
+theorem uEichler_zero_mem_uTransvecGen {x h : Fin n → UnitaryField p}
+    (hxiso : star x ⬝ᵥ x = 0) (hhiso : star h ⬝ᵥ h = 0) (hxh : star x ⬝ᵥ h = 0) :
+    (⟨uEichler x h 0, uEichler_mem_su x h 0 hxiso hxh
+        (by rw [star_zero, add_zero]; exact hhiso.symm)⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) ∈ uTransvecGen p (n := n) := by
+  obtain ⟨c, hc0, hctr⟩ := UnitaryField.exists_traceZero_ne_zero p
+  have hsc : star c = -c := by linear_combination hctr
+  have hcd : c * c⁻¹ = 1 := mul_inv_cancel₀ hc0
+  have hstard : star c⁻¹ = -c⁻¹ := by rw [star_inv₀, hsc, inv_neg]
+  have hd_tr : c⁻¹ + star c⁻¹ = 0 := by rw [hstard]; ring
+  have hnc_tr : (-c) + star (-c) = 0 := by rw [star_neg, hsc]; ring
+  have hhx : star h ⬝ᵥ x = 0 := by rw [dotProduct_star_swap x h, hxh, star_zero]
+  have hz'iso : star (x + c⁻¹ • h) ⬝ᵥ (x + c⁻¹ • h) = 0 := by
+    simp only [star_add, star_smul, hstard, add_dotProduct, dotProduct_add, smul_dotProduct,
+      dotProduct_smul, hxiso, hxh, hhx, hhiso, smul_zero, add_zero]
+  set P := uTransvecSU h c⁻¹ hhiso hd_tr * uTransvecSU x (-c) hxiso hnc_tr
+    * uTransvecSU (x + c⁻¹ • h) c hz'iso hctr with hP
+  have hPgen : P ∈ uTransvecGen p (n := n) :=
+    mul_mem (mul_mem (uTransvecSU_mem_gen p h c⁻¹ hhiso hd_tr)
+        (uTransvecSU_mem_gen p x (-c) hxiso hnc_tr))
+      (uTransvecSU_mem_gen p (x + c⁻¹ • h) c hz'iso hctr)
+  have heq : (⟨uEichler x h 0, uEichler_mem_su x h 0 hxiso hxh
+      (by rw [star_zero, add_zero]; exact hhiso.symm)⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) = P := by
+    apply Subtype.ext
+    simp only [hP, Submonoid.coe_mul, uTransvecSU_coe]
+    exact uEichler_isotropic_eq_transvection_prod hxiso hhiso hxh hcd hstard
+  rw [heq]; exact hPgen
+
+/-- **The Eichler transformation with isotropic `h` lies in `⟨transvections⟩`** (`x, h` isotropic,
+`⟨x,h⟩ = 0`, `μ` trace-zero — automatic from `h` isotropic via `uEichler_mem_su`). Peel
+`E_{x,h,μ} = E_{x,h,0}·τ_{x,−μ}` (`uEichler_eq_mul_transvection`): the pure factor is in
+`uTransvecGen` (`uEichler_zero_mem_uTransvecGen`) and `τ_{x,−μ}` is a transvection (`−μ` trace-zero).
+This discharges the Eichler mate step `UExactMateTrans` whenever the mate difference `h = f'−f` is
+isotropic; the genuinely anisotropic case is tied to the deep `SU₃` core (`UScaleKill`). -/
+theorem uEichler_isotropic_mem_uTransvecGen {x h : Fin n → UnitaryField p} {μ : UnitaryField p}
+    (hxiso : star x ⬝ᵥ x = 0) (hhiso : star h ⬝ᵥ h = 0) (hxh : star x ⬝ᵥ h = 0)
+    (hμ : μ + star μ = 0) :
+    (⟨uEichler x h μ, uEichler_mem_su x h μ hxiso hxh (by rw [hμ]; exact hhiso.symm)⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) ∈ uTransvecGen p (n := n) := by
+  have hsμ : star μ = -μ := by linear_combination hμ
+  have hnμ_tr : (-μ) + star (-μ) = 0 := by rw [star_neg, hsμ]; ring
+  set Q := (⟨uEichler x h 0, uEichler_mem_su x h 0 hxiso hxh
+      (by rw [star_zero, add_zero]; exact hhiso.symm)⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) * uTransvecSU x (-μ) hxiso hnμ_tr
+    with hQ
+  have hQgen : Q ∈ uTransvecGen p (n := n) :=
+    mul_mem (uEichler_zero_mem_uTransvecGen p hxiso hhiso hxh)
+      (uTransvecSU_mem_gen p x (-μ) hxiso hnμ_tr)
+  have heq : (⟨uEichler x h μ, uEichler_mem_su x h μ hxiso hxh (by rw [hμ]; exact hhiso.symm)⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) = Q := by
+    apply Subtype.ext
+    simp only [hQ, Submonoid.coe_mul, uTransvecSU_coe]
+    exact uEichler_eq_mul_transvection μ hxiso hxh
+  rw [heq]; exact hQgen
+
 /-- **Within-`offSU C` non-orthogonal line move, in `⟨transvections⟩` and fixing `C`.** For isotropic
 `v, w ∈ offSU C` non-orthogonal, the Eichler product `τ_{v,b}·τ_{w,t}` maps `v ↦ c·w` (`c ≠ 0`),
 lies in `⟨transvections⟩` (a product of two generators), and fixes `C` (its centres `v, w` lie in

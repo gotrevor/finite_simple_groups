@@ -784,6 +784,99 @@ theorem exists_su_fixes_maps_isotropic_mate (x y y' : Fin n → UnitaryField p)
       mul_one]
     abel
 
+/-- **Exact mate-transitivity fixing the ENTIRE perp `⟨x,y,y'⟩^⊥`.** Strengthens
+`exists_su_fixes_maps_isotropic_mate`: the element `g = τ_{x,c}·E_{x,h,μ}` (`h = y'-y`) sending the
+isotropic mate `y ↦ y'` of `x` (both `⟨x,·⟩ = 1`) also fixes *every* `z` with
+`⟨x,z⟩ = ⟨y,z⟩ = ⟨y',z⟩ = 0` — the transvection `τ_{x,·}` fixes `x^⊥` and the Eichler `E_{x,h,·}`
+fixes `⟨x,h⟩^⊥` (and `⟨h,z⟩ = ⟨y',z⟩ - ⟨y,z⟩ = 0` there). This is the mate-step engine of the
+generation induction (unitary analogue of `offS_transvecFixing_maps_mate`): it carries `f₀ ↦ f₀'`
+inside the line stabiliser of `e₀` while pinning the already-fixed pairs in the complement. -/
+theorem exists_su_fixes_maps_isotropic_mate_fixing_perp (x y y' : Fin n → UnitaryField p)
+    (hxiso : star x ⬝ᵥ x = 0) (hyiso : star y ⬝ᵥ y = 0) (hy'iso : star y' ⬝ᵥ y' = 0)
+    (hxy : star x ⬝ᵥ y = 1) (hxy' : star x ⬝ᵥ y' = 1) :
+    ∃ g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p),
+      (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x = x ∧
+        (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ y = y' ∧
+        ∀ z : Fin n → UnitaryField p, star x ⬝ᵥ z = 0 → star y ⬝ᵥ z = 0 → star y' ⬝ᵥ z = 0 →
+          (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ z = z := by
+  set h := y' - y with hh_def
+  have hxh : star x ⬝ᵥ h = 0 := by rw [hh_def, dotProduct_sub, hxy, hxy', sub_self]
+  obtain ⟨t, ht⟩ := exists_add_star_eq_neg_dotProduct_self p h
+  set μ := -t with hμ_def
+  have hμ : μ + star μ = star h ⬝ᵥ h := by rw [hμ_def, star_neg, ← neg_add, ht, neg_neg]
+  set c := star h ⬝ᵥ y + μ with hc_def
+  have hE_x : uEichler x h μ *ᵥ x = x := uEichler_apply_self x h μ hxiso hxh
+  have hyh : y' = y + h := by rw [hh_def]; abel
+  have hE_y : uEichler x h μ *ᵥ y = y' - c • x := by
+    rw [uEichler_mulVec, hxy, one_smul, mul_one, hc_def, add_smul, hyh]
+    abel
+  have hc_tr : c + star c = 0 := by
+    have hsc : star c = star y ⬝ᵥ h + star μ := by
+      rw [hc_def, star_add]
+      exact congrArg (· + star μ) (dotProduct_star_swap h y).symm
+    have key : star h ⬝ᵥ y + star y ⬝ᵥ h + star h ⬝ᵥ h = 0 := by
+      rw [hh_def]
+      simp only [star_sub, sub_dotProduct, dotProduct_sub, hyiso, hy'iso]
+      ring
+    rw [hc_def, hsc]; linear_combination key + hμ
+  have hEcoe : ((⟨uEichler x h μ, uEichler_mem_su x h μ hxiso hxh hμ⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) :
+      Matrix (Fin n) (Fin n) (UnitaryField p)) = uEichler x h μ := rfl
+  refine ⟨uTransvecSU x c hxiso hc_tr *
+    ⟨uEichler x h μ, uEichler_mem_su x h μ hxiso hxh hμ⟩, ?_, ?_, ?_⟩
+  · rw [Submonoid.coe_mul, uTransvecSU_coe, hEcoe, ← Matrix.mulVec_mulVec, hE_x,
+      uTransvection_apply_self x c hxiso]
+  · rw [Submonoid.coe_mul, uTransvecSU_coe, hEcoe, ← Matrix.mulVec_mulVec, hE_y,
+      uTransvection_mulVec, dotProduct_sub, hxy', dotProduct_smul, hxiso, smul_zero, sub_zero,
+      mul_one]
+    abel
+  · intro z hxz hyz hy'z
+    have hhz : star h ⬝ᵥ z = 0 := by rw [hh_def, star_sub, sub_dotProduct, hy'z, hyz, sub_zero]
+    have hEz : uEichler x h μ *ᵥ z = z := by
+      rw [uEichler_mulVec, hxz, hhz, mul_zero]; simp
+    rw [Submonoid.coe_mul, uTransvecSU_coe, hEcoe, ← Matrix.mulVec_mulVec, hEz,
+      uTransvection_mulVec, hxz, mul_zero, zero_smul, add_zero]
+
+/-- **Non-orthogonal move fixing the ENTIRE common perp `⟨v,w⟩^⊥`.** For isotropic `v, w` with
+`⟨v,w⟩ ≠ 0`, the SAME element `g = τ_{v,b}·τ_{w,t} ∈ SU` mapping `v ↦ c·w` (`c ≠ 0`) fixes *every*
+`x` orthogonal to both centres (`⟨v,x⟩ = ⟨w,x⟩ = 0`) — because each transvection `τ_{u,·}` fixes
+`u^⊥`. This is the within-complement transitivity engine of the generation dimension induction
+(unitary analogue of the symplectic `offS_transvecGen_maps`): applied with `e, f ∈ ⟨v,w⟩^⊥` it moves
+`v` to the line of `w` while pinning a whole hyperbolic pair `(e,f)`. Strict generalisation of
+`exists_su_fixes_maps_nonorth` (which fixes a single passed `x`). -/
+theorem exists_su_maps_nonorth_fixing_perp (v w : Fin n → UnitaryField p)
+    (hviso : star v ⬝ᵥ v = 0) (hwiso : star w ⬝ᵥ w = 0) (hvw : star v ⬝ᵥ w ≠ 0) :
+    ∃ (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) (c : UnitaryField p),
+      c ≠ 0 ∧ (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ v = c • w ∧
+        ∀ x : Fin n → UnitaryField p, star v ⬝ᵥ x = 0 → star w ⬝ᵥ x = 0 →
+          (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x = x := by
+  have hβ : star w ⬝ᵥ v = star (star v ⬝ᵥ w) := dotProduct_star_swap v w
+  set β := star v ⬝ᵥ w with hβdef
+  set Nβ := star β * β with hNdef
+  have hNβ0 : Nβ ≠ 0 := mul_ne_zero (star_ne_zero.mpr hvw) hvw
+  have hNβH : star Nβ = Nβ := by rw [hNdef, star_mul', star_star, mul_comm]
+  obtain ⟨t, ht0, httr⟩ := UnitaryField.exists_traceZero_ne_zero p
+  have hstart : star t = -t := by linear_combination httr
+  set b := -(Nβ⁻¹ * t⁻¹) with hbdef
+  have hb_tr : b + star b = 0 := by
+    rw [hbdef, star_neg, star_mul', star_inv₀, star_inv₀, hNβH, hstart, inv_neg]
+    ring
+  have hcoef : b * (t * Nβ) = -1 := by
+    rw [hbdef, neg_mul,
+      show Nβ⁻¹ * t⁻¹ * (t * Nβ) = (Nβ⁻¹ * Nβ) * (t⁻¹ * t) by ring,
+      inv_mul_cancel₀ hNβ0, inv_mul_cancel₀ ht0, mul_one]
+  refine ⟨uTransvecSU v b hviso hb_tr * uTransvecSU w t hwiso httr, t * star β,
+    mul_ne_zero ht0 (star_ne_zero.mpr hvw), ?_, ?_⟩
+  · rw [Submonoid.coe_mul, uTransvecSU_coe, uTransvecSU_coe, ← Matrix.mulVec_mulVec,
+      uTransvection_mulVec w t v, hβ, uTransvection_mulVec v b,
+      dotProduct_add, dotProduct_smul, hviso, ← hβdef, smul_eq_mul, zero_add,
+      show t * star β * β = t * Nβ by rw [hNdef]; ring, hcoef, neg_one_smul]
+    abel
+  · intro x hvx hwx
+    rw [Submonoid.coe_mul, uTransvecSU_coe, uTransvecSU_coe, ← Matrix.mulVec_mulVec,
+      uTransvection_mulVec w t x, hwx, mul_zero, zero_smul, add_zero,
+      uTransvection_mulVec v b x, hvx, mul_zero, zero_smul, add_zero]
+
 /-- **`SU` is transitive on isotropic lines** (`n ≥ 3`, machine-checked, no Witt classification):
 for nonzero isotropic `v, w`, there is `g ∈ SU` with `g·v = c·w` (`c ≠ 0`), i.e. `g·[v] = [w]`.
 Route through a common non-orthogonal isotropic `u` (`exists_common_nonorth_isotropic`, diameter-2

@@ -220,6 +220,27 @@ theorem spTransvecSp_smul_vec (a c : R) (v : (l ⊕ l) → R) :
     spTransvecSp (a • v) c = spTransvecSp v (c * a * a) :=
   Subtype.ext (by simp only [spTransvecSp_coe]; exact spTransvection_smul_vec a c v)
 
+/-- **Inverse of a transvection**: `τ_{v,a}⁻¹ = τ_{v,-a}` (the `(R,+)`-subgroup law). -/
+theorem spTransvecSp_inv (v : (l ⊕ l) → R) (a : R) :
+    (spTransvecSp v a)⁻¹ = spTransvecSp v (-a) := by
+  rw [eq_comm, eq_inv_iff_mul_eq_one, spTransvecSp_mul, neg_add_cancel, spTransvecSp_zero]
+
+/-- **The commutator collapse for symplectic transvections.** If `g ∈ Sp` scales the centre
+`v` by `λ` (`g·v = λ·v`), then the commutator of `g` with the transvection `τ_{v,a}` is again
+a transvection on the same line, with parameter multiplied by `λ²-1`:
+`[g, τ_{v,a}] = g τ_{v,a} g⁻¹ τ_{v,a}⁻¹ = τ_{v, (λ²-1)·a}`.
+
+Pure group-algebra: conjugation gives `τ_{λv, a} = τ_{v, a·λ²}` (`spTransvecSp_conj` +
+`spTransvecSp_smul_vec`), times `τ_{v,-a}` (`spTransvecSp_inv`) gives `τ_{v, aλ²-a}`. This is
+the engine of **perfectness**: when `λ²≠1`, every `τ_{v,b}` is the commutator with `a = b/(λ²-1)`
+— the symplectic analogue of `SLn.transvecSL_mem_commutator`. -/
+theorem spTransvecSp_commutator {g : symplecticGroup l R} {v : (l ⊕ l) → R} {lam : R}
+    (hgv : (g : Matrix (l ⊕ l) (l ⊕ l) R) *ᵥ v = lam • v) (a : R) :
+    g * spTransvecSp v a * g⁻¹ * (spTransvecSp v a)⁻¹ = spTransvecSp v ((lam * lam - 1) * a) := by
+  rw [spTransvecSp_conj, hgv, spTransvecSp_smul_vec, spTransvecSp_inv, spTransvecSp_mul]
+  congr 1
+  ring
+
 /-- The one-parameter subgroup hom `(R,+) → Sp`, `c ↦ τ_{v,c}`. -/
 noncomputable def spTransvecHom (v : (l ⊕ l) → R) : Multiplicative R →* symplecticGroup l R where
   toFun c := spTransvecSp v (Multiplicative.toAdd c)

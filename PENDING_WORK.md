@@ -417,17 +417,20 @@ This lap discharged BOTH former core axioms and wired into LieType:
     - **T1 atom (REMAINING):** `Stab[x]` transitive on isotropic points non-orth to `[x]` — needs the
       unitary **Eichler/Siegel transformation** (fix `x`, translate the hyperbolic partner by `h∈x^⊥`).
       **AT ARISTOTLE** (project `19b0b4a0-94ac-43c7-849b-e0fd7b9c255f`).
-    - **PERP CASE (REMAINING):** distinct PERPENDICULAR isotropic block points. Needs (i) perp-
-      transitivity (`Stab[x]` transitive on isotropic points PERP to `[x]` — a 2nd Eichler lemma) and
-      (ii) an isotropic separation (∃ isotropic `s ⊥ x`, non-perp to `y`). **KEY SIMPLIFICATION for
-      n=3:** two distinct isotropic lines are NEVER perpendicular when n=3 (a 2-dim totally-isotropic
-      subspace can't sit in a nondeg dim-3 Hermitian space — Witt index ≤ 1). So for n=3 the perp case
-      is VACUOUS and block-triviality = non-perp half + this vacuity, needing only T1 (no perp-
-      transitivity). PROOF ROUTE for the vacuity: get `u` non-orth to both `x,y` (connectivity), note
-      `u∉span{x,y}`, so `{x,y,u}` is a basis of `F³`; the functional `⟨x,·⟩ - (⟨x,u⟩/⟨y,u⟩)⟨y,·⟩`
-      vanishes on the basis ⇒ is 0 ⇒ (nondeg, take `z=eᵢ`) `x` is a scalar multiple of `y`. ~50 lines
-      of `LinearIndependent`/spanning plumbing — clean NEXT-LAP target (discharges PSU(3,q) block-
-      triviality mod T1).
+    - ✅ **n=3 PERP CASE DISCHARGED** (2026-06-04, `UnitarySimple.lean`, axiom-clean): the
+      perpendicular case is **vacuous** for n=3 (Witt index ≤ 1). New lemmas:
+      `perp_isotropic_parallel` (perp isotropic vectors in dim 3 are linearly dependent — via the
+      common non-orth isotropic `u ∉ span{x,y}`, basis `{u,y,x}`, the covector `star x - c·star y`
+      annihilates the basis hence is 0), `isoPoint_nonperp_of_ne` (distinct iso points are non-perp),
+      `psu3_isTrivialBlock_of_isBlock` (full block-triviality for n=3 from T1 alone), and the capstone
+      **`psu3_isSimpleGroup_of_generate_of_T1`** (PSU(3,p²) simple modulo just generation + T1, both
+      at Aristotle). `#print axioms` = `[propext, Classical.choice, Quot.sound]` on all four.
+    - **GENERAL-n PERP CASE (REMAINING, n≥4):** distinct PERPENDICULAR isotropic block points. Needs
+      (i) perp-transitivity (`Stab[x]` transitive on isotropic points PERP to `[x]` — a 2nd Eichler
+      lemma, T2) and (ii) an isotropic separation (∃ isotropic `s ⊥ x`, non-perp to `y`). Mirror
+      `SpN.psp_isTrivialBlock_of_isBlock` (SpIwasawa lines 1199-1236) using `exists_form_perp_nonperp`
+      (separation) + `psp_stab_maps_perp` (perp-transitivity) analogues. NOTE: only needed for n≥4 —
+      PSU(3,q) is already fully reduced above.
 - **Step 3a — generation.** Unitary transvections generate `SU` (the unitary Eichler/Witt
   theorem). DEEP core, mirrors `sp_stab_hyperbolic_le` / the ambient-induction generation proof.
   **Submitted to Aristotle 2026-06-04 eve (project `a1c167e7-c1bb-417e-9dd2-15e82ddd1fc4`)** as a

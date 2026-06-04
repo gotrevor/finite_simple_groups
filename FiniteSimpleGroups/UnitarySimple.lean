@@ -1050,6 +1050,58 @@ theorem psu3_isTrivialBlock_of_isBlock (hn3 : n = 3)
     exact block_univ_of_nonperp_pair p n hn3.ge hT1 hB hq hr
       (isoPoint_nonperp_of_ne p n hn3 hqr)
 
+/-- **Block-triviality for `PSU(n,q)`, general `n ≥ 3`**, modulo the three geometric Eichler atoms:
+`hT1` (`Stab[x]` transitive on isotropic points non-perpendicular to `[x]`), `hT2` (`Stab[x]`
+transitive on isotropic points *perpendicular* to `[x]`), and `hSep` (isotropic separation: distinct
+perpendicular isotropic points admit an isotropic `s ⊥ x` non-perpendicular to `y`). The unitary
+analogue of `SpN.psp_isTrivialBlock_of_isBlock`. For `n = 3` the perpendicular branch is unreachable
+(`isoPoint_nonperp_of_ne`), so `psu3_isTrivialBlock_of_isBlock` needs only `hT1`; here the general
+case routes the perpendicular subcase through `hSep` + `hT2` exactly as the symplectic proof. -/
+theorem psu_isTrivialBlock_of_isBlock (hn : 3 ≤ n)
+    (hT1 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep ≠ 0 → star x.1.rep ⬝ᵥ y'.1.rep ≠ 0 →
+        ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+    (hT2 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep = 0 → star x.1.rep ⬝ᵥ y'.1.rep = 0 →
+        y ≠ x → y' ≠ x → ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+    (hSep : ∀ {x y : IsoPoint p n}, x ≠ y → star x.1.rep ⬝ᵥ y.1.rep = 0 →
+      ∃ s : Fin n → UnitaryField p, s ≠ 0 ∧ star s ⬝ᵥ s = 0 ∧
+        star x.1.rep ⬝ᵥ s = 0 ∧ star y.1.rep ⬝ᵥ s ≠ 0)
+    {B : Set (IsoPoint p n)}
+    (hB : letI := psuAction p n; MulAction.IsBlock (PSUConcrete n p) B) :
+    letI := psuAction p n; MulAction.IsTrivialBlock B := by
+  letI := psuAction p n
+  by_cases hsub : B.Subsingleton
+  · exact Or.inl hsub
+  · right
+    rw [Set.not_subsingleton_iff] at hsub
+    obtain ⟨x, hx, y, hy, hxy⟩ := hsub
+    by_cases hperp : star x.1.rep ⬝ᵥ y.1.rep = 0
+    · -- perpendicular case: introduce the separating isotropic point `S`
+      obtain ⟨s, hs0, hsiso, hxs, hys⟩ := hSep hxy hperp
+      set S : IsoPoint p n :=
+        ⟨Projectivization.mk (UnitaryField p) s hs0, (isIso_mk_iff p n hs0).mpr hsiso⟩ with hS
+      obtain ⟨a, ha0, haeq⟩ := form_rep_mk_right_smul p n x hs0
+      have hxS : star x.1.rep ⬝ᵥ S.1.rep = 0 := by
+        show star x.1.rep ⬝ᵥ (Projectivization.mk (UnitaryField p) s hs0).rep = 0
+        rw [haeq, hxs, mul_zero]
+      obtain ⟨a', ha'0, ha'eq⟩ := form_rep_mk_right_smul p n y hs0
+      have hyS : star y.1.rep ⬝ᵥ S.1.rep ≠ 0 := by
+        show star y.1.rep ⬝ᵥ (Projectivization.mk (UnitaryField p) s hs0).rep ≠ 0
+        rw [ha'eq]; exact mul_ne_zero ha'0 hys
+      -- `S ≠ x` (else `⟨y,S⟩` would be `⟨y,x⟩ = star ⟨x,y⟩ = 0`)
+      have hSx : S ≠ x := by
+        intro hcon
+        rw [hcon] at hyS
+        exact hyS (by rw [dotProduct_star_swap, hperp, star_zero])
+      -- T2 maps `y → S` inside `Stab[x]`, so `S ∈ B`
+      obtain ⟨g, hgx, hgy⟩ := hT2 hperp hxS hxy.symm hSx
+      have hgB : g • B = B := hB.smul_eq_of_mem hx (by rw [hgx]; exact hx)
+      have hSB : S ∈ B := by rw [← hgy, ← hgB]; exact Set.smul_mem_smul_set hy
+      exact block_univ_of_nonperp_pair p n hn hT1 hB hy hSB hyS
+    · -- non-perpendicular case: `(x,y)` is already a non-perp pair
+      exact block_univ_of_nonperp_pair p n hn hT1 hB hx hy hperp
+
 /-- **The `PSU`-level root subgroup along the isotropic line `x`** — the image in `SU/Z` of
 `uRootSubgroup x.rep`. The Iwasawa family `T`. By `uRootSubgroup_rep`/`_smul` it depends only on
 the line `x`. -/
@@ -1245,6 +1297,29 @@ theorem psu3_isSimpleGroup_of_generate_of_T1 (hn3 : n = 3) (hp : 5 ≤ p)
     IsSimpleGroup (PSUConcrete n p) :=
   PSU_isSimpleGroup_of_generate p n hn3.ge hp hgen
     (fun {_B} hB => psu3_isTrivialBlock_of_isBlock p n hn3 hT1 hB)
+
+/-- **`PSU_n(F_{p²})` is simple** (`n ≥ 3`, `p ≥ 5`) for general `n`, modulo the Witt generation
+`hgen` and the three geometric Eichler atoms `hT1`, `hT2`, `hSep` (see `psu_isTrivialBlock_of_isBlock`).
+This is the fully-general assembly: block-triviality for all `n` is routed through the perpendicular
+separation + perp-transitivity exactly as in the symplectic case. For `n = 3` use
+`psu3_isSimpleGroup_of_generate_of_T1` instead — there `hT2`/`hSep` are unnecessary (vacuous perp
+case). The remaining inputs are all recognized Eichler/Witt-theory targets. -/
+theorem PSU_isSimpleGroup_of_generate_of_eichler (hn : 3 ≤ n) (hp : 5 ≤ p)
+    (hgen : Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p) (hv : star v ⬝ᵥ v = 0)
+        (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤)
+    (hT1 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep ≠ 0 → star x.1.rep ⬝ᵥ y'.1.rep ≠ 0 →
+        ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+    (hT2 : letI := psuAction p n; ∀ {x y y' : IsoPoint p n},
+      star x.1.rep ⬝ᵥ y.1.rep = 0 → star x.1.rep ⬝ᵥ y'.1.rep = 0 →
+        y ≠ x → y' ≠ x → ∃ g : PSUConcrete n p, g • x = x ∧ g • y = y')
+    (hSep : ∀ {x y : IsoPoint p n}, x ≠ y → star x.1.rep ⬝ᵥ y.1.rep = 0 →
+      ∃ s : Fin n → UnitaryField p, s ≠ 0 ∧ star s ⬝ᵥ s = 0 ∧
+        star x.1.rep ⬝ᵥ s = 0 ∧ star y.1.rep ⬝ᵥ s ≠ 0) :
+    IsSimpleGroup (PSUConcrete n p) :=
+  PSU_isSimpleGroup_of_generate p n hn hp hgen
+    (fun {_B} hB => psu_isTrivialBlock_of_isBlock p n hn hT1 hT2 hSep hB)
 
 end Iwasawa
 

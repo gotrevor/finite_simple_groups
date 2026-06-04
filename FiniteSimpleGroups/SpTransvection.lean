@@ -141,4 +141,65 @@ theorem spTransvection_conj {g : Matrix (l ⊕ l) (l ⊕ l) R} (hg : g ∈ sympl
   simp only [add_mul, mul_add, mul_one, smul_mul_assoc, mul_smul_comm]
   rw [hgg, mul_vecMulVec, vecMulVec_mul, hkey]
 
+/-! ### Group-level transvection algebra: the one-parameter subgroup `{τ_{v,c} : c}`
+
+Lifting the matrix identities to the group `symplecticGroup l R`. The map `c ↦ τ_{v,c}`
+is a homomorphism `(R,+) → Sp` (`spTransvecHom`), whose range `spTransvecGroup v` is an
+**abelian** subgroup conjugated by `g ∈ Sp` to `spTransvecGroup (g·v)`. These are exactly the
+`is_comm` and `is_conj` inputs to the symplectic Iwasawa structure on `PSp`. -/
+
+@[simp] theorem spTransvecSp_coe (v : (l ⊕ l) → R) (c : R) :
+    (spTransvecSp v c : Matrix (l ⊕ l) (l ⊕ l) R) = spTransvection v c := rfl
+
+/-- `τ_{v,0} = 1` in the group. -/
+@[simp] theorem spTransvecSp_zero (v : (l ⊕ l) → R) : spTransvecSp v 0 = 1 :=
+  Subtype.ext (by simp)
+
+/-- The one-parameter group law `τ_{v,c₁} · τ_{v,c₂} = τ_{v, c₁+c₂}` in the group. -/
+theorem spTransvecSp_mul (v : (l ⊕ l) → R) (c₁ c₂ : R) :
+    spTransvecSp v c₁ * spTransvecSp v c₂ = spTransvecSp v (c₁ + c₂) :=
+  Subtype.ext (by simp only [Submonoid.coe_mul, spTransvecSp_coe]; exact spTransvection_mul v c₁ c₂)
+
+/-- **Conjugation in the group**: `g · τ_{v,c} · g⁻¹ = τ_{g·v, c}` for `g ∈ Sp`. -/
+theorem spTransvecSp_conj (g : symplecticGroup l R) (v : (l ⊕ l) → R) (c : R) :
+    g * spTransvecSp v c * g⁻¹ = spTransvecSp ((g : Matrix (l ⊕ l) (l ⊕ l) R) *ᵥ v) c :=
+  Subtype.ext (by
+    simp only [Submonoid.coe_mul, spTransvecSp_coe, SymplecticGroup.coe_inv']
+    exact spTransvection_conj g.property v c)
+
+/-- The one-parameter subgroup hom `(R,+) → Sp`, `c ↦ τ_{v,c}`. -/
+noncomputable def spTransvecHom (v : (l ⊕ l) → R) : Multiplicative R →* symplecticGroup l R where
+  toFun c := spTransvecSp v (Multiplicative.toAdd c)
+  map_one' := spTransvecSp_zero v
+  map_mul' := fun _ _ => (spTransvecSp_mul v _ _).symm
+
+/-- **The transvection subgroup along `v`** — the long root subgroup `{τ_{v,c} : c ∈ R}`,
+the range of `spTransvecHom v`. Abelian (image of the commutative `(R,+)`), it is the
+symplectic analogue of `SLn.dirTransvecGroup`. -/
+noncomputable def spTransvecGroup (v : (l ⊕ l) → R) : Subgroup (symplecticGroup l R) :=
+  (spTransvecHom v).range
+
+instance (v : (l ⊕ l) → R) : IsMulCommutative (spTransvecGroup v) := by
+  unfold spTransvecGroup; infer_instance
+
+theorem mem_spTransvecGroup {v : (l ⊕ l) → R} {y : symplecticGroup l R} :
+    y ∈ spTransvecGroup v ↔ ∃ c : R, spTransvecSp v c = y := by
+  constructor
+  · rintro ⟨c, rfl⟩; exact ⟨Multiplicative.toAdd c, rfl⟩
+  · rintro ⟨c, rfl⟩; exact ⟨Multiplicative.ofAdd c, rfl⟩
+
+/-- **Conjugation-equivariance of the transvection subgroup**: `g · (spTransvecGroup v) · g⁻¹
+= spTransvecGroup (g·v)`. This is the Iwasawa `is_conj` input (it also exhibits
+`spTransvecGroup v` as normal in the stabilizer of the line `[v]`). -/
+theorem spTransvecGroup_conj (g : symplecticGroup l R) (v : (l ⊕ l) → R) :
+    (spTransvecGroup v).map (MulAut.conj g)
+      = spTransvecGroup ((g : Matrix (l ⊕ l) (l ⊕ l) R) *ᵥ v) := by
+  ext y
+  simp only [Subgroup.mem_map, mem_spTransvecGroup]
+  constructor
+  · rintro ⟨x, ⟨c, rfl⟩, rfl⟩
+    exact ⟨c, (spTransvecSp_conj g v c).symm⟩
+  · rintro ⟨c, rfl⟩
+    exact ⟨spTransvecSp v c, ⟨c, rfl⟩, spTransvecSp_conj g v c⟩
+
 end FiniteSimpleGroups.SpN

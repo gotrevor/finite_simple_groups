@@ -217,6 +217,30 @@ theorem exists_hyperbolic_pair [Nonempty l] :
     (Pi.single (Sum.inl i₀) 1 ⬝ᵥ (Matrix.J l F *ᵥ z))⁻¹ • z, ?_⟩
   rw [mulVec_smul, dotProduct_smul, smul_eq_mul, inv_mul_cancel₀ hz1]
 
+/-! ### Building blocks for the generation core (`sp_stab_hyperbolic_le`) dimension induction -/
+
+/-- **The pair-stabilizer preserves the orthogonal complement.** A symplectic `g` fixing `e`
+and `f` maps `⟨e,f⟩⊥` into itself: if `ω(e,x)=ω(f,x)=0` then `ω(e,g·x)=ω(f,g·x)=0`. Via
+`g·e=e`, `g·f=f` and `sp_preserves_form`. The "`g` restricts to `⟨e,f⟩⊥`" half of the
+induction. -/
+theorem sp_fixing_preserves_perp {e f : (l ⊕ l) → F} {g : symplecticGroup l F}
+    (hge : (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ e = e)
+    (hgf : (g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ f = f) {x : (l ⊕ l) → F}
+    (hex : e ⬝ᵥ (Matrix.J l F *ᵥ x) = 0) (hfx : f ⬝ᵥ (Matrix.J l F *ᵥ x) = 0) :
+    e ⬝ᵥ (Matrix.J l F *ᵥ ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ x)) = 0 ∧
+      f ⬝ᵥ (Matrix.J l F *ᵥ ((g : Matrix (l ⊕ l) (l ⊕ l) F) *ᵥ x)) = 0 := by
+  refine ⟨?_, ?_⟩
+  · rw [← hge, sp_preserves_form g.2 e x]; exact hex
+  · rw [← hgf, sp_preserves_form g.2 f x]; exact hfx
+
+/-- **A transvection centred in `⟨e,f⟩⊥` fixes the pair `(e,f)`.** If `ω(e,v)=ω(f,v)=0` then
+`τ_{v,c}` fixes both `e` and `f` (`spTransvection_apply_of_orth`). The "extend back" half of the
+induction: transvections of the complement land in the pair-stabilizer. -/
+theorem spTransvection_fixes_pair {e f v : (l ⊕ l) → F} (c : F)
+    (hev : e ⬝ᵥ (Matrix.J l F *ᵥ v) = 0) (hfv : f ⬝ᵥ (Matrix.J l F *ᵥ v) = 0) :
+    spTransvection v c *ᵥ e = e ∧ spTransvection v c *ᵥ f = f :=
+  ⟨spTransvection_apply_of_orth c hev, spTransvection_apply_of_orth c hfv⟩
+
 /-- **DISCLOSED AXIOM (generation core — stabilizer of a hyperbolic pair).** A symplectic `g`
 fixing a hyperbolic pair `(e,f)` (`ω(e,f)=1`) **pointwise** lies in the transvection subgroup
 `⨆_v spTransvecGroup v`. This is the genuine remaining core of symplectic generation, the

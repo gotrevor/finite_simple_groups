@@ -1196,6 +1196,97 @@ theorem PSU_nontrivial (hn : 3 ≤ n) : Nontrivial (PSUConcrete n p) := by
   rw [hsum] at hiso
   exact hk ((mul_eq_zero.mp hiso).resolve_left (by rwa [Pi.star_apply] at hsk))
 
+/-! ### `offSU` / `FixSU`: bookkeeping layer of the `hgen` generation induction
+
+Coordinate analogues of the symplectic `offS` / `FixS` (`SpIwasawa.lean:460-614`). For the identity
+Hermitian form `⟨x,y⟩ = star x ⬝ᵥ y` on `Fin n → F_{p²}` the standard basis is orthonormal
+(`⟨e_j,x⟩ = x_j`), so "vanishing on a coordinate set `C`" coincides with "orthogonal to
+`{e_j : j ∈ C}`". Consequently a `g ∈ SU` fixing those `e_j` (`FixSU C`) preserves the vanishing
+condition (`offSU C`), and the perp-fixing Eichler engines (which fix the *whole* `⟨v,w⟩^⊥`) restrict
+to `FixSU C` moves whenever the two centres lie in `offSU C`. This is the purely bookkeeping part of
+the Dieudonné dimension induction; the genuinely deep step — exact transitivity on hyperbolic pairs
+*fixing `C`* (the third-dimension determinant balance, `exists_scale`) — is isolated separately. -/
+
+/-- Vectors vanishing on the coordinate set `C` (the unitary analogue of the symplectic `offS`). -/
+def offSU (C : Finset (Fin n)) (x : Fin n → UnitaryField p) : Prop := ∀ j ∈ C, x j = 0
+
+/-- `g ∈ SU` fixes the standard basis vectors indexed by `C` (the unitary analogue of `FixS`). -/
+def FixSU (C : Finset (Fin n))
+    (g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) : Prop :=
+  ∀ j ∈ C, (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ Pi.single j 1 = Pi.single j 1
+
+theorem offSU_add {C : Finset (Fin n)} {x y : Fin n → UnitaryField p}
+    (hx : offSU p C x) (hy : offSU p C y) : offSU p C (x + y) := fun j hj => by
+  rw [Pi.add_apply, hx j hj, hy j hj, add_zero]
+
+theorem offSU_sub {C : Finset (Fin n)} {x y : Fin n → UnitaryField p}
+    (hx : offSU p C x) (hy : offSU p C y) : offSU p C (x - y) := fun j hj => by
+  rw [Pi.sub_apply, hx j hj, hy j hj, sub_zero]
+
+theorem offSU_smul {C : Finset (Fin n)} (a : UnitaryField p) {x : Fin n → UnitaryField p}
+    (hx : offSU p C x) : offSU p C (a • x) := fun j hj => by
+  rw [Pi.smul_apply, hx j hj, smul_zero]
+
+/-- `Pi.single j a` vanishes on `C` when `j ∉ C`. -/
+theorem offSU_single {C : Finset (Fin n)} {j : Fin n} (hj : j ∉ C) (a : UnitaryField p) :
+    offSU p C (Pi.single j a) := fun i hi => by
+  have hne : i ≠ j := fun h => hj (h ▸ hi)
+  simp [hne]
+
+/-- The `j`-th coordinate as a Hermitian form value: `⟨e_j, y⟩ = star (e_j) ⬝ᵥ y = y_j`. -/
+theorem coord_eq_form (j : Fin n) (y : Fin n → UnitaryField p) :
+    star (Pi.single j (1 : UnitaryField p)) ⬝ᵥ y = y j := by
+  rw [← Pi.single_star, star_one, single_dotProduct, one_mul]
+
+theorem FixSU_mul {C : Finset (Fin n)}
+    {g h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)}
+    (hg : FixSU p C g) (hh : FixSU p C h) : FixSU p C (g * h) := fun j hj => by
+  rw [Submonoid.coe_mul, ← Matrix.mulVec_mulVec, hh j hj, hg j hj]
+
+/-- **A `FixSU C` element preserves `offSU C`.** `(g·x)_j = ⟨e_j, g·x⟩ = ⟨g·e_j, g·x⟩ = ⟨e_j, x⟩
+= x_j = 0` for `j ∈ C` (using `g·e_j = e_j` and the unitary form-preservation). -/
+theorem offSU_preserved {C : Finset (Fin n)}
+    {g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)} (hg : FixSU p C g)
+    {x : Fin n → UnitaryField p} (hx : offSU p C x) :
+    offSU p C ((g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x) := by
+  intro j hj
+  rw [← coord_eq_form p j ((g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x), ← hg j hj,
+    u_preserves_form (Matrix.specialUnitaryGroup_le_unitaryGroup g.2), coord_eq_form p j x]
+  exact hx j hj
+
+/-- **A perp-fixing `SU` element with both centres in `offSU C` is a `FixSU C` move.** If `g` fixes
+`⟨v,w⟩^⊥` pointwise and `v, w ∈ offSU C`, then each `e_j` (`j ∈ C`) is orthogonal to both `v` and
+`w` (`⟨v,e_j⟩ = star (v_j) = 0`), hence fixed by `g`. This converts the Eichler perp-fixing engines
+(`exists_su_maps_nonorth_fixing_perp`) into the `FixS`-style relative moves of the induction. -/
+theorem FixSU_of_fixes_perp {C : Finset (Fin n)} {v w : Fin n → UnitaryField p}
+    (hv : offSU p C v) (hw : offSU p C w)
+    {g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)}
+    (hfix : ∀ x : Fin n → UnitaryField p, star v ⬝ᵥ x = 0 → star w ⬝ᵥ x = 0 →
+      (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ x = x) :
+    FixSU p C g := by
+  intro j hj
+  refine hfix _ ?_ ?_
+  · rw [dotProduct_single, mul_one, Pi.star_apply, hv j hj, star_zero]
+  · rw [dotProduct_single, mul_one, Pi.star_apply, hw j hj, star_zero]
+
+/-- **Base case of the generation induction**: a `g ∈ SU` fixing every standard basis vector is the
+identity (its columns are the `e_j`). Unitary analogue of `sp_eq_one_of_FixS_univ`. -/
+theorem FixSU_univ_eq_one {g : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)}
+    (hg : FixSU p Finset.univ g) : g = 1 := by
+  apply Subtype.ext
+  show (g : Matrix (Fin n) (Fin n) (UnitaryField p)) = 1
+  ext q r
+  have hr : (g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ Pi.single r 1 = Pi.single r 1 :=
+    hg r (Finset.mem_univ r)
+  have hentry : ((g : Matrix (Fin n) (Fin n) (UnitaryField p)) *ᵥ Pi.single r 1) q
+      = (g : Matrix (Fin n) (Fin n) (UnitaryField p)) q r := by
+    rw [mulVec_single_one]; rfl
+  rw [← hentry, hr]
+  by_cases h : r = q
+  · subst h; rw [Pi.single_eq_same, Matrix.one_apply_eq]
+  · have hne : q ≠ r := fun hh => h hh.symm
+    simp [hne]
+
 /-- **`SU_n(F_{p²})` is perfect, modulo the unitary Witt generation theorem** (`n ≥ 3`, `p ≥ 5`).
 Assembles `commutator_specialUnitaryGroup_eq_top` with the concrete fixed-field scalar
 (`exists_fixedField_norm_ne_one`, `p ≥ 5`) and hyperbolic partners (`exists_hyperbolic_partner`).

@@ -191,3 +191,7 @@ curl -fsSL -A "$UA" -e "https://www.ams.org/notices/200507/" -o feit-obituary-20
 🟡 Scaffold built. Not currently being extended — this is "look around and learn" territory, not "make a dent."
 
 KB pointer: [side-quest doc](../../personal/claude/knowledge/core/projects/lean-journey/side-quests/finite-simple-groups.md).
+
+## License
+
+[Apache License 2.0](LICENSE), Copyright 2026 Trevor Morris

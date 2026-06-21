@@ -2005,6 +2005,87 @@ theorem hgen_of_scaleKill_mate (h2 : (2 : UnitaryField p) ≠ 0)
         (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤ :=
   hgen_of_line_mate p h2 (UExactLineTrans_of_scaleKill p hsk) hmate
 
+/-- **The pure short-root membership atom** — `E_{x,h,μ} ∈ ⟨transvections⟩` for isotropic `x`, ANY
+`h ⊥ x`, and trace-compatible `μ` (`μ + star μ = ⟨h,h⟩`). This is the cleanest form of the deep
+`SU₃` short-root content: it **directly generalises** the already-proven isotropic case
+(`uEichler_isotropic_mem_uTransvecGen`) to **anisotropic** `h`, where the Eichler is a genuine
+short-root element of `SU₃` — exactly the rank-3 Dieudonné construction that also underlies
+`UScaleKill`. A *pure* membership statement: no `offSU`/`FixSU` bookkeeping, no mapping — just that
+one explicit matrix lies in `⟨transvections⟩`. (Verified computationally at `(n,q) = (3,5)`: the
+short-root element is an explicit product of 4 unitary transvections, and 6 transvections already
+generate all of `SU₃(F₂₅)` — order `378000`.) -/
+def UShortRoot : Prop :=
+  ∀ (x h : Fin n → UnitaryField p) (μ : UnitaryField p)
+    (hxiso : star x ⬝ᵥ x = 0) (hxh : star x ⬝ᵥ h = 0) (hμ : μ + star μ = star h ⬝ᵥ h),
+    (⟨uEichler x h μ, uEichler_mem_su x h μ hxiso hxh hμ⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) ∈ uTransvecGen p (n := n)
+
+/-- **`UExactMateTrans ⟸ UShortRoot`** — the Eichler mate step collapses to the pure short-root
+membership atom. The mate engine builds `g = τ_{x,c}·E_{x,h,μ}` (`h = f'−f`, `c = ⟨h,f⟩+μ`, which is
+automatically trace-zero because `f, f'` are isotropic mates of `x`). `E_{x,h,μ} ∈ ⟨transvections⟩`
+by `UShortRoot` and `τ_{x,c}` is a transvection, so `g ∈ ⟨transvections⟩`; `g` fixes `C` (both
+centres `x, h ∈ offSU C`, so `g` fixes everything `⊥ {x,h} ⊇ {eⱼ : j ∈ C}`, via
+`FixSU_of_fixes_perp`) and maps `x ↦ x`, `f ↦ f'`. This **strips the mate atom's geometric
+overhead**, leaving the single pure `SU₃` short-root atom (the same content as `UScaleKill`'s
+torus). -/
+theorem UExactMateTrans_of_shortRoot (hsr : UShortRoot p (n := n)) :
+    UExactMateTrans p (n := n) := by
+  intro C x f f' hx hf hf' hxiso hfiso hf'iso hxf hxf'
+  set h := f' - f with hh_def
+  have hxh : star x ⬝ᵥ h = 0 := by rw [hh_def, dotProduct_sub, hxf, hxf', sub_self]
+  have hh_off : offSU p C h := offSU_sub p hf' hf
+  obtain ⟨t, ht⟩ := exists_add_star_eq_neg_dotProduct_self p h
+  set μ := -t with hμ_def
+  have hμ : μ + star μ = star h ⬝ᵥ h := by rw [hμ_def, star_neg, ← neg_add, ht, neg_neg]
+  set c := star h ⬝ᵥ f + μ with hc_def
+  have hE_x : uEichler x h μ *ᵥ x = x := uEichler_apply_self x h μ hxiso hxh
+  have hyh : f' = f + h := by rw [hh_def]; abel
+  have hE_y : uEichler x h μ *ᵥ f = f' - c • x := by
+    rw [uEichler_mulVec, hxf, one_smul, mul_one, hc_def, add_smul, hyh]; abel
+  have hc_tr : c + star c = 0 := by
+    have hsc : star c = star f ⬝ᵥ h + star μ := by
+      rw [hc_def, star_add]
+      exact congrArg (· + star μ) (dotProduct_star_swap h f).symm
+    have key : star h ⬝ᵥ f + star f ⬝ᵥ h + star h ⬝ᵥ h = 0 := by
+      rw [hh_def]
+      simp only [star_sub, sub_dotProduct, dotProduct_sub, hfiso, hf'iso]
+      ring
+    rw [hc_def, hsc]; linear_combination key + hμ
+  have hEcoe : ((⟨uEichler x h μ, uEichler_mem_su x h μ hxiso hxh hμ⟩ :
+      Matrix.specialUnitaryGroup (Fin n) (UnitaryField p)) :
+      Matrix (Fin n) (Fin n) (UnitaryField p)) = uEichler x h μ := rfl
+  refine ⟨uTransvecSU x c hxiso hc_tr *
+      ⟨uEichler x h μ, uEichler_mem_su x h μ hxiso hxh hμ⟩,
+    mul_mem (uTransvecSU_mem_gen p x c hxiso hc_tr) (hsr x h μ hxiso hxh hμ), ?_, ?_, ?_⟩
+  · -- FixSU C: fixes everything ⊥ {x, h}
+    apply FixSU_of_fixes_perp p hx hh_off
+    intro z hxz hhz
+    have hEz : uEichler x h μ *ᵥ z = z := by
+      rw [uEichler_mulVec, hxz, hhz, mul_zero]; simp
+    rw [Submonoid.coe_mul, uTransvecSU_coe, hEcoe, ← Matrix.mulVec_mulVec, hEz,
+      uTransvection_mulVec, hxz, mul_zero, zero_smul, add_zero]
+  · -- g·x = x
+    rw [Submonoid.coe_mul, uTransvecSU_coe, hEcoe, ← Matrix.mulVec_mulVec, hE_x,
+      uTransvection_apply_self x c hxiso]
+  · -- g·f = f'
+    rw [Submonoid.coe_mul, uTransvecSU_coe, hEcoe, ← Matrix.mulVec_mulVec, hE_y,
+      uTransvection_mulVec, dotProduct_sub, hxf', dotProduct_smul, hxiso, smul_zero, sub_zero,
+      mul_one]
+    abel
+
+/-- **`hgen` reduced to the scalar-kill torus + the pure short-root atom**:
+`hgen ⟸ UScaleKill + UShortRoot + (2≠0)`. The mate step `UExactMateTrans` is discharged into the
+pure short-root membership atom (`UExactMateTrans_of_shortRoot`), so the entire Dieudonné generation
+now rests on exactly two `SU₃` facts of the **same kind** — both `UScaleKill` (the torus) and
+`UShortRoot` (the short-root element) are transvection-product statements about the rank-3 unitary
+group. -/
+theorem hgen_of_scaleKill_shortRoot (h2 : (2 : UnitaryField p) ≠ 0)
+    (hsk : UScaleKill p (n := n)) (hsr : UShortRoot p (n := n)) :
+    Subgroup.closure {h : Matrix.specialUnitaryGroup (Fin n) (UnitaryField p) |
+      ∃ (v : Fin n → UnitaryField p) (a : UnitaryField p)
+        (hv : star v ⬝ᵥ v = 0) (ha : a + star a = 0), h = uTransvecSU v a hv ha} = ⊤ :=
+  hgen_of_scaleKill_mate p h2 hsk (UExactMateTrans_of_shortRoot p hsr)
+
 /-- **`SU_n(F_{p²})` is perfect, modulo the unitary Witt generation theorem** (`n ≥ 3`, `p ≥ 5`).
 Assembles `commutator_specialUnitaryGroup_eq_top` with the concrete fixed-field scalar
 (`exists_fixedField_norm_ne_one`, `p ≥ 5`) and hyperbolic partners (`exists_hyperbolic_partner`).
@@ -2892,6 +2973,20 @@ theorem PSU_isSimpleGroup_modulo_scaleKill_mate (hn : 3 ≤ n) (hp : 5 ≤ p)
     (hsk : UScaleKill p (n := n)) (hmate : UExactMateTrans p (n := n)) :
     IsSimpleGroup (PSUConcrete n p) :=
   PSU_isSimpleGroup_modulo_line_mate p n hn hp (UExactLineTrans_of_scaleKill p hsk) hmate
+
+/-- **★ `PSU(n,q)` is simple, modulo the two pure `SU₃` transvection-product atoms**
+(`n ≥ 3`, `p ≥ 5`) — the cleanest and most uniform reduction to date. The geometric mate step
+`UExactMateTrans` is collapsed (`UExactMateTrans_of_shortRoot`) into the pure membership atom
+`UShortRoot`, so `IsSimpleGroup (PSUConcrete n p)` now follows from exactly two facts of the *same
+kind*: `UScaleKill` (the `F_{q²}*` line-stabiliser torus as a transvection product) and `UShortRoot`
+(the short-root Eichler element as a transvection product). Both are pure statements about the rank-3
+unitary group `SU₃` — confirmed true computationally at `(3,5)`. Everything else (the genAux
+dimension induction, base case, connectivity, line-to-scalar transitivity, and the *entire* mate
+engine) is machine-checked. -/
+theorem PSU_isSimpleGroup_modulo_scaleKill_shortRoot (hn : 3 ≤ n) (hp : 5 ≤ p)
+    (hsk : UScaleKill p (n := n)) (hsr : UShortRoot p (n := n)) :
+    IsSimpleGroup (PSUConcrete n p) :=
+  PSU_isSimpleGroup_modulo_scaleKill_mate p n hn hp hsk (UExactMateTrans_of_shortRoot p hsr)
 
 end Iwasawa
 

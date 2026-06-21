@@ -50,11 +50,12 @@ example : IsSimpleGroup (alternatingGroup (Fin 5)) := inferInstance
 
 /-- **`A_n` is simple for `n ≥ 5`** (Galois, 1832).
 
-Formalized in mathlib past this repo's v4.29.1 pin as
-`alternatingGroup.isSimpleGroup` (PR #36524, Iwasawa criterion). Recorded here as
-an honest `axiom` — bucket C, delete-on-bump. See the module docstring. -/
-axiom alternatingGroup_isSimple (n : ℕ) (hn : 5 ≤ n) :
-    IsSimpleGroup (alternatingGroup (Fin n))
+Discharged at the v4.31 bump (the "delete-on-bump" trigger): mathlib's
+`alternatingGroup.isSimpleGroup` (PR #36524, Iwasawa criterion) is now in the pin,
+so this is a real machine-checked theorem rather than a cited `axiom`. -/
+theorem alternatingGroup_isSimple (n : ℕ) (hn : 5 ≤ n) :
+    IsSimpleGroup (alternatingGroup (Fin n)) :=
+  alternatingGroup.isSimpleGroup (by rw [Nat.card_fin]; exact hn)
 
 /-- Bundled: `A_5` is a finite simple group. Mathlib provides all three
 instances: `Finite`, `Nontrivial (alternatingGroup (Fin 5))`, and

@@ -23,8 +23,9 @@ Faithfulness gate: `#print axioms` on the heavily-refactored results
 Remaining (non-blocking, deprecation **warnings** only): `nilpotent_of_mulEquiv` →
 `Group.nilpotent_of_mulEquiv`, `LinearIndependent.fin_cons` → `.finCons`,
 `Polynomial.eval_finset_sum` → `eval_finsetSum`, `Set.ncard_diff` → `ncard_sdiff`, `push_neg` →
-`push Not`. The in-flight `UShortRoot` unitary work is still parked on `wip/ushortroot-atom`
-(forward-port to v4.31 as its own commit).
+`push Not`. (NB: these were cleared in `5cf00d9`.) The in-flight `UShortRoot` unitary work has
+been **forward-ported to v4.31** (`a41dbe4`, builds clean / 0 sorries / no source changes) — the
+`wip/ushortroot-atom` branch is now subsumed and safe to delete.
 
 ---
 

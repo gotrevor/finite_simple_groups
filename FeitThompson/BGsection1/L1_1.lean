@@ -35,6 +35,10 @@ import Mathlib.Algebra.Group.Conj
 namespace FeitThompson.BGsection1.L1_1
 
 open FeitThompson.Stubs
+-- v4.31: the `CommMonoid`/`CommGroup` instances deduced from `IsMulCommutative ↥M`
+-- are now scoped (Mathlib.Algebra.Group.Defs); open the scope so `powMonoidHom p`
+-- on `↥M` picks the same `Monoid` instance as `M.subtype` (avoids the diamond).
+open scoped IsMulCommutative
 
 variable {G : Type*} [Group G]
 

@@ -45,6 +45,10 @@ in `docs/architecture.md`; this file is the logical spine.
 
 namespace FiniteSimpleGroups
 
+-- v4.31: `CommGroup G` from `IsMulCommutative G` is now a scoped instance (needed by
+-- `IsSimpleGroup.prime_card` once a simple group is shown commutative).
+open scoped IsMulCommutative
+
 /-! ### Milestone 0: Burnside's `p^a q^b` theorem (1904)
 
 Predates CFSG by half a century; not on the deductive spine below, but the

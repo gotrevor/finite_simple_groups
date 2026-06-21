@@ -1080,7 +1080,8 @@ theorem psp_stab_maps_nonperp [Nonempty l]
       have hthis := hgy
       rw [mulVec_smul] at hthis
       have h3 := congrArg (fun z => (x.rep ⬝ᵥ (Matrix.J l F *ᵥ y.rep)) • z) hthis
-      simp only at h3
+      -- v4.31 (cookbook I): the `congrArg` redex is already β-reduced at elaboration; the old
+      -- `simp only at h3` is now a no-op error, so it is dropped.
       rw [smul_smul, mul_inv_cancel₀ h1, one_smul, smul_smul] at h3
       exact h3
     conv_rhs => rw [← Projectivization.mk_rep y']

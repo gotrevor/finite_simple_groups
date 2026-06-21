@@ -34,6 +34,8 @@ import Mathlib.GroupTheory.Commutator.Basic
 namespace FeitThompson.BGsection1.P1_6e
 
 open FeitThompson.Stubs
+-- v4.31: `CommMagma G` from `IsMulCommutative G` is now a scoped instance (needed by `mul_comm`).
+open scoped IsMulCommutative
 
 variable {G : Type*} [Group G] [Fintype G]
 

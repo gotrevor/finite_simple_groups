@@ -1,4 +1,34 @@
-# ▶ ACTIVE SESSION HANDOFF (2026-05-30, 22:24 UTC)
+# ▶ ACTIVE SESSION HANDOFF (2026-06-21) — v4.31 BUMP COMPLETE ✅
+
+**The mathlib v4.29.1 → v4.31.0 bump is DONE.** `lake build FiniteSimpleGroups FeitThompson` is
+**green** (8622 jobs, exit 0) at `leanprover/lean4:v4.31.0`, committed on branch
+`cfsg-sporadic-order-pin`. The in-flight marker (`.lake/.bump-inflight.json`) has been removed.
+
+Source fixes touched 13 modules — the breaking-change families were:
+- **`IsMulCommutative`-derived `CommGroup`/`CommMonoid`/`CommMagma` instances went scoped** in v4.31
+  → `open scoped IsMulCommutative` (L1_1, L1_2, P1_6d, P1_6e, ProofStrategy, GeneralizedFitting).
+- **`convert … using N` over-split** the membership/element goals (cookbook A/K/P) → replaced with
+  explicit `Subtype.ext`/value-equality transport (SLnPerfect — added a small `mem_closure_of_val_eq`
+  helper to dodge the v4.31 anon-constructor-on-`SL` type poisoning; CharacterTheory; SmallOrders).
+- **`simpa`/`simp only` final-checks went syntactic / β-reduced at elaboration** (cookbook F/I)
+  → `simp only … ; exact …` or dropped the no-op (LayerNormal, SpIwasawa, CharacterTheory).
+- **`Nat.card` vs `Fintype.card` / `Nat.card_sigma` now needs `[Fintype]`**, deprecated set-diff
+  renames, `add_apply` ambiguity (SmallOrders, SLnPerfect, CharacterTheory).
+
+Faithfulness gate: `#print axioms` on the heavily-refactored results
+(`SLn.transvecSL_closure_eq_top`, `commutator_SLn_eq_top`, `PSLn_nontrivial`,
+`trace_mulLeft_pi_matrix`, `exists_trivial_factor`, `fittingSubgroup_isNilpotent`) →
+`[propext, Classical.choice, Quot.sound]` only, **no `sorryAx`**.
+
+Remaining (non-blocking, deprecation **warnings** only): `nilpotent_of_mulEquiv` →
+`Group.nilpotent_of_mulEquiv`, `LinearIndependent.fin_cons` → `.finCons`,
+`Polynomial.eval_finset_sum` → `eval_finsetSum`, `Set.ncard_diff` → `ncard_sdiff`, `push_neg` →
+`push Not`. The in-flight `UShortRoot` unitary work is still parked on `wip/ushortroot-atom`
+(forward-port to v4.31 as its own commit).
+
+---
+
+## (superseded) ACTIVE SESSION HANDOFF (2026-05-30, 22:24 UTC)
 
 **Branch:** `main` (only branch — `cfsg-fitting-nilpotent` ff-merged in, then
 deleted) · **Tip:** `16aafe3` · **PUSHED** to `origin/main` (`e1a7f88..16aafe3`).

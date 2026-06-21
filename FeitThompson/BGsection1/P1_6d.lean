@@ -26,6 +26,9 @@ import Mathlib.GroupTheory.Solvable
 namespace FeitThompson.BGsection1.P1_6d
 
 open FeitThompson.Stubs
+-- v4.31: `CommGroup`/`CommMagma` from `IsMulCommutative G` are now scoped instances,
+-- so `IsSolvable G` (via CommGroup) and `mul_comm` (via CommMagma) need the scope open.
+open scoped IsMulCommutative
 
 variable {G : Type*} [Group G] [Fintype G]
 

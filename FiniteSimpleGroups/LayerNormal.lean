@@ -36,7 +36,8 @@ private theorem map_center_eq {Q Q' : Type*} [Group Q] [Group Q'] (e : Q ≃* Q'
   rw [Subgroup.mem_map]
   constructor
   · rintro ⟨x, hx, rfl⟩
-    simpa using MulEquivClass.apply_mem_center e hx
+    -- v4.31: `apply_mem_center` lands in `Set.center`; `exact` bridges to `Subgroup.center` (defeq).
+    exact MulEquivClass.apply_mem_center e hx
   · intro hy
     refine ⟨e.symm y, ?_, by simp⟩
     have hy' : e (e.symm y) ∈ center Q' := by simpa using hy

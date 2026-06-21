@@ -814,7 +814,15 @@ theorem trace_mulLeft_pi_matrix {n : ℕ} (d : Fin n → ℕ)
         rw [ Finset.sum_sigma' ]
         rfl
       exact h_trace_direct_sum f
-    convert h_trace_prod ( fun i => mulLeft ℂ ( M i ) ) using 1
+    -- v4.31: `convert … using 1` no longer auto-closes the residual `mulLeft ℂ M = pi …` defeq;
+    -- prove that linear-map equality explicitly, then apply the per-factor decomposition.
+    rw [show (LinearMap.mulLeft ℂ M :
+          ((i : Fin n) → Matrix (Fin (d i)) (Fin (d i)) ℂ) →ₗ[ℂ]
+            ((i : Fin n) → Matrix (Fin (d i)) (Fin (d i)) ℂ))
+        = LinearMap.pi fun i => LinearMap.mulLeft ℂ (M i) ∘ₗ LinearMap.proj i from by
+      ext y i
+      simp [LinearMap.mulLeft_apply]]
+    exact h_trace_prod (fun i => mulLeft ℂ (M i))
   have h_trace_mulLeft : ∀ (i : Fin n) (A : Matrix (Fin (d i)) (Fin (d i)) ℂ), (LinearMap.trace ℂ (Matrix (Fin (d i)) (Fin (d i)) ℂ)) (mulLeft ℂ A) = (d i : ℂ) * A.trace := by
     intro i A
     set basis : Module.Basis (Fin (d i) × Fin (d i)) ℂ (Matrix (Fin (d i)) (Fin (d i)) ℂ) := Matrix.stdBasis ℂ (Fin (d i)) (Fin (d i))
@@ -1132,10 +1140,23 @@ private lemma algHom_matrix_dim_one {n : ℕ}
         convert h_comm using 2 <;> ext a b <;> simp +decide [ Matrix.mul_apply ]
         · rw [ Finset.sum_eq_single ( i + 1 ) ] <;> aesop
         · rw [ Finset.sum_eq_single i ] <;> aesop
+      have hi_ne : i ≠ i + 1 := fun h =>
+        zero_ne_one (add_left_cancel (a := i) (by rw [add_zero, ← h]))
       have h_ortho : f (Matrix.of (fun a b => if a = i ∧ b = i then 1 else 0))
           * f (Matrix.of (fun a b => if a = (i + 1) ∧ b = (i + 1) then 1 else 0)) = 0 := by
-        rw [ ← map_mul ]; convert f.map_zero
-        ext a b; simp +decide [ Matrix.mul_apply ]; aesop
+        -- v4.31: the old `convert f.map_zero; ext; simp; aesop` no longer lands; prove the
+        -- matrix-unit product is `0` by a direct entrywise sum-eq-zero (orthogonal idempotents).
+        rw [← map_mul, show (Matrix.of (fun a b => if a = i ∧ b = i then 1 else 0)
+            * Matrix.of (fun a b => if a = (i + 1) ∧ b = (i + 1) then 1 else 0))
+            = (0 : Matrix (Fin (n + 1 + 1)) (Fin (n + 1 + 1)) ℂ) from ?_, map_zero]
+        ext a b
+        simp only [Matrix.mul_apply, Matrix.of_apply, Matrix.zero_apply]
+        refine Finset.sum_eq_zero fun k _ => ?_
+        by_cases h1 : a = i ∧ k = i
+        · by_cases h2 : k = i + 1 ∧ b = i + 1
+          · exact absurd (h1.2 ▸ h2.1) hi_ne
+          · simp [h2]
+        · simp [h1]
       aesop
     have h_sum : f (Matrix.of (fun a b => if a = b then 1 else 0)) = 0 := by
       convert Finset.sum_eq_zero fun i _ => h_idempotent i using 1
@@ -1164,11 +1185,10 @@ private noncomputable def restrictAlgHom {n : ℕ} {d : Fin n → ℕ}
   toFun m := f (Pi.single i₀ m)
   map_one' := hone
   map_mul' x y := by rw [ ← map_mul ]; congr with i; by_cases hi : i = i₀ <;> aesop
-  map_zero' := by convert f.map_zero; ext; simp [Pi.single]
+  map_zero' := by rw [Pi.single_zero, map_zero]
   map_add' x y := by
-    have h_add : f (Pi.single i₀ (x + y)) = f (Pi.single i₀ x + Pi.single i₀ y) := by
-      congr with i; by_cases hi : i = i₀ <;> aesop
-    convert f.map_add ( Pi.single i₀ x ) ( Pi.single i₀ y ) using 1
+    -- v4.31: `convert f.map_add … using 1` left an `f`/`f.toRingHom` mismatch; rewrite directly.
+    rw [← map_add, ← Pi.single_add]
   commutes' r := by
     by_cases hr : r = 0 <;> simp_all +decide [ Algebra.algebraMap_eq_smul_one, Pi.single_smul ]
 
@@ -1201,7 +1221,7 @@ theorem exists_trivial_factor
   have hc_ortho : ∀ i j, i ≠ j → c i * c j = 0 := fun i j hij => by
     rw [ ← map_mul, pi_single_one_ortho hij, map_zero ]
   have hc_sum : ∑ i, c i = 1 := by
-    rw [ ← map_sum, sum_pi_single_one ]; convert f.map_one using 1
+    rw [ ← map_sum, sum_pi_single_one ]; exact map_one f
   obtain ⟨i₀, hi₀_one, hi₀_zero⟩ := exists_idem_one hc_idem hc_ortho hc_sum
   refine ⟨i₀, fun g => ?_⟩
   have h_g_hom : f (Pi.single i₀ ((e (MonoidAlgebra.single g 1)) i₀)) = 1 := by
@@ -1558,7 +1578,10 @@ theorem burnside_class_size {G : Type*} [Group G] [Finite G] (hsimple : IsSimple
     by_cases hpd : p ∣ d i
     · simp only [hpd, if_true]
       have hnat : IsIntegral ℤ ((d i / p : ℕ) : ℂ) := by
-        simpa using isIntegral_algebraMap (R := ℤ) (A := ℂ) (x := ((d i / p : ℕ) : ℤ))
+        -- v4.31: bare `simpa` pushes `Nat.cast` through the division (`↑(d i/p)` → `↑(d i)/↑p`),
+        -- mismatching the goal; restrict to `map_natCast` which only collapses the algebraMap.
+        simpa only [map_natCast] using
+          isIntegral_algebraMap (R := ℤ) (A := ℂ) (x := ((d i / p : ℕ) : ℤ))
       exact hnat.mul (trace_matrixHom_isIntegral (R i) g)
     · simp only [hpd, if_false]
       exact isIntegral_zero

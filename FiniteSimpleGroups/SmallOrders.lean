@@ -96,7 +96,11 @@ private lemma card_dvd_factorial_of_card_sylow_gt_one
       intro P g; specialize h g; replace h := Equiv.Perm.ext_iff.mp h P; aesop
     have h_unique : ∀ P Q : Sylow p G, P = Q := by
       intro P Q; have := MulAction.exists_smul_eq G P Q; aesop
-    exact absurd (Fintype.card_le_one_iff.mpr fun P Q => h_unique P Q) h_gt.not_ge
+    -- v4.31: keep this in `Nat.card` (matches `h_gt`); the old `Fintype.card_le_one_iff` route
+    -- needed a `Fintype` instance that no longer synthesizes and a Nat/Fintype.card bridge.
+    have hone : Nat.card (Sylow p G) = 1 :=
+      Nat.card_eq_one_iff_unique.mpr ⟨⟨h_unique⟩, inferInstance⟩
+    omega
   convert Subgroup.card_subgroup_dvd_card (φ.range) using 1
   · exact Nat.card_congr (Equiv.ofInjective _ <| (MonoidHom.ker_eq_bot_iff _).mp h_kernel_bot)
   · exact?
@@ -162,19 +166,21 @@ private lemma card_nonidentity_in_prime_sylow_union {G : Type*} [Group G] [Finit
   · have h_card : ∀ Q : Sylow p G, Nat.card {g : (Q : Subgroup G) // g.1 ≠ 1} = p - 1 := by
       intro Q
       have h_card_Q : Nat.card (Q : Subgroup G) = p := by
-        have := Sylow.card_eq_multiplicity Q; aesop;
+        -- v4.31: aesop no longer chains `card_eq_multiplicity` with `hv`; do it by hand.
+        rw [Sylow.card_eq_multiplicity Q, hv, pow_one]
       have h_card_nonid : Nat.card {g : (Q : Subgroup G) // g.1 ≠ 1} = Nat.card (Q : Subgroup G) - 1 := by
-        convert Set.ncard_diff _ _;
-        any_goals exact { 1 };
-        · fapply Set.ncard_congr;
-          use fun a ha => a.val;
-          · aesop;
-          · aesop;
-          · exact fun b hb => ⟨ ⟨ b, hb.1 ⟩, hb.2, rfl ⟩;
-        · simp +decide [ Set.ncard_eq_toFinset_card' ];
-        · exact Set.singleton_subset_iff.mpr ( Q.1.one_mem );
-        · exact Set.finite_singleton 1
+        -- v4.31: the old `convert Set.ncard_diff …` cascade broke in several spots; instead use
+        -- `Set.card_ne_eq` after transporting `g.1 ≠ 1` to `g ≠ 1` (an `↥Q`-internal equation).
+        haveI : Fintype ↥(Q : Subgroup G) := Fintype.ofFinite _
+        haveI : Fintype {x : ↥(Q : Subgroup G) | x ≠ 1} := Fintype.ofFinite _
+        have e : {g : (Q : Subgroup G) // g.1 ≠ 1} ≃ {x : ↥(Q : Subgroup G) | x ≠ 1} :=
+          Equiv.subtypeEquivRight fun g => by
+            simp only [Set.mem_setOf_eq, ne_eq, Subtype.ext_iff, OneMemClass.coe_one]
+        rw [Nat.card_congr e, Nat.card_eq_fintype_card, Set.card_ne_eq,
+          ← Nat.card_eq_fintype_card]
       rw [h_card_nonid, h_card_Q];
+    -- v4.31: `Nat.card_sigma` now requires `[Fintype α]` (was `[Finite α]`); supply it.
+    haveI : Fintype (Sylow p G) := Fintype.ofFinite _
     simp +decide only [Nat.card_sigma, h_card];
     simp +decide [ ← mul_tsub ];
   · refine' Equiv.ofBijective ( fun x => ⟨ x.2.1, x.2.2, x.1, x.2.1.2 ⟩ ) ⟨ fun x y h => _, fun x => _ ⟩;
@@ -238,7 +244,7 @@ private lemma sylow_2_unique_of_8_sylow_7 {G : Type*} [Group G] [Finite G]
       · exact Set.toFinite _;
     have h_card_G : Nat.card {g : G | g ≠ 1} = Nat.card G - 1 := by
       have : {g : G | g ≠ 1} = Set.univ \ {1} := by
-        grind +splitIndPred
+        ext g; simp [Set.mem_diff]
       simp +decide [ this, Set.toFinset_card ];
     grind +revert;
   have hP_subset_R : ∀ P : Sylow 2 G, {g : G | g ∈ (P : Subgroup G) ∧ g ≠ 1} ⊆ R := by
@@ -257,9 +263,15 @@ private lemma sylow_2_unique_of_8_sylow_7 {G : Type*} [Group G] [Finite G]
     have hP_card : Nat.card (P : Subgroup G) = 8 := by
       convert P.card_eq_multiplicity using 1 ; norm_num [ h ];
       native_decide;
-    convert Nat.card_congr ( Equiv.subtypeEquivRight ( show ∀ g : G, g ∈ ( P : Subgroup G ) ∧ ¬g = 1 ↔ g ∈ ( P : Subgroup G ) ∧ g ≠ 1 from fun g => Iff.rfl ) ) using 1;
-    convert congr_arg ( fun x : ℕ => x - 1 ) hP_card.symm using 1;
-    convert Set.ncard_diff_singleton_of_mem ( show 1 ∈ ( P : Subgroup G ) from P.1.one_mem ) using 1;
+    -- v4.31: the old `convert … ncard_diff_singleton …` chain over-split; do the `ncard`
+    -- computation directly: `{g | g ∈ P ∧ g ≠ 1} = ↑P \ {1}`, whose `ncard` is `|P| - 1 = 7`.
+    have hpc : (↑(P : Subgroup G) : Set G).ncard = 8 := by
+      rw [← Nat.card_coe_set_eq]; exact hP_card
+    have hset : {g : G | g ∈ (P : Subgroup G) ∧ g ≠ 1} = (↑(P : Subgroup G) : Set G) \ {1} :=
+      Set.ext fun g => ⟨fun h => ⟨h.1, h.2⟩, fun h => ⟨h.1, h.2⟩⟩
+    rw [Nat.card_coe_set_eq, hset,
+      Set.ncard_sdiff_singleton_of_mem (show (1 : G) ∈ (↑(P : Subgroup G) : Set G) from P.1.one_mem),
+      hpc]
   have hP_eq_R : ∀ P : Sylow 2 G, {g : G | g ∈ (P : Subgroup G) ∧ g ≠ 1} = R := by
     intro P
     apply Set.eq_of_subset_of_ncard_le

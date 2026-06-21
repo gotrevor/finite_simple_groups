@@ -41,6 +41,10 @@ the definition and the normality.
 
 namespace FiniteSimpleGroups
 
+-- v4.31: `CommGroup ↥(center G)` from `IsMulCommutative` is now a scoped instance (needed to
+-- derive `IsSolvable ↥(center G)`).
+open scoped IsMulCommutative
+
 universe u
 
 variable {G : Type*} [Group G]

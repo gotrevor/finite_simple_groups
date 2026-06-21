@@ -117,6 +117,14 @@ private lemma transvecSL_mem_closure {i j : n} (h : i ≠ j) (c : F) :
     transvecSL h c ∈ Subgroup.closure S :=
   Subgroup.subset_closure ⟨i, j, h, c, rfl⟩
 
+/-- Transport membership in `closure S` across SL elements with equal matrix value. Stating
+the equality over *bound* SL variables avoids the v4.31 anon-constructor type poisoning
+(an inline `(⟨M, h⟩ : SL)` elaborates at the raw subtype `{A // A.det = 1}`, breaking `*`). -/
+private lemma mem_closure_of_val_eq {x y : SpecialLinearGroup n F}
+    (h : (x : Matrix n n F) = (y : Matrix n n F)) (hy : y ∈ Subgroup.closure S) :
+    x ∈ Subgroup.closure S := by
+  rw [show x = y from Subtype.ext h]; exact hy
+
 /-- Product of a list of `TransvectionStruct` matrices has determinant 1. -/
 private lemma det_list_transvec_prod (L : List (TransvectionStruct n F)) :
     (L.map TransvectionStruct.toMatrix).prod.det = 1 := by
@@ -133,7 +141,11 @@ private lemma list_transvec_prod_mem_closure (L : List (TransvectionStruct n F))
       SpecialLinearGroup n F) ∈ Subgroup.closure S := by
   induction' L with t L ih;
   · exact OneMemClass.one_mem _;
-  · convert Subgroup.mul_mem _ ( transvecSL_mem_closure t.hij t.c ) ih using 1
+  · -- v4.31: `convert … using 1` over-splits the membership; but the goal subject
+    -- `⟨(t::L).prod, _⟩` is *defeq* to `transvecSL t.hij t.c * ⟨L.prod, _⟩`
+    -- (`List.map_cons`/`prod_cons`/`toMatrix` are all `rfl`, SL-mul unfolds to matrix mul),
+    -- so `mul_mem` closes it directly.
+    exact Subgroup.mul_mem _ (transvecSL_mem_closure t.hij t.c) ih
 
 /-! ### Whitehead lemma: diagonal matrices with det 1 are products of transvections -/
 
@@ -217,9 +229,17 @@ An elementary diagonal matrix lies in the transvection closure.
 private lemma elem_diag_mem_closure (i j : n) (hij : i ≠ j) (a : F) (ha : a ≠ 0) :
     (⟨diagonal (elemDiagFn i j a), det_elemDiag i j hij a ha⟩ :
       SpecialLinearGroup n F) ∈ Subgroup.closure S := by
-  convert Subgroup.mul_mem _ ( Subgroup.mul_mem _ ( Subgroup.mul_mem _ ( Subgroup.mul_mem _ ( transvecSL_mem_closure hij a ) ( transvecSL_mem_closure ( Ne.symm hij ) ( -a⁻¹ ) ) ) ( transvecSL_mem_closure hij ( a - 1 ) ) ) ( transvecSL_mem_closure ( Ne.symm hij ) 1 ) ) ( transvecSL_mem_closure hij ( -1 ) ) using 1;
-  ext; simp [transvecSL];
-  rw [ ← five_transvec_eq_elem_diag i j hij a ha ]
+  -- v4.31: `convert … using 1` over-splits the membership. Transport via `mem_closure_of_val_eq`:
+  -- the five-`transvecSL` product has value `= diagonal (elemDiagFn …)` by `five_transvec_eq_elem_diag`.
+  -- Discharge the value-equality with `coe` lemmas (a bare defeq check `whnf`-explodes on the
+  -- five concrete transvection matrices).
+  refine mem_closure_of_val_eq ?_
+    (Subgroup.mul_mem _ (Subgroup.mul_mem _ (Subgroup.mul_mem _ (Subgroup.mul_mem _
+      (transvecSL_mem_closure hij a) (transvecSL_mem_closure (Ne.symm hij) (-a⁻¹)))
+      (transvecSL_mem_closure hij (a - 1))) (transvecSL_mem_closure (Ne.symm hij) 1))
+      (transvecSL_mem_closure hij (-1)))
+  simp only [SpecialLinearGroup.coe_mul, transvecSL, SpecialLinearGroup.coe_mk]
+  exact (five_transvec_eq_elem_diag i j hij a ha).symm
 
 /-
 If all entries of `D` are 1, then `diagonal D` is the identity.
@@ -282,7 +302,8 @@ private lemma diag_det_one_mem_closure (D : n → F) (hD : (diagonal D).det = 1)
   by_cases h_all_one : ∀ i, D i = 1;
   · have h1 : diagonal D = 1 := diag_all_one D h_all_one
     revert hD; rw [h1]; intro hD
-    convert Subgroup.one_mem (Subgroup.closure S)
+    -- v4.31: `convert` over-splits; `(1 : SL) = ⟨1, hD⟩` defeq (proof-irrelevant), use `exact`.
+    exact Subgroup.one_mem (Subgroup.closure S)
   · obtain ⟨i₀, hi₀⟩ : ∃ i₀, D i₀ ≠ 1 := by
       exact not_forall.mp h_all_one
     obtain ⟨j₀, hj₀_ne_i₀, hj₀⟩ : ∃ j₀, j₀ ≠ i₀ ∧ D j₀ ≠ 1 := by
@@ -299,13 +320,16 @@ private lemma diag_det_one_mem_closure (D : n → F) (hD : (diagonal D).det = 1)
         exact absurd ( hD' ▸ Finset.prod_eq_zero ( Finset.mem_univ i₀ ) h ) ( by simp +decide )
     have h_card_lt : (Finset.univ.filter (fun i => D' i ≠ 1)).card < (Finset.univ.filter (fun i => D i ≠ 1)).card := by
       apply_rules [ nonone_card_lt ];
+    have hDi₀ : D i₀ ≠ 0 := by
+      intro h; simp_all +decide [ Finset.prod_eq_zero ( Finset.mem_univ i₀ ) ]
     have h_diag_factor : diagonal D = diagonal (elemDiagFn i₀ j₀ (D i₀)) * diagonal D' := by
       convert diag_factor D i₀ j₀ ( Ne.symm hj₀_ne_i₀ ) _ using 1;
       intro h; simp_all +decide [ Finset.prod_eq_zero ( Finset.mem_univ i₀ ) ] ;
-    convert Subgroup.mul_mem _ ( elem_diag_mem_closure i₀ j₀ ( Ne.symm hj₀_ne_i₀ ) ( D i₀ ) ?_ ) ( ih _ ?_ D' hD'_det rfl ) using 1;
-    refine Subtype.ext h_diag_factor;
-    · intro h; simp_all +decide [ Finset.prod_eq_zero ( Finset.mem_univ i₀ ) ] ;
-    · linarith
+    -- v4.31: `convert … using 1` over-splits the membership. Transport via `mem_closure_of_val_eq`:
+    -- `diagonal D = diagonal (elemDiagFn …) * diagonal D'` (`h_diag_factor`) is the value equality.
+    exact mem_closure_of_val_eq h_diag_factor (Subgroup.mul_mem _
+      (elem_diag_mem_closure i₀ j₀ (Ne.symm hj₀_ne_i₀) (D i₀) hDi₀)
+      (ih _ (by linarith) D' hD'_det rfl))
 
 /-- **Transvections generate `SL(n,F)`** (over a field) — formerly a disclosed axiom,
 now machine-checked. Proof (Whitehead reduction, verified in our kernel via a brick
@@ -321,9 +345,17 @@ theorem transvecSL_closure_eq_top :
   refine' eq_top_iff.mpr _;
   intro A hA
   obtain ⟨L, L', D, h_eq⟩ := Pivot.exists_list_transvec_mul_diagonal_mul_list_transvec (↑A : Matrix n n F);
-  convert Subgroup.mul_mem _ ( Subgroup.mul_mem _ ( list_transvec_prod_mem_closure L ) ( diag_det_one_mem_closure D ?_ ) ) ( list_transvec_prod_mem_closure L' ) using 1;
-  exact Subtype.ext h_eq;
-  apply_fun Matrix.det at h_eq; simp_all +decide [ Matrix.det_mul ] ;
+  -- side condition: `(diagonal D).det = 1` (from `det ↑A = 1` and the transvec products having det 1).
+  have hDdet : (diagonal D).det = 1 := by
+    have hA1 : (↑A : Matrix n n F).det = 1 := A.2
+    rw [h_eq, Matrix.det_mul, Matrix.det_mul, det_list_transvec_prod,
+      det_list_transvec_prod] at hA1
+    simpa using hA1
+  -- v4.31: `convert … using 1` over-splits the membership. Transport via `mem_closure_of_val_eq`:
+  -- `↑A = L.prod * diagonal D * L'.prod` (`h_eq`) is the value equality.
+  exact mem_closure_of_val_eq h_eq (Subgroup.mul_mem _
+    (Subgroup.mul_mem _ (list_transvec_prod_mem_closure L) (diag_det_one_mem_closure D hDdet))
+    (list_transvec_prod_mem_closure L'))
 
 end TransvecGenerate
 
@@ -369,8 +401,9 @@ theorem PSLn_nontrivial (h2 : 2 ≤ Fintype.card n) :
   obtain ⟨r, hr, hscal⟩ := hmem
   have hentry := congr_fun₂ hscal i j
   rw [transvecSL_val] at hentry
-  simp only [scalar_apply, diagonal_apply_ne _ hij, transvection, add_apply, one_apply_ne hij,
-    single_apply_same, zero_add] at hentry
+  -- v4.31: `add_apply` is now ambiguous (`_root_.add_apply` vs `Matrix.add_apply`); qualify it.
+  simp only [scalar_apply, diagonal_apply_ne _ hij, transvection, Matrix.add_apply,
+    one_apply_ne hij, single_apply_same, zero_add] at hentry
   exact one_ne_zero hentry.symm
 
 end FiniteSimpleGroups.SLn

@@ -27,6 +27,9 @@ import Mathlib.GroupTheory.Nilpotent
 namespace FeitThompson.BGsection1.L1_2
 
 open FeitThompson.Stubs
+-- v4.31: `CommGroup` from `IsMulCommutative ↥M` is now a scoped instance (needed for the
+-- `IsMulCommutative → CommGroup → IsNilpotent` chain).
+open scoped IsMulCommutative
 
 variable {G : Type*} [Group G]
 

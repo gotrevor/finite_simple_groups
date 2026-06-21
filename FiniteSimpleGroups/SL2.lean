@@ -219,7 +219,7 @@ theorem comm_diag_lower (a : F) (ha : a ≠ 0) (s : F) :
 theorem exists_sq_ne_one [Fintype F] (hF : 4 ≤ Fintype.card F) :
     ∃ a : F, a ≠ 0 ∧ a ^ 2 ≠ 1 := by
   by_contra h
-  push_neg at h
+  push Not at h
   have hsub : (Finset.univ : Finset F) ⊆ {0, 1, -1} := by
     intro a _
     by_cases ha : a = 0
@@ -286,7 +286,7 @@ theorem PSL2_perfect (q : ℕ) [Fact (Nat.Prime q)] (hq : 4 ≤ q) :
 theorem upper_one_notMem_center (F : Type*) [Field F] [DecidableEq F] :
     upper (1 : F) ∉ Subgroup.center (SpecialLinearGroup (Fin 2) F) := by
   rw [Subgroup.mem_center_iff]
-  push_neg
+  push Not
   refine ⟨lower 1, ?_⟩
   intro heq
   have h00 : (lower (1 : F) * upper 1).val 0 0 = (upper (1 : F) * lower 1).val 0 0 := by

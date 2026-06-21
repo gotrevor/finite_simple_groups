@@ -2400,7 +2400,7 @@ theorem perp_isotropic_parallel (hn3 : n = 3)
         rw [← hab, dotProduct_add, dotProduct_smul, dotProduct_smul, hperp, hxiso,
           smul_zero, smul_zero, add_zero])
     have hind : LinearIndependent (UnitaryField p) (Fin.cons u ![y, x]) :=
-      hLI.fin_cons hu_notmem
+      hLI.finCons hu_notmem
     have hcard : Fintype.card (Fin 3)
         = Module.finrank (UnitaryField p) (Fin n → UnitaryField p) := by
       rw [Module.finrank_fintype_fun_eq_card, Fintype.card_fin, Fintype.card_fin, hn3]

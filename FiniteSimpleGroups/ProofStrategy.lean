@@ -81,7 +81,7 @@ private theorem burnside_aux (p q : ℕ) : ∀ (n : ℕ) (G : Type u) [Group G] 
       · exact burnside_simple G p q hpq hsimple
       · obtain ⟨N, hNnorm, hNbot, hNtop⟩ : ∃ N : Subgroup G, N.Normal ∧ N ≠ ⊥ ∧ N ≠ ⊤ := by
           by_contra hcon
-          push_neg at hcon
+          push Not at hcon
           exact hsimple ⟨fun N hN => or_iff_not_imp_left.mpr (hcon N hN)⟩
         haveI := hNnorm
         have hNdvd : Nat.card N ∣ Nat.card G := Subgroup.card_subgroup_dvd_card N

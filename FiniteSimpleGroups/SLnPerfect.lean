@@ -92,7 +92,7 @@ theorem transvecSL_mem_commutator (h3 : 3 ≤ Fintype.card n) {i j : n} (hij : i
     obtain ⟨k, _, hk⟩ := Finset.not_subset.mp hne
     exact ⟨k, hk⟩
   rw [Finset.mem_insert, Finset.mem_singleton] at hk
-  push_neg at hk
+  push Not at hk
   obtain ⟨hki, hkj⟩ := hk
   have hik : i ≠ k := fun h => hki h.symm
   have hjk : k ≠ j := fun h => hkj h

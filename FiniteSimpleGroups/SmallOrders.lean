@@ -244,7 +244,7 @@ private lemma sylow_2_unique_of_8_sylow_7 {G : Type*} [Group G] [Finite G]
       · exact Set.toFinite _;
     have h_card_G : Nat.card {g : G | g ≠ 1} = Nat.card G - 1 := by
       have : {g : G | g ≠ 1} = Set.univ \ {1} := by
-        ext g; simp [Set.mem_diff]
+        ext g; simp [Set.mem_sdiff]
       simp +decide [ this, Set.toFinset_card ];
     grind +revert;
   have hP_subset_R : ∀ P : Sylow 2 G, {g : G | g ∈ (P : Subgroup G) ∧ g ≠ 1} ⊆ R := by
@@ -376,7 +376,7 @@ private lemma no_simple_group_order_30
     exact hg_ne (Subgroup.mem_bot.mp hg_bot)
   have h_ne1 : {g : G | g ≠ 1}.ncard = 29 := by
     have heq : {g : G | g ≠ 1} = (Set.univ : Set G) \ {1} := by ext g; simp
-    rw [heq, Set.ncard_diff (Set.singleton_subset_iff.mpr (Set.mem_univ _)) (Set.toFinite _),
+    rw [heq, Set.ncard_sdiff (Set.singleton_subset_iff.mpr (Set.mem_univ _)) (Set.toFinite _),
       Set.ncard_univ, Set.ncard_singleton, h]
   have h_union_le : (A ∪ B).ncard ≤ {g : G | g ≠ 1}.ncard :=
     Set.ncard_le_ncard (Set.union_subset (fun _ hx => hx.1) (fun _ hx => hx.1)) (Set.toFinite _)

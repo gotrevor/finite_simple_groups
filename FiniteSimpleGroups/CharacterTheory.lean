@@ -670,7 +670,7 @@ theorem root_charpoly_pow_eq_one {d n : ℕ} (M : Matrix (Fin d) (Fin d) ℂ)
                             rw [ Matrix.det_eq_sign_charpoly_coeff ];
                             simp_all +decide [ Matrix.charpoly, Matrix.det_apply' ];
                             convert ha.2 using 1;
-                            simp +decide [ Polynomial.eval_finset_sum, Polynomial.eval_mul, Polynomial.eval_prod, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_one, Polynomial.coeff_zero_eq_eval_zero ];
+                            simp +decide [ Polynomial.eval_finsetSum, Polynomial.eval_mul, Polynomial.eval_prod, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_one, Polynomial.coeff_zero_eq_eval_zero ];
                             exact Finset.sum_congr rfl fun _ _ => by congr; ext; by_cases h : ‹Equiv.Perm ( Fin d ) › ‹_› = ‹_› <;> simp +decide [ h ] ;
                           obtain ⟨ v, hv ⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr h_singular;
                           exact ⟨ v, hv.1, by simpa [ sub_eq_iff_eq_add, Matrix.sub_mulVec ] using hv.2 ⟩ );
@@ -1073,7 +1073,7 @@ private lemma exists_idem_one {n : ℕ} {c : Fin n → ℂ}
     (hsum : ∑ i, c i = 1) :
     ∃ i₀, c i₀ = 1 ∧ ∀ j, j ≠ i₀ → c j = 0 := by
   have h_one : ∃ i₀, c i₀ = 1 := by
-    by_contra h_contra; push_neg at h_contra
+    by_contra h_contra; push Not at h_contra
     exact absurd ( hsum ▸ Finset.sum_eq_zero fun i _ ↦
       Or.resolve_right ( idem_complex ( hidem i ) ) ( h_contra i ) ) ( by norm_num )
   exact ⟨ h_one.choose, h_one.choose_spec,
@@ -1552,7 +1552,7 @@ theorem burnside_class_size {G : Type*} [Group G] [Finite G] (hsimple : IsSimple
   have hnontriv : ∀ i, i ≠ i₀ → ∃ h, R i h ≠ 1 := by
     intro i hi
     by_contra hall
-    push_neg at hall
+    push Not at hall
     exact hi (htrivu i hall)
   -- Define `θ` and feed the arithmetic core.
   refine burnside_final_contradiction (fun i => (d i : ℂ) * (R i g).trace) p hp i₀ ?_

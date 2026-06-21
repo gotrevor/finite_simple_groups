@@ -120,7 +120,7 @@ theorem IsMinimalNormal.exists_nonabelian_sub {M : Subgroup G} [Finite G]
   refine ⟨K, hK, fun hKab => ?_⟩
   haveI := hK.1
   have hKnil : Group.IsNilpotent (K : Type _) :=
-    ⟨1, (upperCentralSeries_one (K : Type _)).trans hKab⟩
+    ⟨1, (Subgroup.upperCentralSeries_one (K : Type _)).trans hKab⟩
   exact hK.2.1 (le_bot_iff.mp
     (hF ▸ normal_nilpotent_le_fittingSubgroup K hK.1 hKnil))
 

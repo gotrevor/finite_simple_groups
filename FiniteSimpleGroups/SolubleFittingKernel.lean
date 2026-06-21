@@ -64,7 +64,7 @@ theorem exists_nontrivial_abelian_normal_of_solvable (G : Type*) [Group G]
 theorem isNilpotent_of_quotient_by_central_isNilpotent (G : Type*) [Group G]
     (N : Subgroup G) [N.Normal] (hc : N ≤ Subgroup.center G)
     (hq : Group.IsNilpotent (G ⧸ N)) : Group.IsNilpotent G := by
-  convert of_quotient_center_nilpotent _
+  convert Group.of_quotient_center_nilpotent _
   -- `N ≤ Z(G)` gives a surjection `G/N ↠ G/Z(G)`, transporting nilpotency.
   have h_surj : ∃ f : G ⧸ N →* G ⧸ Subgroup.center G, Function.Surjective f := by
     refine ⟨QuotientGroup.lift N (QuotientGroup.mk' (Subgroup.center G)) ?_, ?_⟩
@@ -72,7 +72,7 @@ theorem isNilpotent_of_quotient_by_central_isNilpotent (G : Type*) [Group G]
     · exact fun x => by
         obtain ⟨y, rfl⟩ := QuotientGroup.mk_surjective x
         exact ⟨QuotientGroup.mk y, rfl⟩
-  exact nilpotent_of_surjective _ h_surj.choose_spec
+  exact Group.nilpotent_of_surjective _ h_surj.choose_spec
 
 /-- **`F(G/Z(G)) = ⊥` when `F(G) ≤ Z(G)`.** If the Fitting subgroup is central then the
 Fitting subgroup of `G/Z(G)` is trivial. A nilpotent normal subgroup `A` of `G/Z(G)`
@@ -105,8 +105,8 @@ theorem fittingSubgroup_quotient_center_eq_bot (G : Type*) [Group G] [Finite G]
   haveI hAnil' : Group.IsNilpotent φ.range := hrange ▸ hAnil
   haveI hqnil : Group.IsNilpotent (N ⧸ Z.subgroupOf N) := by
     haveI hnil : Group.IsNilpotent (N ⧸ φ.ker) :=
-      nilpotent_of_mulEquiv (QuotientGroup.quotientKerEquivRange φ).symm
-    exact nilpotent_of_mulEquiv (QuotientGroup.quotientMulEquivOfEq hker)
+      Group.nilpotent_of_mulEquiv (QuotientGroup.quotientKerEquivRange φ).symm
+    exact Group.nilpotent_of_mulEquiv (QuotientGroup.quotientMulEquivOfEq hker)
   -- `Z ⊓ N` is central in `N`, so `N` is nilpotent (central-by-nilpotent).
   have hcentral : Z.subgroupOf N ≤ Subgroup.center N := by
     intro x hx

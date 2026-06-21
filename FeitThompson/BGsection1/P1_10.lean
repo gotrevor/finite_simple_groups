@@ -139,7 +139,7 @@ theorem coprime_nil_faithful_cent_stab
   have hSelfNorm : N = C := le_antisymm hNC hCN
   -- Nilpotent G + NormalizerCondition ⟹ C = ⊤.
   haveI : Group.IsNilpotent G := hNil
-  have hCond : NormalizerCondition G := normalizerCondition_of_isNilpotent
+  have hCond : NormalizerCondition G := Group.normalizerCondition_of_isNilpotent
   have hC_top : C = ⊤ :=
     (normalizerCondition_iff_only_full_group_self_normalizing.mp hCond) C hSelfNorm
   -- A ≤ C(C) and C = ⊤ ⟹ A ≤ C(⊤).

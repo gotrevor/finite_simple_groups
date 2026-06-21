@@ -64,7 +64,7 @@ theorem sylow_characteristic_of_isNilpotent {N : Type*} [Group N] [Finite N]
     [Group.IsNilpotent N] {p : ℕ} [Fact p.Prime] (P : Sylow p N) :
     (↑P : Subgroup N).Characteristic :=
   P.characteristic_of_normal
-    (P.normal_of_normalizerCondition normalizerCondition_of_isNilpotent)
+    (P.normal_of_normalizerCondition Group.normalizerCondition_of_isNilpotent)
 
 /-- **Sylow subgroups of a normal nilpotent subgroup are normal in the whole
 group.** Characteristic in `N` + `N ⊴ G` ⇒ normal in `G`. -/
@@ -269,7 +269,7 @@ theorem iSup_pCore_isNilpotent (G : Type*) [Group G] [Finite G] :
     haveI : Fact (i : ℕ).Prime := ⟨Nat.prime_of_mem_primeFactors i.2⟩
     exact isPGroup_pCore.isNilpotent
   have hnil : Group.IsNilpotent ↥(⨆ i : (Nat.card G).primeFactors, pCore G (i : ℕ)) :=
-    nilpotent_of_mulEquiv e
+    Group.nilpotent_of_mulEquiv e
   -- bridge the prime-indexed join to the primeFactors-indexed join
   have heq : (⨆ (p : ℕ) (_ : p.Prime), pCore G p)
       = ⨆ i : (Nat.card G).primeFactors, pCore G (i : ℕ) := by
@@ -308,10 +308,10 @@ theorem fittingSubgroup_eq_top_iff_isNilpotent (G : Type*) [Group G] [Finite G] 
   constructor
   · intro h
     haveI : Group.IsNilpotent (⊤ : Subgroup G) := h ▸ fittingSubgroup_isNilpotent G
-    exact nilpotent_of_mulEquiv Subgroup.topEquiv
+    exact Group.nilpotent_of_mulEquiv Subgroup.topEquiv
   · intro h
     refine top_le_iff.mp (normal_nilpotent_le_fittingSubgroup ⊤ inferInstance ?_)
-    exact nilpotent_of_mulEquiv Subgroup.topEquiv.symm
+    exact Group.nilpotent_of_mulEquiv Subgroup.topEquiv.symm
 
 /-- The defining set of `F(G)` — normal nilpotent subgroups — is closed under the
 image of any automorphism: an iso carries a normal subgroup to a normal subgroup
@@ -321,7 +321,7 @@ private theorem map_mem_normalNilpotent {G : Type*} [Group G] (ϕ : G ≃* G)
     H.map ϕ.toMonoidHom ∈ {K : Subgroup G | K.Normal ∧ Group.IsNilpotent K} := by
   refine ⟨hH.1.map ϕ.toMonoidHom ϕ.surjective, ?_⟩
   haveI := hH.2
-  exact nilpotent_of_surjective (ϕ.subgroupMap H).toMonoidHom (ϕ.subgroupMap H).surjective
+  exact Group.nilpotent_of_surjective (ϕ.subgroupMap H).toMonoidHom (ϕ.subgroupMap H).surjective
 
 /-- **`F(G)` is characteristic.** The Fitting subgroup is canonical: it is the join
 of all normal nilpotent subgroups, a set every automorphism permutes
@@ -356,7 +356,7 @@ theorem fittingSubgroup_map_subtype_le {G : Type*} [Group G] [Finite G]
   haveI : (fittingSubgroup (N : Type _)).Characteristic := fittingSubgroup_characteristic N
   haveI := fittingSubgroup_isNilpotent (N : Type _)
   have hnil : Group.IsNilpotent ((fittingSubgroup (N : Type _)).map N.subtype) :=
-    nilpotent_of_surjective
+    Group.nilpotent_of_surjective
       (Subgroup.equivMapOfInjective (fittingSubgroup N) N.subtype N.subtype_injective).toMonoidHom
       (Subgroup.equivMapOfInjective (fittingSubgroup N) N.subtype N.subtype_injective).surjective
   exact normal_nilpotent_le_fittingSubgroup _ inferInstance hnil

@@ -57,13 +57,13 @@ theorem commutator_self_normal_of_normal (M : Subgroup G) (hM : M.Normal) :
 
 /-- **Twig A2**: A nontrivial solvable subgroup has proper commutator subgroup.
 
-Mirrors mathlib's `IsSolvable.commutator_lt_of_ne_bot` but with `IsSolvable ↥M`
-instead of `IsSolvable G` (we don't need the ambient group to be solvable). -/
-theorem commutator_lt_self (M : Subgroup G) (hSol : IsSolvable M) (hNT : M ≠ ⊥) :
+Mirrors mathlib's `Group.IsSolvable.commutator_lt_of_ne_bot` but with `Group.IsSolvable ↥M`
+instead of `Group.IsSolvable G` (we don't need the ambient group to be solvable). -/
+theorem commutator_lt_self (M : Subgroup G) (hSol : Group.IsSolvable M) (hNT : M ≠ ⊥) :
     ⁅M, M⁆ < M := by
   haveI := hSol
   haveI : Nontrivial ↥M := M.nontrivial_iff_ne_bot.mpr hNT
-  have h : _root_.commutator ↥M < ⊤ := IsSolvable.commutator_lt_top_of_nontrivial ↥M
+  have h : _root_.commutator ↥M < ⊤ := Group.IsSolvable.commutator_lt_top_of_nontrivial ↥M
   rw [← M.range_subtype, MonoidHom.range_eq_map, ← Subgroup.map_commutator,
       Subgroup.map_subtype_lt_map_subtype]
   exact h
@@ -73,7 +73,7 @@ theorem commutator_lt_self (M : Subgroup G) (hSol : IsSolvable M) (hNT : M ≠ �
 The proper inclusion (Twig A2) plus G-normality of ⁅M,M⁆ (Twig A1) plus
 `MinNormal M` forces ⁅M,M⁆ = ⊥. -/
 theorem commutator_eq_bot
-    (M : Subgroup G) (hMin : MinNormal M) (hSol : IsSolvable M) :
+    (M : Subgroup G) (hMin : MinNormal M) (hSol : Group.IsSolvable M) :
     (⁅M, M⁆ : Subgroup G) = ⊥ := by
   obtain ⟨hNT, hNorm, hMinimal⟩ := hMin
   have hLt : ⁅M, M⁆ < M := commutator_lt_self M hSol hNT
@@ -100,7 +100,7 @@ end BranchA
 
 /-- **Branch A** assembled: a minimal G-normal solvable subgroup is abelian. -/
 theorem abelian_of_minnormal_solvable
-    (M : Subgroup G) (hMin : MinNormal M) (hSol : IsSolvable M) :
+    (M : Subgroup G) (hMin : MinNormal M) (hSol : Group.IsSolvable M) :
     IsMulCommutative M := by
   exact BranchA.isMulCommutative_of_commutator_eq_bot M
     (BranchA.commutator_eq_bot M hMin hSol)
@@ -255,7 +255,7 @@ theorem prime_exp_of_minnormal_abelian
 
 A solvable minimal G-normal subgroup is elementary abelian. -/
 theorem minnormal_solvable_abelem
-    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : IsSolvable M) :
+    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : Group.IsSolvable M) :
     IsAbelem M := by
   -- Branch A: M is abelian
   have hAbel : IsMulCommutative M := abelian_of_minnormal_solvable M hMin hSol

@@ -311,7 +311,7 @@ noncomputable def classSum (g : G) : MonoidAlgebra ℂ G :=
 /-- The class sum is integral over `ℤ`: it is the image of the corresponding element of `ℤ[G]`
 (integral over `ℤ`, since `ℤ[G]` is module-finite over `ℤ`) under the coefficient map `ℤ → ℂ`. -/
 theorem classSum_isIntegral (g : G) : IsIntegral ℤ (classSum g) := by
-  haveI : Module.Finite ℤ (MonoidAlgebra ℤ G) := Module.Finite.of_basis (Finsupp.basisSingleOne)
+  haveI : Module.Finite ℤ (MonoidAlgebra ℤ G) := Module.Finite.of_basis (MonoidAlgebra.basis G _)
   set z : MonoidAlgebra ℤ G :=
     ∑ x ∈ Finset.univ.filter (fun x => IsConj g x), MonoidAlgebra.single x (1 : ℤ) with hz_def
   have hz : IsIntegral ℤ z := Algebra.IsIntegral.isIntegral z
@@ -454,17 +454,20 @@ yields column orthogonality (ingredient 3). -/
 theorem character_leftRegular_eq (g : G) :
     (Representation.ofMulAction ℂ G G).character g
       = if g = 1 then (Fintype.card G : ℂ) else 0 := by
+  -- v4.33: `MonoidAlgebra` is a structure (no Finsupp defeq); use its own basis + coeff API.
   rw [Representation.character,
-    LinearMap.trace_eq_matrix_trace ℂ (Finsupp.basisSingleOne (R := ℂ) (ι := G))]
+    LinearMap.trace_eq_matrix_trace ℂ (MonoidAlgebra.basis G ℂ)]
   rw [Matrix.trace]
-  simp only [Matrix.diag_apply, LinearMap.toMatrix_apply, Finsupp.basisSingleOne_repr,
-    LinearEquiv.refl_apply, Finsupp.coe_basisSingleOne]
-  have key : ∀ x : G, (Representation.ofMulAction ℂ G G g (Finsupp.single x 1)) x
-      = if g = 1 then (1 : ℂ) else 0 := by
+  have key : ∀ x : G,
+      (LinearMap.toMatrix (MonoidAlgebra.basis G ℂ) (MonoidAlgebra.basis G ℂ)
+          ((Representation.ofMulAction ℂ G G) g)).diag x
+        = if g = 1 then (1 : ℂ) else 0 := by
     intro x
-    rw [Representation.ofMulAction]
-    simp only [MonoidHom.coe_mk, OneHom.coe_mk, Finsupp.lmapDomain_apply,
-      Finsupp.mapDomain_single, smul_eq_mul, Finsupp.single_apply]
+    rw [Matrix.diag_apply, LinearMap.toMatrix_apply, MonoidAlgebra.basis_apply,
+      Representation.ofMulAction_single, smul_eq_mul,
+      show ((MonoidAlgebra.basis G ℂ).repr (MonoidAlgebra.single (g * x) (1 : ℂ))) x
+        = Finsupp.single (g * x) (1 : ℂ) x from rfl,
+      Finsupp.single_apply]
     by_cases hg1 : g = 1
     · subst hg1; simp
     · rw [if_neg (fun h => hg1 (mul_eq_right.mp h)), if_neg hg1]
@@ -504,8 +507,8 @@ group order.  Gives the finite index set and the dimension count underlying `Irr
 theorem sum_sq_dim_eq_card :
     ∃ (n : ℕ) (d : Fin n → ℕ), (∀ i, NeZero (d i)) ∧ ∑ i, (d i) ^ 2 = Fintype.card G := by
   haveI : NeZero (Nat.card G : ℂ) := ⟨Nat.cast_ne_zero.mpr Nat.card_pos.ne'⟩
-  haveI : Module.Finite ℂ (MonoidAlgebra ℂ G) := Module.Finite.of_basis (Finsupp.basisSingleOne)
-  let b : Module.Basis G ℂ (MonoidAlgebra ℂ G) := Finsupp.basisSingleOne
+  haveI : Module.Finite ℂ (MonoidAlgebra ℂ G) := Module.Finite.of_basis (MonoidAlgebra.basis G _)
+  let b : Module.Basis G ℂ (MonoidAlgebra ℂ G) := MonoidAlgebra.basis G ℂ
   obtain ⟨n, d, hd, ⟨e⟩⟩ :=
     IsSemisimpleRing.exists_algEquiv_pi_matrix_of_isAlgClosed (R := MonoidAlgebra ℂ G) (F := ℂ)
   refine ⟨n, d, hd, ?_⟩
@@ -963,10 +966,10 @@ sides are algebra homs agreeing on the generators `single g 1`.) -/
 theorem repOfMatrixHom_asAlgebraHom_factor {G : Type*} [Group G] {d : ℕ}
     (R : G →* Matrix (Fin d) (Fin d) ℂ)
     (Ψ : MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin d) (Fin d) ℂ)
-    (hΨ : ∀ g, Ψ (MonoidAlgebra.single g 1) = R g) :
+    (hΨ : ∀ g : G, Ψ (MonoidAlgebra.single g 1) = R g) :
     (repOfMatrixHom R).asAlgebraHom
       = (Matrix.toLinAlgEquiv' (n := Fin d) (R := ℂ)).toAlgHom.comp Ψ := by
-  refine MonoidAlgebra.algHom_ext fun g => ?_
+  refine MonoidAlgebra.algHom_ext (fun g => ?_) (Subsingleton.elim _ _)
   rw [AlgHom.comp_apply, Representation.asAlgebraHom_single_one, hΨ]
   rfl
 
@@ -983,7 +986,7 @@ theorem isIrreducible_of_surjective_algHom {G : Type*} [Group G] {d : ℕ} (hd :
     (R : G →* Matrix (Fin d) (Fin d) ℂ)
     (Ψ : MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin d) (Fin d) ℂ)
     (hΨsurj : Function.Surjective Ψ)
-    (hΨ : ∀ g, Ψ (MonoidAlgebra.single g 1) = R g) :
+    (hΨ : ∀ g : G, Ψ (MonoidAlgebra.single g 1) = R g) :
     (repOfMatrixHom R).IsIrreducible := by
   rw [Representation.irreducible_iff_isSimpleModule_asModule]
   have hfact := repOfMatrixHom_asAlgebraHom_factor R Ψ hΨ
@@ -1020,11 +1023,11 @@ subalgebra `ℂ·1` (it equals `algebraMap ∘ augHom` by `algHom_ext`), so surj
 `d×d` matrix to be scalar, whence `d = 1`.  This shows the trivial Wedderburn factor has degree 1. -/
 theorem wedderburn_trivial_dim_one {G : Type*} [Group G] {d : ℕ} [NeZero d]
     (Ψ : MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin d) (Fin d) ℂ)
-    (hsurj : Function.Surjective Ψ) (htriv : ∀ g, Ψ (MonoidAlgebra.single g 1) = 1) :
+    (hsurj : Function.Surjective Ψ) (htriv : ∀ g : G, Ψ (MonoidAlgebra.single g 1) = 1) :
     d = 1 := by
   -- `Ψ = algebraMap ∘ augHom`, so every value of `Ψ` is a scalar matrix.
   have hfact : Ψ = (Algebra.ofId ℂ (Matrix (Fin d) (Fin d) ℂ)).comp (augHom G) := by
-    refine MonoidAlgebra.algHom_ext fun g => ?_
+    refine MonoidAlgebra.algHom_ext (fun g => ?_) (Subsingleton.elim _ _)
     rw [htriv g, AlgHom.comp_apply, augHom_single, Algebra.ofId_apply]
     simp
   have hscalar : ∀ M : Matrix (Fin d) (Fin d) ℂ, ∃ c : ℂ, M = c • (1 : Matrix (Fin d) (Fin d) ℂ) := by
@@ -1243,7 +1246,9 @@ theorem character_ofMulAction_eq_trace_mulLeft {G : Type*} [Group G] (g : G) :
           (LinearMap.mulLeft ℂ (MonoidAlgebra.single g (1 : ℂ))) := by
   rw [Representation.character]
   congr 1
-  refine Finsupp.lhom_ext fun a b => ?_
+  -- v4.33: maps out of `MonoidAlgebra` (a structure now) take its own ext lemma, not Finsupp's.
+  refine MonoidAlgebra.lhom_ext' fun a => LinearMap.ext fun b => ?_
+  simp only [LinearMap.comp_apply, MonoidAlgebra.lsingle_apply]
   rw [Representation.ofMulAction_single]
   show MonoidAlgebra.single (g • a) b = MonoidAlgebra.single g 1 * MonoidAlgebra.single a b
   rw [MonoidAlgebra.single_mul_single, one_mul, smul_eq_mul]
@@ -1367,13 +1372,13 @@ theorem exists_wedderburn_character_decomp :
       (∀ i, NeZero (d i)) ∧
       (∀ i, R i 1 = 1) ∧
       (∀ i, Function.Surjective (Ψ i)) ∧
-      (∀ i g, Ψ i (MonoidAlgebra.single g 1) = R i g) ∧
+      (∀ i, ∀ g : G, Ψ i (MonoidAlgebra.single g 1) = R i g) ∧
       (∀ g, R i₀ g = 1) ∧
       (∀ i, (∀ g, R i g = 1) → i = i₀) ∧
       (∀ g, (Representation.ofMulAction ℂ G G).character g
               = ∑ i, (d i : ℂ) * (R i g).trace) := by
   haveI : NeZero (Nat.card G : ℂ) := ⟨Nat.cast_ne_zero.mpr Nat.card_pos.ne'⟩
-  haveI : Module.Finite ℂ (MonoidAlgebra ℂ G) := Module.Finite.of_basis (Finsupp.basisSingleOne)
+  haveI : Module.Finite ℂ (MonoidAlgebra ℂ G) := Module.Finite.of_basis (MonoidAlgebra.basis G _)
   obtain ⟨n, d, hd, ⟨e⟩⟩ :=
     IsSemisimpleRing.exists_algEquiv_pi_matrix_of_isAlgClosed (R := MonoidAlgebra ℂ G) (F := ℂ)
   have hone : e (MonoidAlgebra.single (1 : G) (1 : ℂ)) = 1 := by
@@ -1400,7 +1405,7 @@ theorem exists_wedderburn_character_decomp :
     refine ⟨y, ?_⟩
     have hval : Ψ i y = (e y) i := rfl
     rw [hval, hy, Function.update_self]
-  have hΨR : ∀ i g, Ψ i (MonoidAlgebra.single g 1) = R i g := fun i g => rfl
+  have hΨR : ∀ i, ∀ g : G, Ψ i (MonoidAlgebra.single g 1) = R i g := fun i g => rfl
   obtain ⟨i₀, hi₀, huniq⟩ :=
     exists_unique_trivial_factor d (fun k => Nat.pos_of_ne_zero (hd k).out) e
   refine ⟨n, d, R, Ψ, i₀, hd, fun i => (R i).map_one, hΨsurj, hΨR, hi₀, huniq, fun g => ?_⟩
@@ -1466,7 +1471,7 @@ theorem wedderburn_factor_char_vanish
     (R : G →* Matrix (Fin d) (Fin d) ℂ)
     (Ψ : MonoidAlgebra ℂ G →ₐ[ℂ] Matrix (Fin d) (Fin d) ℂ)
     (hΨsurj : Function.Surjective Ψ)
-    (hΨR : ∀ g, Ψ (MonoidAlgebra.single g 1) = R g)
+    (hΨR : ∀ g : G, Ψ (MonoidAlgebra.single g 1) = R g)
     (hR1 : R 1 = 1) (hRnontriv : ∃ h, R h ≠ 1) :
     (R g).trace = 0 := by
   haveI : Fintype G := Fintype.ofFinite G

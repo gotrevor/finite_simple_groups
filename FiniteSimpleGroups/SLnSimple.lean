@@ -278,6 +278,7 @@ theorem exists_linearEquiv_pair (u0 u1 w0 w1 : n → F)
     rw [h]; show bw (E (Sum.inl 1)) = w1
     simp only [E, Equiv.sumCongr_apply, Sum.map_inl, Equiv.refl_apply]; exact hwval 1
 
+set_option backward.isDefEq.respectTransparency false in
 /-- **`SL(n,F)` is 2-transitive on `ℙ^{n-1}(F)`** (for `2 ≤ |n|`; the hypothesis is not
 actually needed, since distinctness of the points already forces `|n| ≥ 2`). Any ordered
 pair of distinct points `(x₀,x₁)` maps to any other ordered pair of distinct points
@@ -291,7 +292,12 @@ operator `D` (in the basis `bw = sumExtend` adapted to `y₀.rep, y₁.rep`) tha
 `(D∘T) x₀.rep = y₀.rep` and `(D∘T) x₁.rep = c • y₁.rep ∥ y₁.rep` — so the matrix of `D∘T`
 lies in `SL(n,F)` and maps the two lines as required (scaling `y₁.rep` is projectively
 invariant). This formerly-axiomatized fact is now fully proved (no reference frame /
-`Basis.extend` column bookkeeping needed). -/
+`Basis.extend` column bookkeeping needed).
+
+v4.33 note: mathlib's transparency-respecting defeq (cookbook entry E) breaks the
+instance-keyed `smul_mk` rewrites against this repo's own SL action instances
+(SLnAction.lean predates mathlib's Projectivization/Action.lean); the `set_option`
+escape hatch matches mathlib's own usage in that file. -/
 theorem exists_sl_maps_two_points (h2 : 2 ≤ Fintype.card n)
     (x0 x1 y0 y1 : Projectivization F (n → F)) (hx : x0 ≠ x1) (hy : y0 ≠ y1) :
     ∃ g : SpecialLinearGroup n F, g • x0 = y0 ∧ g • x1 = y1 := by

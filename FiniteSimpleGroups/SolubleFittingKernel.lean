@@ -15,7 +15,7 @@ theorem / Hall) in its purest central form. (Aschbacher, *Finite Group Theory*
 
 ## History / soundness note
 
-The `[IsSolvable G]` hypothesis is **essential**. Without it the statement is
+The `[Group.IsSolvable G]` hypothesis is **essential**. Without it the statement is
 *false*: `SL(2, 𝔽₅)` (order 120) is a counterexample — its only minimal normal
 subgroup is the central `ℤ/2`, and `F(G) = Z(G) = ℤ/2`, so `F(G) ≤ Z(G)` holds,
 yet `F(G) ≠ ⊤`. An earlier formalization in this repo replaced solvability by the
@@ -32,7 +32,7 @@ nilpotent. Being normal and nilpotent, `N ≤ F(G) = Z(G)`, contradicting `Z(G) 
 ## Remaining gap to discharge `fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center`
 
 The Bender kernel needs the *layer = ⊥* form, not the *solvable* form. The residual
-gap is `layer G = ⊥ → IsSolvable G` (under `F(G) ≤ Z(G)`); see
+gap is `layer G = ⊥ → Group.IsSolvable G` (under `F(G) ≤ Z(G)`); see
 `GeneralizedFitting.lean`. This theorem supplies the engine for that discharge.
 -/
 
@@ -48,11 +48,11 @@ theorem fittingSubgroup_eq_top_of_isNilpotent (G : Type*) [Group G]
 /-- A nontrivial finite solvable group has a nontrivial **abelian** normal subgroup
 — the last nontrivial term of the derived series. -/
 theorem exists_nontrivial_abelian_normal_of_solvable (G : Type*) [Group G]
-    [Finite G] [IsSolvable G] [Nontrivial G] :
+    [Finite G] [Group.IsSolvable G] [Nontrivial G] :
     ∃ A : Subgroup G, A.Normal ∧ A ≠ ⊥ ∧
       ∀ a ∈ A, ∀ b ∈ A, a * b = b * a := by
   obtain ⟨n, hn⟩ : ∃ n, derivedSeries G n ≠ ⊥ ∧ derivedSeries G (n + 1) = ⊥ := by
-    obtain ⟨n, hn⟩ := ‹IsSolvable G›
+    obtain ⟨n, hn⟩ := ‹Group.IsSolvable G›
     contrapose! hn
     induction' n with n ih <;> simp_all +decide [derivedSeries]
   refine ⟨derivedSeries G n, ?_, hn.1, ?_⟩ <;>
@@ -133,7 +133,7 @@ group whose Fitting subgroup is central has `F(G) = ⊤`.
 Proof (ported from Aristotle, re-checked in-kernel): contradiction via a nontrivial
 abelian normal subgroup of `G/Z(G)`. -/
 theorem fittingSubgroup_eq_top_of_isSolvable_of_le_center (G : Type*) [Group G]
-    [Finite G] [IsSolvable G] (hF : fittingSubgroup G ≤ Subgroup.center G) :
+    [Finite G] [Group.IsSolvable G] (hF : fittingSubgroup G ≤ Subgroup.center G) :
     fittingSubgroup G = ⊤ := by
   by_contra! h_contra
   -- `G/Z(G)` is a nontrivial finite solvable group: extract an abelian normal `A`.

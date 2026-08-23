@@ -74,9 +74,9 @@ theorem layer_commutator_fittingSubgroup_eq_bot [Finite G] :
   · exfalso
     haveI : Group.IsNilpotent (fittingSubgroup G) := fittingSubgroup_isNilpotent G
     have e := Subgroup.subgroupOfEquivOfLe hLF
-    haveI : IsSolvable (L.subgroupOf (fittingSubgroup G)) := inferInstance
+    haveI : Group.IsSolvable (L.subgroupOf (fittingSubgroup G)) := inferInstance
     have hinj : Function.Injective e.symm.toMonoidHom := e.symm.injective
-    haveI : IsSolvable L := solvable_of_solvable_injective hinj
+    haveI : Group.IsSolvable L := solvable_of_solvable_injective hinj
     haveI : Nontrivial L := IsQuasisimple.nontrivial L
     haveI : Group.IsPerfect L := ⟨IsQuasisimple.commutator_eq_top L⟩
     exact Group.IsPerfect.not_isSolvable L inferInstance

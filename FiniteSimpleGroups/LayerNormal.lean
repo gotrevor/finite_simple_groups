@@ -133,7 +133,10 @@ theorem layer_normal : (layer G).Normal := by
     refine ⟨fun ⟨L, hL, hLK⟩ => hLK ▸ isComponent_smul _ hL, fun hK => ?_⟩
     exact ⟨(MulAut.conj g)⁻¹ • K, (isComponent_smul_iff _).mp (by rwa [smul_inv_smul]),
       smul_inv_smul _ _⟩
-  rw [layer_eq_sSup, Subgroup.pointwise_smul_def, (Subgroup.gc_map_comap _).l_sSup]
+  -- v4.33: instantiate the GC hom explicitly (see FittingSubgroup.lean - keyed matching
+  -- won't unfold `Monoid.End`).
+  rw [layer_eq_sSup, Subgroup.pointwise_smul_def,
+    (Subgroup.gc_map_comap (MulDistribMulAction.toMonoidEnd _ _ (MulAut.conj g))).l_sSup]
   simp only [← Subgroup.pointwise_smul_def]
   rw [← sSup_image, hset]
 

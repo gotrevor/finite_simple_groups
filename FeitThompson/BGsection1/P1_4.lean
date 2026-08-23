@@ -48,7 +48,7 @@ theorem wlog_cyclic
     [Fintype G] (A : Subgroup G)
     (_hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (_hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (_hSol : IsSolvable G)
+    (_hSol : Group.IsSolvable G)
     (_hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥)
     (hReduce : ∀ A' : Subgroup G, A' ≤ A → IsCyclic A' →
        A' ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥) :
@@ -93,7 +93,7 @@ axiom coprime_trivg_cent_Fitting_cyclic
     {G : Type*} [Group G] [Fintype G] (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G)
+    (hSol : Group.IsSolvable G)
     (hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥)
     (hCyc : IsCyclic A) :
     A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥
@@ -103,7 +103,7 @@ theorem coprime_trivg_cent_Fitting
     [Fintype G] (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G)
+    (hSol : Group.IsSolvable G)
     (hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥) :
     A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥ := by
   apply BranchA.wlog_cyclic A hNorm hCoprime hSol hCentTrivial

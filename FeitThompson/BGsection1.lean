@@ -141,7 +141,7 @@ UPSTREAM:
      minnormal M G -> solvable M -> is_abelem M.`
 -/
 theorem minnormal_solvable_abelem
-    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : IsSolvable M) :
+    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : Group.IsSolvable M) :
     IsAbelem M :=
   L1_1.minnormal_solvable_abelem M hMin hSol
 
@@ -154,7 +154,7 @@ UPSTREAM:
      minnormal M G ->  M \subset G -> solvable M -> M \subset 'Z('F(G)).`
 -/
 theorem minnormal_solvable_Fitting_center
-    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : IsSolvable M) :
+    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : Group.IsSolvable M) :
     M ≤ FittingSubgroup G ⊓
       Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) :=
   L1_2.minnormal_solvable_Fitting_center M hMin hSol
@@ -170,7 +170,7 @@ UPSTREAM:
 
 This is the flagship lemma of §1 — the rest of the chapter uses it
 repeatedly. -/
-theorem cent_sub_Fitting (hG : IsSolvable G) :
+theorem cent_sub_Fitting (hG : Group.IsSolvable G) :
     Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G)
       ≤ FittingSubgroup G :=
   P1_3.cent_sub_Fitting hG
@@ -189,7 +189,7 @@ theorem coprime_trivg_cent_Fitting
     [Fintype G] (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G)
+    (hSol : Group.IsSolvable G)
     (hCentTrivial : A ⊓ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) = ⊥) :
     A ⊓ Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) = ⊥ :=
   P1_4.coprime_trivg_cent_Fitting A hNorm hCoprime hSol hCentTrivial
@@ -207,7 +207,7 @@ theorem coprime_cent_prod
     [Fintype G] (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G) :
+    (hSol : Group.IsSolvable G) :
     (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ⊔
       Subgroup.centralizer (A : Set G) = ⊤ :=
   P1_6.coprime_cent_prod A hNorm hCoprime hSol
@@ -225,7 +225,7 @@ theorem coprime_commGid
     [Fintype G] (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G) :
+    (hSol : Group.IsSolvable G) :
     ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⁅(⊤ : Subgroup G), A⁆ :=
   P1_6.coprime_commGid A hNorm hCoprime hSol
 
@@ -242,7 +242,7 @@ theorem coprime_commGG1P
     [Fintype G] (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G)
+    (hSol : Group.IsSolvable G)
     (hVanish : ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⊥) :
     A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
   P1_6.coprime_commGG1P A hNorm hCoprime hSol hVanish
@@ -322,7 +322,7 @@ theorem stable_factor_cent
     (hStable : P1_9_base.IsStableFactor A H)
     (hCAH : A ≤ Subgroup.centralizer (H : Set G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G) :
+    (hSol : Group.IsSolvable G) :
     A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
   P1_9_base.stable_factor_cent A H hStable hCAH hCoprime hSol
 
@@ -340,7 +340,7 @@ theorem stable_series_cent
     [Fintype G] (A : Subgroup G) (s : List (Subgroup G))
     (hStable : P1_9.IsAStableSeries A s)
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G) :
+    (hSol : Group.IsSolvable G) :
     A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
   P1_9.stable_series_cent A s hStable hCoprime hSol
 

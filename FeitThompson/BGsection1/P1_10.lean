@@ -116,7 +116,7 @@ theorem coprime_nil_faithful_cent_stab
       comm_le := hCommNC
       conjStable := hConjStable }
   -- Nilpotent ⟹ solvable.
-  haveI : IsSolvable G := haveI := hNil; IsNilpotent.to_isSolvable
+  haveI : Group.IsSolvable G := haveI := hNil; IsNilpotent.to_isSolvable
   -- coprime |N| |A| from coprime |G| |A| via N ≤ ⊤.
   have hCoprimeN : (Nat.card N).Coprime (Nat.card A) := by
     have hNdvd : Nat.card N ∣ Nat.card G := by
@@ -124,8 +124,8 @@ theorem coprime_nil_faithful_cent_stab
         Subgroup.card_dvd_of_le le_top
       rwa [Subgroup.card_top] at h1
     exact hCoprime.of_dvd_left hNdvd
-  -- IsSolvable N from IsSolvable G.
-  haveI : IsSolvable N := inferInstance
+  -- Group.IsSolvable N from Group.IsSolvable G.
+  haveI : Group.IsSolvable N := inferInstance
   -- Apply relativized 1.9-base at K = N.
   have hACN : A ≤ Subgroup.centralizer (N : Set G) :=
     P1_9_base.BranchChain.stable_factor_cent_chain' A N C

@@ -75,7 +75,7 @@ Proved here by the classical Sylow / centre reduction to the prime-power class-s
 `isSimpleGroup_centralizer_index_not_primePow`. -/
 theorem burnside_simple (G : Type*) [Group G] [Finite G] (p q : ℕ)
     (hpq : ∀ r : ℕ, r.Prime → r ∣ Nat.card G → r = p ∨ r = q)
-    (hsimple : IsSimpleGroup G) : IsSolvable G := by
+    (hsimple : IsSimpleGroup G) : Group.IsSolvable G := by
   classical
   haveI := hsimple
   -- It suffices to prove `G` commutative; assume not.

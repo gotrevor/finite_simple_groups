@@ -79,7 +79,7 @@ theorem IsSubnormal.sup_normal {H N : Subgroup G} (hH : IsSubnormal H ⊤)
     (hN : N.Normal) : IsSubnormal (H ⊔ N) ⊤ := by
   have key : IsSubnormal (H ⊔ N) (⊤ ⊔ N) :=
     Relation.ReflTransGen.lift (· ⊔ N)
-      (fun _ _ hab => isNormalStep_sup_right hab hN) hH
+      (fun _ _ hab => isNormalStep_sup_right hab hN) _ _ hH
   rwa [top_sup_eq] at key
 
 end FiniteSimpleGroups

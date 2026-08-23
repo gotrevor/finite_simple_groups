@@ -238,7 +238,11 @@ private lemma sylow_2_unique_of_8_sylow_7 {G : Type*} [Group G] [Finite G]
       rw [ tsub_eq_of_eq_add ];
       simp +decide [ Set.setOf_and, Set.setOf_or ];
       rw [ ← @Set.ncard_union_eq ];
-      · congr with x ; by_cases hx : ∃ Q : Sylow 7 G, x ∈ ( Q : Subgroup G ) <;> aesop;
+      · congr 1
+        ext x
+        simp only [hR_def, Set.mem_ofPred_eq, Set.mem_union, Set.mem_inter_iff,
+          SetLike.mem_coe]
+        by_cases hx : ∃ Q : Sylow 7 G, x ∈ ( Q : Subgroup G ) <;> tauto;
       · exact Set.disjoint_left.mpr fun x hx₁ hx₂ => hx₁.2 hx₂.2;
       · exact Set.toFinite R;
       · exact Set.toFinite _;

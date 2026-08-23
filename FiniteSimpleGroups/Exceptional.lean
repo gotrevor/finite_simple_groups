@@ -47,7 +47,12 @@ inductive ExceptionalFamily : Type where
   -- Twisted: Suzuki (`²B_2`, q = 2^{2n+1}), Ree (`²G_2` q = 3^{2n+1}, `²F_4` q = 2^{2n+1}),
   -- Steinberg (`³D_4`, `²E_6`)
   | Suzuki | SmallRee | LargeRee | Steinberg3D4 | Steinberg2E6
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+-- `deriving Fintype` is broken for plain enums under `import Mathlib` at v4.33.1 (see LieType.lean).
+instance : Fintype ExceptionalFamily :=
+  Fintype.ofList [.G2, .F4, .E6, .E7, .E8, .Suzuki, .SmallRee, .LargeRee, .Steinberg3D4,
+    .Steinberg2E6] (fun x => by cases x <;> decide)
 
 theorem card_exceptionalFamily : Fintype.card ExceptionalFamily = 10 := by decide
 

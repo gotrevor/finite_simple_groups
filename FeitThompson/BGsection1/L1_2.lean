@@ -60,7 +60,7 @@ theorem nilpotent_normal_le_fittingSubgroup
 end BranchA
 
 theorem le_fittingSubgroup_of_minnormal_solvable
-    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : IsSolvable M) :
+    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : Group.IsSolvable M) :
     M ≤ FittingSubgroup G := by
   have hAbelem : IsAbelem M := L1_1.minnormal_solvable_abelem M hMin hSol
   have hNil : Group.IsNilpotent M := BranchA.isAbelem_nilpotent M hAbelem
@@ -105,7 +105,7 @@ theorem centralizes_fittingSubgroup
 end BranchB
 
 theorem minnormal_solvable_Fitting_center
-    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : IsSolvable M) :
+    (M : Subgroup G) [Finite M] (hMin : MinNormal M) (hSol : Group.IsSolvable M) :
     M ≤ FittingSubgroup G ⊓
       Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) :=
   le_inf

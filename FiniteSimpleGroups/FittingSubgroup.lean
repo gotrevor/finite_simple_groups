@@ -90,7 +90,11 @@ pointwise smul = `map` of a monoid hom (`pointwise_smul_def`); `map` preserves
 theorem sSup_normal_of_forall_normal {G : Type*} [Group G] {S : Set (Subgroup G)}
     (hS : ∀ K ∈ S, K.Normal) : (sSup S).Normal := by
   refine Subgroup.Normal.of_conjugate_fixed (fun g => ?_)
-  rw [Subgroup.pointwise_smul_def, (Subgroup.gc_map_comap _).l_sSup, sSup_eq_iSup]
+  -- v4.33: `(gc_map_comap _).l_sSup` no longer rw-matches the `Monoid.End` hom produced by
+  -- `pointwise_smul_def` (keyed matching won't unfold `Monoid.End := G →* G`); instantiate it.
+  rw [Subgroup.pointwise_smul_def,
+    (Subgroup.gc_map_comap (MulDistribMulAction.toMonoidEnd _ _ (MulAut.conj g))).l_sSup,
+    sSup_eq_iSup]
   refine iSup_congr (fun K => iSup_congr (fun hK => ?_))
   rw [← Subgroup.pointwise_smul_def]
   haveI := hS K hK

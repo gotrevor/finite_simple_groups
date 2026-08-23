@@ -62,7 +62,13 @@ inductive ClassicalFamily : Type where
   | PSp
   /-- Types `B_n` / `D_n` / `²D_n`: commutator subgroup of `PO^ε_n(F_q)`. -/
   | POmega
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+-- `deriving Fintype` is broken for plain enums under `import Mathlib` at v4.33.1 (the derive
+-- handler's generated `mem` rewrite fails against a `SetLike`-flavored `Finset` membership
+-- instance), so the instance is spelled out via `Fintype.ofList`.
+instance : Fintype ClassicalFamily :=
+  Fintype.ofList [.PSL, .PSU, .PSp, .POmega] (fun x => by cases x <;> decide)
 
 theorem card_classicalFamily : Fintype.card ClassicalFamily = 4 := by decide
 

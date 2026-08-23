@@ -69,7 +69,7 @@ A proper nontrivial normal subgroup `N` splits `G` into the strictly smaller `N`
 both with prime divisors in `{p, q}` (divisibility), hence solvable by induction, so `G` is
 solvable; otherwise `G` is trivial or simple (`burnside_simple`). -/
 private theorem burnside_aux (p q : ℕ) : ∀ (n : ℕ) (G : Type u) [Group G] [Finite G],
-    Nat.card G ≤ n → (∀ r : ℕ, r.Prime → r ∣ Nat.card G → r = p ∨ r = q) → IsSolvable G := by
+    Nat.card G ≤ n → (∀ r : ℕ, r.Prime → r ∣ Nat.card G → r = p ∨ r = q) → Group.IsSolvable G := by
   intro n
   induction n with
   | zero => intro G _ _ hle _; exact absurd (Nat.card_pos.trans_le hle) (by simp)
@@ -103,9 +103,9 @@ private theorem burnside_aux (p q : ℕ) : ∀ (n : ℕ) (G : Type u) [Group G] 
         have hQlt : Nat.card (G ⧸ N) < Nat.card G := by
           rw [hmul]; calc Nat.card (G ⧸ N) < Nat.card (G ⧸ N) * 2 := by omega
             _ ≤ Nat.card (G ⧸ N) * Nat.card N := Nat.mul_le_mul_left _ hN2
-        haveI : IsSolvable N :=
+        haveI : Group.IsSolvable N :=
           ih N (by omega) (fun r hr hrd => hpq r hr (hrd.trans hNdvd))
-        haveI : IsSolvable (G ⧸ N) :=
+        haveI : Group.IsSolvable (G ⧸ N) :=
           ih (G ⧸ N) (by omega) (fun r hr hrd => hpq r hr (hrd.trans hQdvd))
         exact solvable_of_ker_le_range N.subtype (QuotientGroup.mk' N)
           (le_of_eq (by rw [QuotientGroup.ker_mk', Subgroup.range_subtype]))
@@ -116,7 +116,7 @@ simple case, which is the lone residual axiom `burnside_simple` (the character-t
 half). -/
 theorem Burnside_paqb (G : Type*) [Group G] [Finite G]
     (p q : ℕ) (hp : p.Prime) (hq : q.Prime) (a b : ℕ)
-    (h_card : Nat.card G = p ^ a * q ^ b) : IsSolvable G := by
+    (h_card : Nat.card G = p ^ a * q ^ b) : Group.IsSolvable G := by
   refine burnside_aux p q (Nat.card G) G le_rfl (fun r hr hrd => ?_)
   rw [h_card] at hrd
   rcases (Nat.Prime.dvd_mul hr).mp hrd with h | h
@@ -129,7 +129,7 @@ theorem Burnside_paqb (G : Type*) [Group G] [Finite G]
 solvable. (255 pages, 1963; Coq-formalized by Gonthier et al. 2013, ~150k
 lines; not yet ported to Lean.) -/
 axiom Feit_Thompson_odd_order (G : Type*) [Group G] [Finite G]
-    (h_odd : Odd (Nat.card G)) : IsSolvable G
+    (h_odd : Odd (Nat.card G)) : Group.IsSolvable G
 
 /-- **The Feit–Thompson dichotomy (CFSG entry point).** A finite simple group
 is either cyclic of prime order, or contains an involution.
@@ -152,7 +152,7 @@ theorem feitThompson_dichotomy (G : Type*) [Group G] [IsFSG G] :
   by_cases hodd : Odd (Nat.card G)
   · -- odd ⇒ Feit–Thompson ⇒ solvable ⇒ commutative ⇒ cyclic of prime order
     left
-    have hsol : IsSolvable G := Feit_Thompson_odd_order G hodd
+    have hsol : Group.IsSolvable G := Feit_Thompson_odd_order G hodd
     have hcomm : ∀ a b : G, a * b = b * a := IsSimpleGroup.comm_iff_isSolvable.mpr hsol
     haveI : IsMulCommutative G := ⟨⟨hcomm⟩⟩
     have hp : (Nat.card G).Prime := IsSimpleGroup.prime_card

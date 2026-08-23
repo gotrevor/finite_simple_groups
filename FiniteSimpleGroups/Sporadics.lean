@@ -196,7 +196,14 @@ inductive Name : Type where
   | McLaughlin | SuzukiSporadic | HigmanSims
   -- The remaining pariahs (O'Nan, Rudvalis, Lyons)
   | ONan | Rudvalis | Lyons
-  deriving DecidableEq, Repr, Fintype
+  deriving DecidableEq, Repr
+
+-- `deriving Fintype` is broken for plain enums under `import Mathlib` at v4.33.1 (see LieType.lean).
+instance : Fintype Name :=
+  Fintype.ofList
+    [.M11, .M12, .M22, .M23, .M24, .J1, .J2, .J3, .J4, .Co1, .Co2, .Co3, .Fi22, .Fi23, .Fi24',
+     .Monster, .BabyMonster, .Thompson, .HaradaNorton, .Held, .McLaughlin, .SuzukiSporadic,
+     .HigmanSims, .ONan, .Rudvalis, .Lyons] (fun x => by cases x <;> decide)
 
 /-- There are exactly **26** sporadic simple groups. -/
 theorem card_name : Fintype.card Name = 26 := by decide

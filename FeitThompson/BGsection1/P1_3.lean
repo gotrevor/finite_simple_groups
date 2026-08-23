@@ -4,7 +4,7 @@
 **Flagship**: in a solvable group, the centralizer of the Fitting subgroup
 is contained in the Fitting subgroup.
 
-`IsSolvable G → C_G(F(G)) ≤ F(G)`
+`Group.IsSolvable G → C_G(F(G)) ≤ F(G)`
 
 ## Tree
 
@@ -49,7 +49,7 @@ namespace BranchA
 inside F(G). Cited from BGsection1.v / Hall's argument (Fitting_stab_chief). -/
 axiom cent_Fitting_le_chief_stab_of_in_Fitting
     {G : Type*} [Group G]
-    (hG : IsSolvable G) :
+    (hG : Group.IsSolvable G) :
     Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) ≤
       chiefStab (G := G)
 
@@ -64,13 +64,13 @@ Coq: `chief_stab_sub_Fitting` in BGsection1.v line ~187. The proof is
 non-trivial — uses minimal-counterexample induction + chief series exists. -/
 axiom chief_stab_sub_Fitting
     {G : Type*} [Group G]
-    (hG : IsSolvable G) :
+    (hG : Group.IsSolvable G) :
     chiefStab (G := G) ≤ FittingSubgroup G
 
 end BranchB
 
 /-- **Main**: Hall's theorem (B & G Prop 1.3). -/
-theorem cent_sub_Fitting (hG : IsSolvable G) :
+theorem cent_sub_Fitting (hG : Group.IsSolvable G) :
     Subgroup.centralizer ((FittingSubgroup G : Subgroup G) : Set G) ≤
       FittingSubgroup G :=
   (BranchA.cent_Fitting_le_chief_stab_of_in_Fitting hG).trans

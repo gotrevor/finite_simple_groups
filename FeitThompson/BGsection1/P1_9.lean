@@ -65,7 +65,7 @@ applies `stable_factor_cent_chain'` (Inc 26's relativized 1.9-base).
 Subgroup-solvability auto-derives via `subgroup_solvable_of_solvable`. -/
 private theorem cent_of_chain
     (A : Subgroup G) (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G) :
+    (hSol : Group.IsSolvable G) :
     ∀ (H : Subgroup G) (rest : List (Subgroup G))
       (_hChain : (H :: rest).IsChain (IsAStableFactor A))
       (_hCent : A ≤ Subgroup.centralizer (H : Set G)),
@@ -105,7 +105,7 @@ theorem series_cent_of_stable
     (A : Subgroup G) (s : List (Subgroup G))
     (hStable : IsAStableSeries A s)
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G) :
+    (hSol : Group.IsSolvable G) :
     A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) := by
   obtain ⟨hHead, hLast, hChain⟩ := hStable
   -- The series has at least one element (head = ⊥), so destruct.
@@ -140,7 +140,7 @@ theorem stable_series_cent
     (A : Subgroup G) (s : List (Subgroup G))
     (hStable : IsAStableSeries A s)
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G) :
+    (hSol : Group.IsSolvable G) :
     A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
   Branch_induct.series_cent_of_stable A s hStable hCoprime hSol
 

@@ -42,7 +42,7 @@ the definition and the normality.
 namespace FiniteSimpleGroups
 
 -- v4.31: `CommGroup ↥(center G)` from `IsMulCommutative` is now a scoped instance (needed to
--- derive `IsSolvable ↥(center G)`).
+-- derive `Group.IsSolvable ↥(center G)`).
 open scoped IsMulCommutative
 
 universe u
@@ -111,7 +111,7 @@ on `|G|`. A finite group with no components (`layer G = ⊥`) and central Fittin
   and `layer Ḡ = ⊥` (`layer_quotient_center_eq_bot`); by induction `Ḡ` is solvable, and `G`
   is the extension of the abelian `Z(G)` by the solvable `Ḡ`. -/
 private theorem isSolvable_aux : ∀ (n : ℕ) (G : Type u) [Group G] [Finite G],
-    Nat.card G ≤ n → layer G = ⊥ → fittingSubgroup G ≤ Subgroup.center G → IsSolvable G := by
+    Nat.card G ≤ n → layer G = ⊥ → fittingSubgroup G ≤ Subgroup.center G → Group.IsSolvable G := by
   intro n
   induction n with
   | zero => intro G _ _ hle _ _; exact absurd (Nat.card_pos.trans_le hle) (by simp)
@@ -126,7 +126,7 @@ private theorem isSolvable_aux : ∀ (n : ℕ) (G : Type u) [Group G] [Finite G]
       · -- `F(G) ≤ Z(G) = ⊥`: a (necessarily abelian) minimal normal subgroup would lie in
         -- `F(G) = ⊥`; impossible, so `G` is trivial.
         rcases subsingleton_or_nontrivial G with hsub | _
-        · exact isSolvable_of_subsingleton G
+        · infer_instance
         · exfalso
           obtain ⟨M, hMnorm, hMne, hMmin⟩ := exists_isMinimalNormal (G := G)
           have hctr : Subgroup.center (M : Type _) = ⊤ :=
@@ -146,7 +146,7 @@ private theorem isSolvable_aux : ∀ (n : ℕ) (G : Type u) [Group G] [Finite G]
               < Nat.card (G ⧸ Subgroup.center G) * Nat.card (Subgroup.center G) := by
                 exact lt_mul_of_one_lt_right hqpos h1
             _ = Nat.card G := hmul.symm
-        haveI hsolvQ : IsSolvable (G ⧸ Subgroup.center G) :=
+        haveI hsolvQ : Group.IsSolvable (G ⧸ Subgroup.center G) :=
           ih (G ⧸ Subgroup.center G) (by omega)
             (layer_quotient_center_eq_bot G hE)
             (by rw [fittingSubgroup_quotient_center_eq_bot G hF]; exact bot_le)
@@ -158,7 +158,7 @@ private theorem isSolvable_aux : ∀ (n : ℕ) (G : Type u) [Group G] [Finite G]
 order-bounded `isSolvable_aux` at `n = |G|`. This is the solvability hypothesis the
 machine-checked solvable kernel needs; together they give Bender's central base case. -/
 theorem isSolvable_of_layer_eq_bot_of_le_center (G : Type*) [Group G] [Finite G]
-    (hE : layer G = ⊥) (hF : fittingSubgroup G ≤ Subgroup.center G) : IsSolvable G :=
+    (hE : layer G = ⊥) (hF : fittingSubgroup G ≤ Subgroup.center G) : Group.IsSolvable G :=
   isSolvable_aux (Nat.card G) G le_rfl hE hF
 
 /-- **The soluble base case of Bender's cornerstone (the irreducible kernel).** A
@@ -189,7 +189,7 @@ genuine corollary of this kernel but cannot *replace* the `layer = ⊥` hypothes
 is one direction only).
 
 **The axiom surface is now a single, sharp, clearly-true statement about the layer.**
-Since the *solvable* case `[IsSolvable G] → F(G) ≤ Z(G) → F(G) = ⊤` is machine-checked
+Since the *solvable* case `[Group.IsSolvable G] → F(G) ≤ Z(G) → F(G) = ⊤` is machine-checked
 (`fittingSubgroup_eq_top_of_isSolvable_of_le_center`), solvability is the only missing
 hypothesis. Solvability is then proved by strong induction on `|G|` (`isSolvable_aux`
 below): the quotient `Ḡ = G/Z(G)` has `F(Ḡ) = ⊥` (`fittingSubgroup_quotient_center_eq_bot`,
@@ -202,7 +202,7 @@ theorem fittingSubgroup_eq_top_of_layer_eq_bot_of_le_center (G : Type*) [Group G
     (hE : layer G = ⊥)
     (hF : fittingSubgroup G ≤ Subgroup.center G) :
     fittingSubgroup G = ⊤ :=
-  have : IsSolvable G := isSolvable_of_layer_eq_bot_of_le_center G hE hF
+  have : Group.IsSolvable G := isSolvable_of_layer_eq_bot_of_le_center G hE hF
   fittingSubgroup_eq_top_of_isSolvable_of_le_center G hF
 
 /-- **Bender's central base case.** If `F*(G)` is central (`C_G(F*(G)) = ⊤`, i.e.

@@ -51,7 +51,7 @@ axiom coprimeR_cent_prod
     (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (hCoprime : (Nat.card (⁅(⊤ : Subgroup G), A⁆ : Subgroup G)).Coprime (Nat.card A))
-    (hSol : IsSolvable (⁅(⊤ : Subgroup G), A⁆ : Subgroup G)) :
+    (hSol : Group.IsSolvable (⁅(⊤ : Subgroup G), A⁆ : Subgroup G)) :
     (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ⊔
       Subgroup.centralizer (A : Set G) = ⊤
 
@@ -62,7 +62,7 @@ theorem coprime_cent_prod
     (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G) :
+    (hSol : Group.IsSolvable G) :
     (⁅(⊤ : Subgroup G), A⁆ : Subgroup G) ⊔
       Subgroup.centralizer (A : Set G) = ⊤ := by
   haveI := hSol
@@ -75,7 +75,7 @@ theorem coprime_cent_prod
         Nat.card_congr Subgroup.topEquiv.toEquiv
       exact h2 ▸ h1
     exact hCoprime.of_dvd_left hCard
-  · -- IsSolvable ⁅⊤,A⁆ from IsSolvable G (subgroups inherit solvability)
+  · -- Group.IsSolvable ⁅⊤,A⁆ from Group.IsSolvable G (subgroups inherit solvability)
     infer_instance
 
 /-- **1.6(b) `coprime_commGid`**: `⁅⁅G,A⁆, A⁆ = ⁅G,A⁆`.
@@ -92,7 +92,7 @@ theorem coprime_commGid
     (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G) :
+    (hSol : Group.IsSolvable G) :
     ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⁅(⊤ : Subgroup G), A⁆ := by
   refine le_antisymm ?_ ?_
   · -- (⊆) ⁅⁅⊤,A⁆, A⁆ ≤ ⁅⊤,A⁆ by monotonicity (⁅⊤,A⁆ ≤ ⊤).
@@ -137,7 +137,7 @@ theorem coprime_commGG1P
     (A : Subgroup G)
     (hNorm : A ≤ Subgroup.normalizer (⊤ : Subgroup G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G)
+    (hSol : Group.IsSolvable G)
     (hVanish : ⁅(⁅(⊤ : Subgroup G), A⁆ : Subgroup G), A⁆ = ⊥) :
     A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) := by
   -- 1.6(b) plus hVanish ⇒ ⁅G,A⁆ = ⊥, which equivalently says A ≤ C(G).

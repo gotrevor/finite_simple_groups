@@ -68,7 +68,7 @@ axiom stable_factor_cent_chain'
     (_hStable : IsStableFactor' A K H)
     (_hCAH : A ≤ Subgroup.centralizer (H : Set G))
     (_hCoprime : (Nat.card K).Coprime (Nat.card A))
-    (_hSol : IsSolvable K) :
+    (_hSol : Group.IsSolvable K) :
     A ≤ Subgroup.centralizer (K : Set G)
 
 /-- **K = ⊤ specialization (THEOREM)** — derived from
@@ -80,7 +80,7 @@ theorem stable_factor_cent_chain
     (hStable : IsStableFactor A H)
     (hCAH : A ≤ Subgroup.centralizer (H : Set G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G) :
+    (hSol : Group.IsSolvable G) :
     A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) := by
   haveI := hSol
   -- Build the relativized stable factor at K = ⊤ from IsStableFactor A H.
@@ -102,7 +102,7 @@ theorem stable_factor_cent
     (hStable : IsStableFactor A H)
     (hCAH : A ≤ Subgroup.centralizer (H : Set G))
     (hCoprime : (Nat.card G).Coprime (Nat.card A))
-    (hSol : IsSolvable G) :
+    (hSol : Group.IsSolvable G) :
     A ≤ Subgroup.centralizer ((⊤ : Subgroup G) : Set G) :=
   BranchChain.stable_factor_cent_chain A H hStable hCAH hCoprime hSol
 

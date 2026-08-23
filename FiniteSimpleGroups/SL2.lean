@@ -133,6 +133,9 @@ theorem mk_eq_c_ne (a b c d : F) (hdet : a * d - b * c = 1) (hc : c ≠ 0)
     (try field_simp) <;> (try ring) <;>
     (try linear_combination hdet) <;> (try linear_combination -hdet)
 
+-- v4.33 transparency change (mathlib-bump cookbook entry E/D5): keyed matching refuses
+-- the Subtype-coe / repo-action instance forms this proof rewrites through.
+set_option backward.isDefEq.respectTransparency false in
 /-- Bruhat decomposition, `c = 0`: `!![a,b;0,d] = diag(a,a⁻¹)·upper(b·a⁻¹)`. -/
 theorem mk_eq_c_eq (a b d : F) (hdet : a * d - b * 0 = 1)
     (h : (!![a, b; 0, d]).det = 1) :
@@ -306,6 +309,9 @@ theorem PSL2_nontrivial (q : ℕ) [Fact (Nat.Prime q)] : Nontrivial (PSL 2 q) :=
 
 /-! ### The center of `SL(2,F)` — kernel of `SL → PSL` -/
 
+-- v4.33 transparency change (mathlib-bump cookbook entry E/D5): keyed matching refuses
+-- the Subtype-coe / repo-action instance forms this proof rewrites through.
+set_option backward.isDefEq.respectTransparency false in
 /-- **The center of `SL(2,F)` is `{1, -1}`.** A central element commutes with all
 transvections, hence is a scalar matrix `c·I` (`mem_range_scalar_iff_commute_…`);
 `det = c² = 1` forces `c = ±1`. This pins the kernel `Z` of `SL(2,q) ↠ PSL(2,q)`,
@@ -570,6 +576,9 @@ def E1 (q : ℕ) [Fact (Nat.Prime q)] : P1 q :=
 def E2 (q : ℕ) [Fact (Nat.Prime q)] : P1 q :=
   Projectivization.mk (ZMod q) ![0, 1] (cons_ne_zero_of_snd 0 1 one_ne_zero)
 
+-- v4.33 transparency change (mathlib-bump cookbook entry E/D5): keyed matching refuses
+-- the Subtype-coe / repo-action instance forms this proof rewrites through.
+set_option backward.isDefEq.respectTransparency false in
 /-- **The `SL(2,q)` action carries the reference frame `([e₁],[e₂])` to any pair
 of distinct lines.** The matrix with columns `v` and `d⁻¹w` (`d = det[v|w] ≠ 0`
 since `[v] ≠ [w]`) has determinant 1 and sends `e₁ ↦ v`, `e₂ ↦ d⁻¹w ∥ w`. -/
@@ -787,8 +796,13 @@ theorem transvecGroup_smul (a : F) (ha : a ≠ 0) (v : Fin 2 → F) :
 noncomputable def Tline (q : ℕ) [Fact (Nat.Prime q)] (x : P1 q) : Subgroup (PSL 2 q) :=
   (transvecGroup x.rep).map (QuotientGroup.mk' (Subgroup.center _))
 
-instance (q : ℕ) [Fact (Nat.Prime q)] (x : P1 q) : IsMulCommutative (Tline q x) := by
-  unfold Tline; infer_instance
+instance (q : ℕ) [Fact (Nat.Prime q)] (x : P1 q) : IsMulCommutative (Tline q x) :=
+  -- v4.33: `unfold Tline; infer_instance` no longer finds it (keyed search does not unfold
+  -- the def); ascribe the unfolded type so the search keys on `Subgroup.map`, then defeq at
+  -- default transparency bridges back to `Tline`.
+  (inferInstance :
+    IsMulCommutative ((transvecGroup (Projectivization.rep x)).map
+      (QuotientGroup.mk' (Subgroup.center _))))
 
 
 
@@ -801,6 +815,8 @@ proved above, `PSL2_isSimpleGroup_of_iwasawa` then yields **`PSL(2,q)` simple fo
 every prime `q ≥ 4`** (`PSL2_isSimpleGroup`), `#print axioms`-clean. This discharges
 `PSL_isSimpleGroup` (the deep CFSG `axiom` in `LieType`) at `n = 2`. -/
 
+-- v4.33 transparency change (cookbook E/D5): see the other hatches in this file.
+set_option backward.isDefEq.respectTransparency false in
 /-- **Conjugation-equivariance of `Tline`** — the Iwasawa `is_conj` obligation:
 `T (g • x) = MulAut.conj g • T x`, from `transvecGroup_conj` (conjugating a
 transvection along `v` yields one along `g·v`) pushed through the quotient. -/

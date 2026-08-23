@@ -17,7 +17,7 @@ of two things happens:
 | `IsPGroup p G`       | ✅      | `Mathlib.GroupTheory.PGroup` |
 | `Sylow`              | ✅      | `Mathlib.GroupTheory.Sylow`  |
 | `IsNilpotent`        | ✅      | `Mathlib.GroupTheory.Nilpotent` |
-| `IsSolvable`         | ✅      | `Mathlib.GroupTheory.Solvable`  |
+| `Group.IsSolvable`         | ✅      | `Mathlib.GroupTheory.Solvable`  |
 | `frattini G`         | ✅      | `Mathlib.GroupTheory.Frattini`  |
 | `IsSubnormal`        | ✅      | `Mathlib.GroupTheory.IsSubnormal` (2026) |
 | `Subgroup.normalizer`| ✅      | `Mathlib.GroupTheory.Subgroup.Basic` |

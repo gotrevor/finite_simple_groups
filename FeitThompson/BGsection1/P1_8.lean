@@ -1,4 +1,10 @@
 /-
+Copyright (c) 2026 Trevor Morris. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Trevor Morris
+-/
+
+/-
 # B & G, Proposition 1.8 / Aschbacher 24.1 — `coprime_cent_Phi`
 
 If G is a p-group, `|A|` is coprime to `|G|`, and `⁅G,A⁆ ⊆ Φ(G)`, then `A ⊆ C(G)`.

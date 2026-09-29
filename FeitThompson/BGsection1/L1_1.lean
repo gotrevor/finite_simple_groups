@@ -1,4 +1,10 @@
 /-
+Copyright (c) 2026 Trevor Morris. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Trevor Morris
+-/
+
+/-
 # B & G, Lemma 1.1 — `minnormal_solvable_abelem`
 
 Statement: a solvable minimal normal subgroup of a group is elementary abelian.

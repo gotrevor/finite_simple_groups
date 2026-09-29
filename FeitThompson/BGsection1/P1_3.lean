@@ -1,4 +1,10 @@
 /-
+Copyright (c) 2026 Trevor Morris. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Trevor Morris
+-/
+
+/-
 # B & G, Proposition 1.3 (P. Hall) — `cent_sub_Fitting`
 
 **Flagship**: in a solvable group, the centralizer of the Fitting subgroup

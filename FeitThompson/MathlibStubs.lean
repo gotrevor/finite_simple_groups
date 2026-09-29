@@ -1,4 +1,10 @@
 /-
+Copyright (c) 2026 Trevor Morris. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Trevor Morris
+-/
+
+/-
 # Mathlib stubs for the FT port
 
 Local axiomatization of finite-group-theory concepts that the BG / PF port

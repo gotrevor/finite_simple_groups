@@ -1,4 +1,10 @@
 /-
+Copyright (c) 2026 Trevor Morris. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Trevor Morris
+-/
+
+/-
 # B & G, Corollary 1.12 — `coprime_odd_faithful_cent_abelem`
 
 For an elementary abelian p-subgroup `E` of an odd-order p-group `G` with

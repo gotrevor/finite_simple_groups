@@ -1,4 +1,10 @@
 /-
+Copyright (c) 2026 Trevor Morris. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Trevor Morris
+-/
+
+/-
 # B & G, Proposition 1.6(e) — `coprime_abelian_faithful_Ohm1`
 
 Generalizes Aschbacher (24.3): for abelian G with `A ≤ N(G)`, `coprime |G| |A|`,

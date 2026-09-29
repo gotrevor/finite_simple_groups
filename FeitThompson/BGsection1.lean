@@ -1,4 +1,10 @@
 /-
+Copyright (c) 2026 Trevor Morris. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Trevor Morris
+-/
+
+/-
 Port of `BGsection1.v` from `math-comp/odd-order`.
 
 Upstream: papers/odd-order/BGsection1.v (1335 lines, 89 declarations).

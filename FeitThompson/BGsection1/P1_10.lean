@@ -1,4 +1,10 @@
 /-
+Copyright (c) 2026 Trevor Morris. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Trevor Morris
+-/
+
+/-
 # B & G, Proposition 1.10 — `coprime_nil_faithful_cent_stab`
 
 For nilpotent G with `A ≤ N(G)`, `coprime |G| |A|`, let `C := C_G(A)`.
